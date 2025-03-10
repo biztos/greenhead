@@ -30,7 +30,7 @@ i.e. a converstation, potentially brokered?
 
 ### Plug-ins
 
-First hard thing is the plug-in thing considering no dynamic loading in Go.
+First hard thing is the plug-in plan considering no dynamic loading in Go.
 Probably acceptable to have a registry of these which is compiled and then
 set up which funcs are available, with default rigging to do that via a TOML
 file.
@@ -58,8 +58,23 @@ in this case.
 
 ### Demo Funcs that actually do something.
 
-Ideally they should do something, however useless, when run between two Agents
-with no human.
+Tic Tac Toe seems like a good one!
+
+Can also play against a human.
+
+Functions:
+
+`ttt.start() -> game_id`
+
+`ttt.join(id)`
+
+`ttt.move(x,y) -> ack`
+
+`ttt.board() -> shows board`
+
+`ttt.whoami() -> X|O`
+
+Good example of how we need more than one single function for a plug-in.
 
 ### Broker
 

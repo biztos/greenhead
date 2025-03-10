@@ -1,10 +1,10 @@
 package core
 
 import (
-	"context"
+	// "context"
 
 	"github.com/oklog/ulid/v2"
-	"github.com/sashabaranov/go-openai"
+	// "github.com/sashabaranov/go-openai"
 )
 
 type History interface {
@@ -32,7 +32,7 @@ type Response struct {
 
 // ParseResponseMessage parses m and saves it into h, returning a unique
 // Response with an Id that is (should be) known to h.
-func ParseResponseMessage(m)
+func ParseResponseMessage(m string) {}
 
 // Roundtrip represents an element in a Conversation.
 type Roundtrip struct {
