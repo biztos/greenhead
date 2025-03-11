@@ -1,6 +1,6 @@
-// Package registry holds the registered extensions.
+// Package registry holds the registered tools.
 //
-// Register and Clear are *not* safe for concurrency: extensions should be
+// Register and Clear are *not* safe for concurrency: tools should be
 // registered at load.
 package registry
 
@@ -8,62 +8,41 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/biztos/greenhead/extensions"
+	"github.com/biztos/greenhead/tools"
 )
 
-var registered = []extensions.Extension{}
+var registered []tools.Tooler
 
-// Get returns an extension by name, or nil if none is found.
-func Get(name string) extensions.Extension {
-	for _, e := range registered {
-		if e.Name() == name {
-			return e
+// Get returns a Tooler by name, or nil if none is found.
+func Get(name string) tools.Tooler {
+	for _, t := range registered {
+		if t.Name() == name {
+			return t
 		}
 	}
 	return nil
 }
 
-// Names returns all the registered extension names, in order of registration.
+// Names returns all the registered Tooler names, in order of registration.
 func Names() []string {
 	names := make([]string, len(registered))
-	for i, e := range registered {
-		names[i] = e.Name()
+	for i, t := range registered {
+		names[i] = t.Name()
 	}
 	return names
 
 }
 
-// Register adds an extension, with simple checks.  For any non-nil return
-// value, the extension will *not* have been registered.
-//
-// Note that nothing but your own sanity is preventing you from making the
-// values return different things on each call; that kind of chicanery is
-// unsupported.
-func Register(ext extensions.Extension) error {
+// Register adds a Tool, with simple checks.  For any non-nil return value, t
+// will *not* have been registered.
+func Register(t tools.Tooler) error {
 	// Must have a non-blanco name.
-	if strings.TrimSpace(ext.Name()) == "" {
-		return fmt.Errorf("empty name for extension")
-	}
-	// Must have some functions.
-	functions := ext.Functions()
-	if len(functions) == 0 {
-		return fmt.Errorf("no functions for extension %q", ext.Name())
-	}
-	// Each of its functions must have a unique name within the extension.
-	have := map[string]bool{}
-	for _, f := range functions {
-		if strings.TrimSpace(f.Name) == "" {
-			return fmt.Errorf("empty name for callable in %q - %q",
-				ext.Name(), f.Name)
-		}
-		if have[f.Name] {
-			return fmt.Errorf("duplicate name for callable in %q - %q",
-				ext.Name(), f.Name)
-		}
-		have[f.Name] = true
+	if strings.TrimSpace(t.Name()) == "" {
+		return fmt.Errorf("empty name for tool")
 	}
 	// Good enough for now!
-	registered = append(registered, ext)
+	// TODO: check the input for JSON-ability here, better than later.
+	registered = append(registered, t)
 	return nil
 
 }
@@ -74,5 +53,9 @@ func Register(ext extensions.Extension) error {
 // Use Clear when building a custom binary that should only have access to its
 // own extensions.
 func Clear() {
-	registered = []extensions.Extension{}
+	registered = []tools.Tooler{}
+}
+
+func init() {
+	Clear()
 }

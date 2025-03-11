@@ -3,8 +3,8 @@
 package greenhead
 
 import (
-	_ "github.com/biztos/greenhead/extensions/demo"
 	_ "github.com/biztos/greenhead/registry"
+	_ "github.com/biztos/greenhead/tools/demo"
 
 	"github.com/biztos/greenhead/runner"
 )
