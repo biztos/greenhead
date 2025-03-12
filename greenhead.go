@@ -22,8 +22,8 @@ var Register = registry.Register
 // NewTool exposes the tools submodule's NewTool function.
 //
 // (We can't use a var for this because of the "generic" type.)
-func NewTool[T any](name, desc string, f func(context.Context, T) (any, error)) *tools.Tool[T] {
-	return tools.NewTool[T](name, desc, f)
+func NewTool[T any, R any](name, desc string, f func(context.Context, T) (R, error)) *tools.Tool[T, R] {
+	return tools.NewTool[T, R](name, desc, f)
 }
 
 // CustomApp sets values in runner for very basic customization of app name,

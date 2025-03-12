@@ -26,13 +26,13 @@ type ParseUrlInput struct {
 	Url string
 }
 
-func ParseUrl(ctx context.Context, in ParseUrlInput) (any, error) {
+func ParseUrl(ctx context.Context, in ParseUrlInput) (*url.URL, error) {
 	return url.Parse(in.Url) // context ignored
 }
 
 func init() {
 
-	parse_url := greenhead.NewTool[ParseUrlInput](
+	parse_url := greenhead.NewTool[ParseUrlInput, *url.URL](
 		"parse_url",
 		"Parses an URL and returns its parts in a struct.",
 		ParseUrl,

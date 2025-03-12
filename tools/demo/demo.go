@@ -68,25 +68,25 @@ func init() {
 	// Instantiating them on the fly is TBD but should be doable;
 	// cf. PROBLEMS.md
 	d := &Demo{}
-	store := tools.NewTool[StoreInput](
+	store := tools.NewTool[StoreInput, string](
 		"demo_store",
 		"Stores a string value for later Recall.",
-		func(ctx context.Context, in StoreInput) (any, error) {
+		func(ctx context.Context, in StoreInput) (string, error) {
 			d.Store(in.Value) // ctx is ignored for now
-			return nil, nil
+			return "stored", nil
 		},
 	)
-	recall := tools.NewTool[NullInput](
+	recall := tools.NewTool[NullInput, []string](
 		"demo_recall",
 		"Returns the stored values.",
-		func(ctx context.Context, in NullInput) (any, error) {
+		func(ctx context.Context, in NullInput) ([]string, error) {
 			return d.Recall(), nil // ctx is ignored for now
 		},
 	)
-	sum := tools.NewTool[SumInput](
+	sum := tools.NewTool[SumInput, float64](
 		"demo_sum",
 		"Sum input values.",
-		func(ctx context.Context, in SumInput) (any, error) {
+		func(ctx context.Context, in SumInput) (float64, error) {
 			return d.Sum(in.Values), nil // ctx is ignored for now
 		},
 	)

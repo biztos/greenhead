@@ -1,5 +1,9 @@
 # PROBLEMS
 
+## How to structure tool output?
+
+GPT at least just wants a fucking string.
+
 ## How to instantiate new objects on the fly?
 
 Want to be able to do something like:
