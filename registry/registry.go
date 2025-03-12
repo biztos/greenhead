@@ -33,6 +33,35 @@ func Names() []string {
 
 }
 
+// Display returns the name and description for all registered Toolers, with
+// formatting, or "<no tools>" if none are registered.
+//
+// If the description is multi-line, the first line is used.
+func Display() string {
+	if len(registered) == 0 {
+		return "<no tools>"
+	}
+	max_name := 0
+	names := make([]string, len(registered))
+	descs := make([]string, len(registered))
+	for i, t := range registered {
+		names[i] = t.Name()
+		if len(names[i]) > max_name {
+			max_name = len(names[i])
+		}
+		desc_lines := strings.Split(t.Description(), "\n")
+		descs[i] = desc_lines[0]
+
+	}
+	fmt_str := fmt.Sprintf("%%-%ds - %%s\n", max_name)
+	disp := ""
+	for i, n := range names {
+		disp += fmt.Sprintf(fmt_str, n, descs[i])
+	}
+	return disp
+
+}
+
 // Register adds a Tool, with simple checks.  For any non-nil return value, t
 // will *not* have been registered.
 func Register(t tools.Tooler) error {

@@ -1,6 +1,14 @@
 // Package demo defines a Demo extension that registers itself on init.
 //
 // This is intended as an idiomatic way of creating new tools as subpackages.
+//
+// TODO: break out into more realistic examples.
+//
+// Say one that is stateless, one stateful.
+//
+// Stateful can be something real, like say Employee Registry.
+//
+// Stateless... maybe uptime? github.com/shirou/gopsutil
 package demo
 
 import (

@@ -19,6 +19,7 @@ type Tooler interface {
 	Name() string
 	Description() string
 	Exec(context.Context, any) (any, error)
+	Help() string
 
 	OpenAiTool() (*openai.Tool, error)
 }
@@ -59,6 +60,17 @@ func (t *Tool[T]) Exec(ctx context.Context, input any) (any, error) {
 		return nil, fmt.Errorf("Wrong input type for %s: %T", t.name, input)
 	}
 	return t.f(ctx, inp_t)
+}
+
+// Help implements Tooler by returning a (hopefully) useful summary of the
+// Tool.
+func (t *Tool[T]) Help() string {
+	s := t.name + "\n\n" + t.desc
+	// OK, now I need to come up with the JSON schema for input, and also one
+	// for output if possible.  We will need these for the LLM anyway.
+	// TODO: json shit!
+
+	return s
 }
 
 // OpenAiTool implements Tooler and returns an OpenAI-compatibile definition
