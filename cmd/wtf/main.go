@@ -1,14 +1,9 @@
-// cmd/example/main.go -- a simple example of custom tools.
+// wtf -- my work-in-progress binary to test shit out
 //
-// This uses the default setup, with a custom function parse_url defined here,
-// and the demo tools loaded from their submodule.
+// obviously: once this is published, keep this kind of thing elsewhere in its
+// own repo.
 //
-// This should serve as a demonstration of the "easy" path to deploying custom
-// tools in agents.
-//
-// To check that it registered the tools, use:
-//
-//	go run ./cmd/example list-tools
+// the runner func is set up in wtf.go, this here is just boilerplate
 package main
 
 import (
@@ -16,11 +11,10 @@ import (
 	"net/url"
 
 	"github.com/biztos/greenhead"
-	_ "github.com/biztos/greenhead/tools/demo"
 )
 
 func main() {
-	greenhead.CustomApp("example", "Greenhead URL Parser", "example 1.0.0")
+	greenhead.CustomApp("wtf", "WTAF", "zerp!")
 	greenhead.Run()
 }
 

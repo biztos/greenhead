@@ -15,6 +15,7 @@ import (
 
 type Config struct {
 	Debug     bool
+	Stream    bool
 	ListTools bool `docopt:"list-tools"`
 	ShowTool  bool `docopt:"show-tool"`
 	RunTool   bool `docopt:"run-tool"`
@@ -22,11 +23,13 @@ type Config struct {
 	Input     string
 }
 
-var Version = "ghd v0.1.0"
-
 var Args = os.Args[1:]
 
 var Exit = os.Exit
+
+var RunnerFunc func(*Config) error = nil
+
+var Version = "ghd v0.1.0"
 
 var Name = "ghd"
 
@@ -49,6 +52,7 @@ Usage:
 
 Options:
   -h --help           Show this screen.
+  --stream            Stream the chat responses as they arrive.
   --debug             Debug mode (more verbose logging).
 
 This program runs AI agents.
@@ -72,6 +76,15 @@ func Run() {
 	}
 	if err := opts.Bind(cfg); err != nil {
 		log.Fatal(err)
+	}
+
+	// TODO: think of how to preserve this pattern in Cobra: let the caller
+	// set up the runner function.  But at what point is it too much?
+	if RunnerFunc != nil {
+		if err := RunnerFunc(cfg); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
 	// Basic dispatcher as long as we're smol:

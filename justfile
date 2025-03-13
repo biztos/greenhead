@@ -10,7 +10,7 @@ prep:
 
 # Run locally from source, with args passed.
 run *ARGS='--version': prep
-	go run cmd/ghd/main.go {{ARGS}}
+	go run ./cmd/ghd {{ARGS}}
 
 # Build for current environment.
 build: prep
