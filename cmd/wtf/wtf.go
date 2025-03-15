@@ -120,22 +120,13 @@ func GetTool(name string) openai.Tool {
 	if tool == nil {
 		panic("tool not found") // don't care, IRL we will have tools already.
 	}
-	return openai.Tool{
-		Type: openai.ToolTypeFunction,
-		Function: &openai.FunctionDefinition{
-			Name:        tool.Name(),
-			Description: tool.Description(),
-			Strict:      true,
-			Parameters:  tool.InputSchema(),
-		},
-	}
+	return tool.OpenAiTool()
 
 }
 
 func CompletionRequest(prompt string) openai.ChatCompletionRequest {
 	return openai.ChatCompletionRequest{
 		Model: openai.GPT4o,
-		// MaxTokens: 20,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,

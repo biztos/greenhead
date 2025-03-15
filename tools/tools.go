@@ -24,17 +24,37 @@ import (
 // Tooler defines the interface to which Tools conform.
 //
 // Tools are managed as Toolers; for complex use-cases you may wish to skip
-// Tool[T any] altogether and define your own type.
+// Tool[T, R] altogether and define your own type.
 //
 // For simple use-cases, just use NewTool.
 type Tooler interface {
+
+	// Name returns the immutable name of the tool, which will be used both
+	// to tell the LLM what the tool is called, and to look it up when the
+	// LLM returns a tool call.
 	Name() string
+
+	// Description is the description of the tool as passed to the LLM.
+	// It should be tuned to that purpose.
 	Description() string
+
+	// InputSchema returns a simplified JSON schema describing the underlying
+	// concrete type of the input (args).
 	InputSchema() *jsonschema.Definition
-	Exec(context.Context, string) (any, error)
+
+	// Exec executes the tool.  The input string must be valid JSON conforming
+	// to the schema returned by InputSchema.
+	Exec(ctx context.Context, input string) (any, error)
+
+	// Help returns information on the tool for a human user of the CLI.
 	Help() string
 
-	OpenAiTool() (*openai.Tool, error)
+	// OpenAiTool returns a valid openai.Tool.
+	//
+	// TODO: move this!  Since it's derived from the above things, no sense in
+	// making someone implement it.  Put in apis maybe?  But we may have our
+	// own API at some point...
+	OpenAiTool() openai.Tool
 }
 
 // Tool is a tool which can be called by LLMs once registered.
@@ -116,8 +136,8 @@ func (t *Tool[T, R]) Help() string {
 // of t.
 //
 // "Strict" is assumed and the ToolType is always "Function."
-func (t *Tool[T, R]) OpenAiTool() (*openai.Tool, error) {
-	oai_tool := &openai.Tool{
+func (t *Tool[T, R]) OpenAiTool() openai.Tool {
+	return openai.Tool{
 		Type: openai.ToolTypeFunction,
 		Function: &openai.FunctionDefinition{
 			Name:        t.name,
@@ -127,5 +147,4 @@ func (t *Tool[T, R]) OpenAiTool() (*openai.Tool, error) {
 			Parameters: t.schemaT,
 		},
 	}
-	return oai_tool, nil
 }
