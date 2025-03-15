@@ -18,18 +18,96 @@ import (
 func Runner(cfg *runner.Config) error {
 	// ignore all the actual opts, just want to get a r/t going here.
 	//
-	// FIRST do this with the fake weather tool, before trying to call 4reals.
-	prompt := "Parse the following URL: https://biztos.com/misc/?a=b"
-	res, err := ExecuteChat(CompletionRequest(prompt), cfg.Stream)
+	// GPT is reliably calling the tool, that's good.  Now maybe do another
+	// r/t with the results?
+	prompt := "Parse the following URLs: https://biztos.com/misc/?a=b, https://google.com/?q=foobar"
+	req := CompletionRequest(prompt)
+	res, err := ExecuteChat(req, cfg.Stream)
 	if err != nil {
-		return err
+		return fmt.Errorf("error executing chat completion request: %w", err)
 	}
-	b, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return err
+	if len(res.Choices) != 1 {
+		return fmt.Errorf("unexpected number of choices in response: %d",
+			len(res.Choices))
+	}
+	choice := res.Choices[0]
+	tool_calls := choice.Message.ToolCalls
+	finish_reason := choice.FinishReason
+	if len(tool_calls) > 0 && finish_reason != "tool_calls" {
+		return fmt.Errorf("have tool calls but finish_reason is %s",
+			finish_reason)
 	}
 
-	fmt.Println(string(b))
+	// TODO: gather async tools and run in a waitgroup, include sync tools
+	// IN ORDER as one task in the waitgroup.  mutex for outputs.
+	// use a type that holds the mutex? not copied... referred... works?
+	outputs := make([]openai.ToolOutput, len(tool_calls))
+	for idx, tool_call := range tool_calls {
+		if tool_call.Type != openai.ToolTypeFunction {
+			return fmt.Errorf("tool call %d has non-function type: %s",
+				idx, tool_call.Type)
+		}
+		name := tool_call.Function.Name
+		args := tool_call.Function.Arguments
+		// TODO: get from agent's own list of tools b/c could be subset.
+		// TBD: what to do if tool not found?  case is the AI hallucinates the
+		// tool, so presumably send an error response.  Anyway this should be
+		// a method on the agent.
+		tool := registry.Get(name)
+		if tool == nil {
+			panic("tool not found:" + name)
+		}
+		// we know the type of the tool input?  maybe not.  can call how?
+		output, err := tool.Exec(context.Background(), args)
+		if err != nil {
+			output = map[string]string{"error": err.Error()}
+		}
+		outputs[idx] = openai.ToolOutput{
+			ToolCallID: tool_call.ID,
+			Output:     output,
+		}
+	}
+	// TODO: at this point if we do NOT have tool calls then do what? Then
+	// we stop the agent and wait for further input which I guess will go
+	// under... Continue?
+	if len(tool_calls) != 0 {
+		// Construct a new call and keep going I guess... could loop on this?
+		// Could indeed.  So have to figure out how to handle that.  Probably
+		// the agent knows in its config how many tool calls in a row it can
+		// get. Easy enough to test with fake responses.  Default 1?  Well.
+		// Think about tic tac toe.  Probably depends on the type of call.
+		// Maybe build in?
+		// OK anyway let's do this as-is for now, just the one time, and dump
+		// the response.
+		req.Messages = append(req.Messages, choice.Message)
+		for _, output := range outputs {
+			b, err := json.Marshal(output.Output)
+			if err != nil {
+				// TODO: prove this uses the concrete type, otherwise ditch.
+				return fmt.Errorf("error marshaling JSON of %T: %w",
+					output.Output, err)
+			}
+			req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+				Role:       "tool",
+				ToolCallID: output.ToolCallID,
+				Content:    string(b),
+			})
+		}
+
+		// Now run it again and see what we get!
+		fmt.Printf("* Sending tool response: %d\n", len(outputs))
+		res, err = ExecuteChat(req, cfg.Stream)
+		if err != nil {
+			return fmt.Errorf("error executing chat completion request: %w", err)
+		}
+	}
+
+	// b, err := json.MarshalIndent(res, "", "  ")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Println(string(b))
 
 	return nil
 }
@@ -171,7 +249,7 @@ func ExecuteChat(r openai.ChatCompletionRequest, streaming bool) (*openai.ChatCo
 					// Update function details
 					if toolCallDelta.Function.Name != "" {
 						toolCalls[index].Function.Name = toolCallDelta.Function.Name
-						fmt.Printf("Tool call: %s ", toolCallDelta.Function.Name)
+						fmt.Printf("\n* Tool call: %s ", toolCallDelta.Function.Name)
 					}
 
 					// Append to function arguments as they stream in

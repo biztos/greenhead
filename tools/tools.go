@@ -31,7 +31,7 @@ type Tooler interface {
 	Name() string
 	Description() string
 	InputSchema() *jsonschema.Definition
-	Exec(context.Context, any) (any, error)
+	Exec(context.Context, string) (any, error)
 	Help() string
 
 	OpenAiTool() (*openai.Tool, error)
@@ -86,15 +86,16 @@ func (t *Tool[T, R]) InputSchema() *jsonschema.Definition {
 	return t.schemaT
 }
 
-// Exec implements Tooler by calling its function with input type-checked.
-func (t *Tool[T, R]) Exec(ctx context.Context, input any) (any, error) {
-	inp_t, ok := input.(T)
-	if !ok {
-		// Programmer error!
-		msg := fmt.Sprintf("tool %s wants %T, got %T", t.name, t.zeroT, input)
-		panic(msg)
+// Exec implements Tooler by calling its function with args as a JSON string.
+func (t *Tool[T, R]) Exec(ctx context.Context, args string) (any, error) {
+	var input T
+	err := json.Unmarshal([]byte(args), &input)
+	if err != nil {
+		// This could be programmer/prompter error or a hallucination; at
+		// least openAI docs *say* the JSON schema should be respected.
+		return nil, fmt.Errorf("error parsing json for %T: %w", input, err)
 	}
-	return t.f(ctx, inp_t)
+	return t.f(ctx, input)
 }
 
 // Help implements Tooler by returning a (hopefully) useful summary of the
