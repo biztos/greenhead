@@ -11,6 +11,7 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 
+	"github.com/biztos/greenhead/registry"
 	"github.com/biztos/greenhead/runner"
 )
 
@@ -18,7 +19,7 @@ func Runner(cfg *runner.Config) error {
 	// ignore all the actual opts, just want to get a r/t going here.
 	//
 	// FIRST do this with the fake weather tool, before trying to call 4reals.
-	prompt := "What's the current weather in San Francisco, CA?"
+	prompt := "Parse the following URL: https://biztos.com/misc/?a=b"
 	res, err := ExecuteChat(CompletionRequest(prompt), cfg.Stream)
 	if err != nil {
 		return err
@@ -33,6 +34,26 @@ func Runner(cfg *runner.Config) error {
 	return nil
 }
 
+// Now do this with a real tool!
+func GetTool(name string) openai.Tool {
+
+	fmt.Println("USING TOOL:", name)
+	tool := registry.Get(name)
+	if tool == nil {
+		panic("tool not found") // don't care, IRL we will have tools already.
+	}
+	return openai.Tool{
+		Type: openai.ToolTypeFunction,
+		Function: &openai.FunctionDefinition{
+			Name:        tool.Name(),
+			Description: tool.Description(),
+			Strict:      true,
+			Parameters:  tool.InputSchema(),
+		},
+	}
+
+}
+
 func CompletionRequest(prompt string) openai.ChatCompletionRequest {
 	return openai.ChatCompletionRequest{
 		Model: openai.GPT4o,
@@ -43,32 +64,7 @@ func CompletionRequest(prompt string) openai.ChatCompletionRequest {
 				Content: prompt,
 			},
 		},
-		Tools: []openai.Tool{
-			{
-				Type: openai.ToolTypeFunction,
-				Function: &openai.FunctionDefinition{
-					Name:        "get_weather",
-					Description: "Get the current weather in a given location",
-					Strict:      true,
-					Parameters: map[string]interface{}{
-						"type": "object",
-						"properties": map[string]interface{}{
-							"location": map[string]interface{}{
-								"type":        "string",
-								"description": "The city and state, e.g. San Francisco, CA",
-							},
-							"unit": map[string]interface{}{
-								"type":        "string",
-								"enum":        []string{"celsius", "fahrenheit"},
-								"description": "The temperature unit to use",
-							},
-						},
-						"required":             []string{"location", "unit"},
-						"additionalProperties": false,
-					},
-				},
-			},
-		},
+		Tools: []openai.Tool{GetTool("parse_url")},
 	}
 }
 

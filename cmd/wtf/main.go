@@ -19,7 +19,7 @@ func main() {
 }
 
 type ParseUrlInput struct {
-	Url string
+	Url string `json:"url"`
 }
 
 func ParseUrl(ctx context.Context, in ParseUrlInput) (*url.URL, error) {
