@@ -1,36 +1,19 @@
 # TODO (ordered!)
 
-## Run a tool from JSON string input
+## Make log opts work: --debug, --logfile and --silent
 
-Marshal or fail; write standard-format output { result, error }
+Where --silent just devnulls.
 
-Gonna need some output type guessing I think.  Something we could control in
-the runner config at some point.
+Also nice to have a specific log-level option and info is default, but error
+level easy to set.
 
-- error: "ERROR: err"
-- string: string
-- array of strings: joined "\n"
-- array of anything else? sprintf as value or what?  TBD
+## Clean up runner/agent stuff w/r/t configs, need to take config files.
 
-Anything object-y gets JSONned.  Or just everything?  Well not straight prim.
+Ideally want to have an extra set of configs you can set per-agent.
 
-## Run a r/t to prove the tool format is right for OpenAI
-
-Need to make sure the tools will be called correctly before going further down
-this path.
-
-## Make a CLI chat i/o thing with streaming
-
-Gonna need it sooner or later anyway, should be Claude-able.
-
-Main point is I really want to see stuff happening real time.  And have some
-colors as an option.
-
-Bonus: up-arrow for history, special chars or :help or something.
-
-## Make that run the function calls (at first don't do that b/c complicated).
-
-At this point it's ready to demo to Sam I think.
+Want a per-app config, a per-agent config, and a per-client extras that can
+be anything, inside of per-agent.  Knowing that per-client will need some
+special checking TBD... but probably can just r/t the json?
 
 ## Convert from docopt to cobra because it's gonna get long w/subcommands.
 
@@ -38,8 +21,15 @@ At this point it's ready to demo to Sam I think.
     ghd tools help foo
     ghd tools run foo INPUT
     ghd rools run foo --file=INPUT_FILE
+    ghd chat --file=config_file
 
 Then agent, whatever else.
+
+## Set up token limits at Agent level and also in OpenAiClient
+
+## Clean up the chat UI, make it at least somewhat fun with defaults.
+
+Stuff in wtf is a good start.
 
 ## UNORDERED BACKLOG
 
