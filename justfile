@@ -33,6 +33,10 @@ cover: prep
 bench: prep
 	go test ./... -bench=.
 
+# Run pkgsite because godoc is deprecated. :-(
+doc: prep
+	pkgsite
+
 # Remove the build and cover artifacts.
 clean:
 	/bin/rm -rf build cover.out
