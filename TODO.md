@@ -25,11 +25,25 @@ special checking TBD... but probably can just r/t the json?
 
 Then agent, whatever else.
 
+Check is a nice thing to have.  `ghd agent check --config=file.json`
+
+Maybe best to start there b/c can validate configs and so on.
+
 ## Set up token limits at Agent level and also in OpenAiClient
 
 ## Clean up the chat UI, make it at least somewhat fun with defaults.
 
 Stuff in wtf is a good start.
+
+## Create two-chat setup with tic tac toe as example.
+
+Coordinate how?
+
+Here's one: `ghd team run --config=one.json --config=two.json`
+
+Where you have M:M?  Pair off each possible set and let them run?
+
+InitialPrompt in config?
 
 ## UNORDERED BACKLOG
 
