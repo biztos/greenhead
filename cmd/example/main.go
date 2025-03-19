@@ -20,7 +20,8 @@ import (
 )
 
 func main() {
-	greenhead.CustomApp("example", "Greenhead URL Parser", "example 1.0.0")
+	// Use a custom name but keep the default description.
+	greenhead.CustomApp("example", "1.0.0", "SuperCorp URL Parser", "")
 	greenhead.Run()
 }
 

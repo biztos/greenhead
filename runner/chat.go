@@ -1,9 +1,10 @@
-package main
+package runner
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,27 +12,14 @@ import (
 	"github.com/chzyer/readline"
 
 	"github.com/biztos/greenhead/agent"
-	"github.com/biztos/greenhead/runner"
+	"github.com/biztos/greenhead/registry"
+	"github.com/biztos/greenhead/tools"
 )
 
-func Runner(cfg *runner.Config) error {
-	agent_cfg := &agent.Config{
-		Type:   "openai",
-		Name:   "WTF",
-		Tools:  []string{"parse_url"},
-		Stream: cfg.Stream,
-		Color:  "lightblue",
-		Context: []*agent.ContextItem{
-			{
-				Role:    "system",
-				Content: "You are a helpful assistant, but you speak like a pirate.",
-			},
-		},
-	}
-	my_agent, err := agent.NewAgent(agent_cfg)
-	if err != nil {
-		return err
-	}
+// RunChat runs an interactive chat session.
+//
+// TODO: take the agent as arg here.
+func RunChat(agt *agent.Agent) error {
 
 	// Hmm, gonna want a way to suppress logging or log to file here.
 	tmp, err := os.CreateTemp("", "wtf-log-*.log")
@@ -49,9 +37,9 @@ func Runner(cfg *runner.Config) error {
 	})
 
 	// Set the default logger to use our file handler
-	my_agent.SetLogger(slog.New(fileHandler))
+	agt.SetLogger(slog.New(fileHandler))
 
-	fmt.Println("Chatting with:", my_agent.String())
+	fmt.Println("Chatting with:", agt.String())
 	fmt.Println("Logs:", absPath)
 	fmt.Println("Return twice to send prompt; empty prompt or Ctrl-D to quit.")
 	fmt.Println("Note that context is NOT cleared!")
@@ -74,7 +62,7 @@ func Runner(cfg *runner.Config) error {
 			if prompt == "" {
 				break
 			}
-			_, err = my_agent.RunCompletion(context.Background(), prompt)
+			_, err = agt.RunCompletion(context.Background(), prompt)
 			if err != nil {
 				return err
 			}
@@ -88,6 +76,23 @@ func Runner(cfg *runner.Config) error {
 	return nil
 }
 
+// TODO: obviously not do this shit here!  useful for demo though.
+type ParseUrlInput struct {
+	Url string `json:"url"`
+}
+
+func ParseUrl(ctx context.Context, in ParseUrlInput) (*url.URL, error) {
+	return url.Parse(in.Url) // context ignored
+}
 func init() {
-	runner.RunnerFunc = Runner
+
+	parse_url := tools.NewTool[ParseUrlInput, *url.URL](
+		"parse_url",
+		"Parses an URL and returns its parts in a struct.",
+		ParseUrl,
+	)
+	if err := registry.Register(parse_url); err != nil {
+		panic(err)
+	}
+
 }

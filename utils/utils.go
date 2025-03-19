@@ -15,6 +15,15 @@ func MustJsonString(v any) string {
 	return string(b)
 }
 
+// MustJsonStringPretty marshals v to a string with indent or panics trying.
+func MustJsonStringPretty(v any) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		panic(err.Error())
+	}
+	return string(b)
+}
+
 // Dur returns the string representation of the duration since t.
 func Dur(t time.Time) string {
 	return time.Since(t).String()

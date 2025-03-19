@@ -11,6 +11,8 @@ import (
 	"github.com/biztos/greenhead/tools"
 )
 
+var locked = false
+
 var registered []tools.Tooler
 
 // Get returns a Tooler by name, or nil if none is found.
@@ -65,6 +67,9 @@ func Display() string {
 // Register adds a Tool, with simple checks.  For any non-nil return value, t
 // will *not* have been registered.
 func Register(t tools.Tooler) error {
+	if locked {
+		return fmt.Errorf("registry is locked")
+	}
 	// Must have a non-blanco name.
 	if strings.TrimSpace(t.Name()) == "" {
 		return fmt.Errorf("empty name for tool")
@@ -83,6 +88,19 @@ func Register(t tools.Tooler) error {
 // own extensions.
 func Clear() {
 	registered = []tools.Tooler{}
+}
+
+// Lock marks the registered extensions as locked, so that no more can be
+// registered.  It is *important* that the runtime call this function if you
+// do not want tools to be able to register new tools.
+//
+// There is no Unlock function.
+//
+// Keep in mind that a tool could call system functions; a tool could create
+// and register new tools; and an AI could (theoretically) do a "gain of
+// function" without your knowledge.
+func Lock() {
+	locked = true
 }
 
 func init() {

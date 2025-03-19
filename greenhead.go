@@ -8,13 +8,13 @@ package greenhead
 import (
 	"context"
 
+	"github.com/biztos/greenhead/cmd"
 	"github.com/biztos/greenhead/registry"
-	"github.com/biztos/greenhead/runner"
 	"github.com/biztos/greenhead/tools"
 )
 
-// Run exposes the runner submodule's Run function.
-var Run = runner.Run
+// Run exposes the cmd submodule's Execute function.
+var Run = cmd.Execute
 
 // Register exposes the register submodule's Register function.
 var Register = registry.Register
@@ -26,17 +26,20 @@ func NewTool[T any, R any](name, desc string, f func(context.Context, T) (R, err
 	return tools.NewTool[T, R](name, desc, f)
 }
 
-// CustomApp sets values in runner for very basic customization of app name,
-// title and version.
-//
-// This should be used when running the standard CLI from the runner submodule
-// in cases where the custom tools warrant a different application name.
-//
-// Note that *only* the strings are affected; no functionality changes.
-//
-// (Also note that elaborate strings may break the runtime. Keep it simple.)
-func CustomApp(name, title, version string) {
-	runner.Name = name
-	runner.Title = title
-	runner.Version = version
+// CustomApp sets custom values for help messages in cmd.
+func CustomApp(name, version, title, description string) {
+	if name != "" {
+		cmd.Name = name
+	}
+	if version != "" {
+		cmd.Version = version
+	}
+	if title != "" {
+		cmd.Title = title
+	}
+	if description != "" {
+		cmd.Description = description
+	}
+	cmd.UpdateInfo()
+
 }
