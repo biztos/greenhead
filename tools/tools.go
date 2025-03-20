@@ -128,7 +128,7 @@ func (t *Tool[T, R]) Help() string {
 		panic(err.Error())
 	}
 	s += fmt.Sprintf("Input Schema:\n\n%s\n\n", string(b))
-	s += fmt.Sprintf("Return Type: %T, error\n\n", t.zeroR)
+	s += fmt.Sprintf("Return Type: %T, error\n", t.zeroR)
 
 	return s
 }

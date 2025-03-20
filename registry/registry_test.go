@@ -14,10 +14,6 @@ type TestInput struct {
 	Val string
 }
 
-type TestInputCannotMarshal struct {
-	Nope *testing.T
-}
-
 func testTool(name string) tools.Tooler {
 	return tools.NewTool[TestInput, string](name, name+" ok\nyes!",
 		func(ctx context.Context, in TestInput) (string, error) {

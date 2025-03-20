@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -36,7 +37,7 @@ var ToolsListCmd = &cobra.Command{
 For important caveats, see the parent command's help text.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		names_only, _ := cmd.Flags().GetBool("names")
-		runner.ListTools(names_only)
+		runner.ListTools(names_only, os.Stdout)
 	},
 }
 
@@ -52,7 +53,7 @@ description and input schema.
 For important caveats, see the parent command's help text.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := runner.ShowTool(args[0]); err != nil {
+		if err := runner.ShowTool(args[0], os.Stdout); err != nil {
 			BailErr(ExitCodeToolsError, err)
 		}
 	},
@@ -68,7 +69,6 @@ Input should be provided on STDIN and *must* be valid JSON conforming to the
 tool's input schema.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Fucking untestable; TODO: wrap in some kind of "must" setup.
 		data, err := io.ReadAll(cmd.InOrStdin())
 		if err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Error reading input: %v\n", err)

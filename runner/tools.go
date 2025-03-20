@@ -3,12 +3,13 @@ package runner
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/biztos/greenhead/registry"
 )
 
-// ListTools prints all registered tools to standard output.
-func ListTools(names_only bool) {
+// ListTools prints all registered tools to w.
+func ListTools(names_only bool, w io.Writer) {
 	var lines []string
 	if names_only {
 		lines = registry.Names()
@@ -16,22 +17,23 @@ func ListTools(names_only bool) {
 		lines = registry.DisplayLines()
 	}
 	if len(lines) == 0 {
-		fmt.Println("<no tools>")
+		fmt.Fprintln(w, "<no tools>")
 	}
 	for _, line := range lines {
-		fmt.Println(line)
+		fmt.Fprintln(w, line)
 	}
 
 }
 
-// ShowTool shows tool help.
-func ShowTool(name string) error {
+// ShowTool prints tool help to w, or returns an error if no tool is
+// registered for name.
+func ShowTool(name string, w io.Writer) error {
 	t := registry.Get(name)
 	if t == nil {
 		// TODO (arguably) exit nonzero here
 		return fmt.Errorf("tool not registered: %s", name)
 	}
-	fmt.Println(t.Help())
+	fmt.Fprintln(w, t.Help())
 	return nil
 }
 
