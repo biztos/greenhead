@@ -29,15 +29,14 @@ explicitly enabled.`,
 
 // ToolsListCmd represents the "tools list" subcommand.
 var ToolsListCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list [--names]",
 	Short: "List all registered tools which can be enabled for agents.",
-	Long: `Lists all the registered tools by name.
+	Long: `Lists all the registered tools, optionally only listing names.
 
 For important caveats, see the parent command's help text.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := runner.ListTools(); err != nil {
-			BailErr(ExitCodeToolsError, err)
-		}
+		names_only, _ := cmd.Flags().GetBool("names")
+		runner.ListTools(names_only)
 	},
 }
 
@@ -90,6 +89,11 @@ tool's input schema.`,
 }
 
 func init() {
+	// Flags:
+	ToolsListCmd.Flags().Bool("names", false,
+		"Show only tool names.")
+
+	// Registration:
 	ToolsCmd.AddCommand(ToolsListCmd)
 	ToolsCmd.AddCommand(ToolsShowCmd)
 	ToolsCmd.AddCommand(ToolsRunCmd)

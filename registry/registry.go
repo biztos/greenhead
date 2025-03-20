@@ -1,108 +1,149 @@
 // Package registry holds the registered tools.
 //
-// Register and Clear are *not* safe for concurrency: tools should be
-// registered at load.
+// All public functions are safe to use concurrently.  However, keep in mind
+// that it is possible to replace a Tooler at runtime, in which case the next
+// call to Get will return a different value.
 package registry
 
 import (
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/biztos/greenhead/tools"
 )
 
-var locked = false
+var mutex = sync.Mutex{}
 
-var registered []tools.Tooler
+var lockedForNew = false
+
+var lockedForReplace = false
+
+var registered = map[string]tools.Tooler{}
+
+var ordered_names = []string{}
+
+var ErrNewLocked = errors.New("registry is locked for new tools")
+var ErrReplaceLocked = errors.New("registry is locked for replacement tools")
+
+// Register adds a tool, replacing any same-named tool if allowed.  For any
+// non-nil return value, the tool will not have been registered.
+//
+// Take note of the one-way Lock* functions for controlling the registry.
+func Register(t tools.Tooler) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	// Must have a non-blanco name.
+	name := t.Name()
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("empty name for tool")
+	}
+	if registered[name] != nil {
+		// We are replacing, if allowed.
+		if lockedForReplace {
+			return ErrReplaceLocked
+		}
+		idx := slices.Index(ordered_names, name)
+		ordered_names = slices.Delete(ordered_names, idx, 1)
+	} else if lockedForNew {
+		return ErrNewLocked
+	}
+
+	// The names now have the new tool at the end in all cases.
+	ordered_names = append(ordered_names, name)
+	registered[name] = t
+	return nil
+
+}
 
 // Get returns a Tooler by name, or nil if none is found.
 func Get(name string) tools.Tooler {
-	for _, t := range registered {
-		if t.Name() == name {
-			return t
-		}
-	}
-	return nil
+	mutex.Lock()
+	defer mutex.Unlock()
+	return registered[name]
 }
 
 // Names returns all the registered Tooler names, in order of registration.
 func Names() []string {
-	names := make([]string, len(registered))
-	for i, t := range registered {
-		names[i] = t.Name()
-	}
-	return names
+	mutex.Lock()
+	defer mutex.Unlock()
+	return slices.Clone(ordered_names)
 
 }
 
-// Display returns the name and description for all registered Toolers, with
-// formatting, or "<no tools>" if none are registered.
+// DisplayLines returns the name and description for all registered Toolers,
+// with formatting, in order of registration.  Sorting the return strings
+// alphabetically will sort by tool name.
 //
 // If the description is multi-line, the first line is used.
-func Display() string {
-	if len(registered) == 0 {
-		return "<no tools>"
-	}
+func DisplayLines() []string {
+	mutex.Lock()
+	defer mutex.Unlock()
+	lines := make([]string, len(ordered_names))
 	max_name := 0
-	names := make([]string, len(registered))
-	descs := make([]string, len(registered))
-	for i, t := range registered {
-		names[i] = t.Name()
-		if len(names[i]) > max_name {
-			max_name = len(names[i])
+	descs := make([]string, len(ordered_names))
+	for i, name := range ordered_names {
+		if len(name) > max_name {
+			max_name = len(name)
 		}
-		desc_lines := strings.Split(t.Description(), "\n")
+		desc_lines := strings.Split(registered[name].Description(), "\n")
 		descs[i] = desc_lines[0]
-
 	}
-	fmt_str := fmt.Sprintf("%%-%ds - %%s\n", max_name)
-	disp := ""
-	for i, n := range names {
-		disp += fmt.Sprintf(fmt_str, n, descs[i])
+	fmt_str := fmt.Sprintf("%%-%ds - %%s", max_name)
+	for i, name := range ordered_names {
+		lines[i] = fmt.Sprintf(fmt_str, name, descs[i])
 	}
-	return disp
-
+	return lines
 }
 
-// Register adds a Tool, with simple checks.  For any non-nil return value, t
-// will *not* have been registered.
-func Register(t tools.Tooler) error {
-	if locked {
-		return fmt.Errorf("registry is locked")
-	}
-	// Must have a non-blanco name.
-	if strings.TrimSpace(t.Name()) == "" {
-		return fmt.Errorf("empty name for tool")
-	}
-	// Good enough for now!
-	// TODO: check the input for JSON-ability here, better than later.
-	registered = append(registered, t)
-	return nil
-
-}
-
-// Clear clears all registered extensions.  Calling Clear after doing anything
-// with the extensions is *not* supported and is likely to break things.
+// Clear clears all registered extensions.  Note that Clear does *not* unlock
+// the registry.
 //
-// Use Clear when building a custom binary that should only have access to its
-// own extensions.
+// Clear is intended for the use-case of having runtime tool registration only
+// but starting with compiled-in tools you do not want.  Calling Clear in the
+// init phase may not do what you expect.
+//
+// TODO: prove it works in init phase of an *external* package; it should!
 func Clear() {
-	registered = []tools.Tooler{}
+	mutex.Lock()
+	defer mutex.Unlock()
+	registered = map[string]tools.Tooler{}
 }
 
-// Lock marks the registered extensions as locked, so that no more can be
-// registered.  It is *important* that the runtime call this function if you
-// do not want tools to be able to register new tools.
+// Lock locks the registry for both new and replacement tools.
 //
-// There is no Unlock function.
+// There is no corresponding Unlock function.
+//
+// Use Lock as a guard against accidentally creating tools at runtime.
 //
 // Keep in mind that a tool could call system functions; a tool could create
 // and register new tools; and an AI could (theoretically) do a "gain of
 // function" without your knowledge.
 func Lock() {
-	locked = true
+	mutex.Lock()
+	defer mutex.Unlock()
+	lockedForNew = true
+	lockedForReplace = true
 }
 
-func init() {
-	Clear()
+// LockForNew applies a selective lock, preventing only new registrations.
+//
+// If LockForReplace or Lock has been called already, replacements will remain
+// locked as well.
+func LockForNew() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	lockedForNew = true
+}
+
+// LockForReplace applies a selective lock, preventing only replacements.
+//
+// If LockForNew or Lock has been called already, new registrations will
+// remain locked as well.
+func LockForReplace() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	lockedForReplace = true
 }

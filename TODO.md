@@ -1,10 +1,5 @@
 # TODO (ordered!)
 
-## FIX DUPE FUCKING TOOL REGISTRATION WTF?
-
-```
-go run ./cmd/example tools list
-```
 
 ## Make log opts work: --debug, --logfile and --silent
 
