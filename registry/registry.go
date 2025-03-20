@@ -46,7 +46,7 @@ func Register(t tools.Tooler) error {
 			return ErrReplaceLocked
 		}
 		idx := slices.Index(ordered_names, name)
-		ordered_names = slices.Delete(ordered_names, idx, 1)
+		ordered_names = slices.Delete(ordered_names, idx, idx+1)
 	} else if lockedForNew {
 		return ErrNewLocked
 	}
@@ -110,6 +110,7 @@ func Clear() {
 	mutex.Lock()
 	defer mutex.Unlock()
 	registered = map[string]tools.Tooler{}
+	ordered_names = []string{}
 }
 
 // Lock locks the registry for both new and replacement tools.

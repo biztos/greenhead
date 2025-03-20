@@ -60,8 +60,9 @@ type Tooler interface {
 // Tool is a tool which can be called by LLMs once registered.
 //
 // T is the input type for the function; R is the return type for the
-// non-error value.  Both must be JSON serializable/deserializable or
-// runtime errors will occur.
+// non-error value.  T must be JSON serializable/deserializable in its
+// entirety; R must be serializable as a property; otherwise runtime errors
+// will occur when the tool is called by an Agent.
 type Tool[T any, R any] struct {
 	name    string
 	desc    string
