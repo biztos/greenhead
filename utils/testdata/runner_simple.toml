@@ -1,0 +1,6 @@
+# runner_simple.toml - for runner.Config
+debug = true
+log_file = "file.log"
+silent = true
+stream = true
+dump_dir = "dump.dir"

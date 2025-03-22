@@ -10,8 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/biztos/greenhead/config"
+	// "github.com/biztos/greenhead/config"
 	"github.com/biztos/greenhead/registry"
+	"github.com/biztos/greenhead/runner"
 )
 
 var Version = "0.1.0"
@@ -22,7 +23,7 @@ var Description = `Runs AI (LLM) agents.
 More soon!
 `
 
-var Config = &config.RunConfig{}
+var Config = &runner.Config{}
 
 var Exit = os.Exit // for testability
 var Stdout io.Writer = os.Stdout

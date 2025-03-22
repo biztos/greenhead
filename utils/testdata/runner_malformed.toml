@@ -1,0 +1,7 @@
+# runner_malformed.toml - for runner.Config
+x?
+debug = true
+log_file = "file.log"
+silent = true
+stream = true
+dump_dir = "dump.dir"

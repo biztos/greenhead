@@ -22,7 +22,7 @@ const (
 )
 
 // Config describes the configuration of an Agent, and is usually supplied in
-// a file.  Note that CLI options may override some configs
+// a file.
 type Config struct {
 	Name     string         `json:"name"`               // name of the agent
 	Type     string         `json:"type"`               // type, e.g. AgentTypeOpenAi
@@ -33,6 +33,12 @@ type Config struct {
 	Color    string         `json:"color"`              // color for console output
 	BgColor  string         `json:"bg_color"`           // background color for console output
 	Context  []*ContextItem `json:"context,omitempty"`  // context window for client
+
+	// Safety and limits:  (Zero generally means "no limit.")
+	MaxTokens      int  `json:"max_tokens,omitempty"` // Maximum number of total tokens for all operations.
+	MaxToolChain   int  `json:"max_tokens,omitempty"` // Max number of tool calls allowed in a row.
+	AbortOnRefusal bool `json:"max_tokens,omitempty"` // Abort if a completion is refused by an LLM.
+
 }
 
 // ContextItem is a high-level representation of a message to add to the
@@ -159,7 +165,7 @@ type Agent struct {
 	Id     ulid.ULID
 	Config *Config
 	Client ApiClient
-	Tools  map[string]tools.Tooler
+	Tools  map[string]tools.Tooler // TODO: rethink, might change in runtime!
 
 	logger *slog.Logger
 }
@@ -192,7 +198,13 @@ func (a *Agent) SetLogger(logger *slog.Logger) {
 //
 // The logger is a default slog JSON logger to Stderr with an "agent" attr
 // defined as the agent's Ident value.
+//
+// TODO: consider the possibility of runtime tool registrations, in which case
+// what do we do to keep the agent up to date?
 func NewAgent(cfg *Config) (*Agent, error) {
+	// TODO: support tool names like "foo*"
+	// TODO: instead of keeping tools here, fetch from registry at call time,
+	// b/c it's possible they may have changed during runtime.
 	toolmap := map[string]tools.Tooler{}
 	for _, name := range cfg.Tools {
 		tool := registry.Get(name)

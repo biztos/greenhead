@@ -3,6 +3,20 @@
 
 ## Make log opts work: --debug, --logfile and --silent
 
+OK, basics: don't want agent config to have any of the top-level debug, logfile
+and so on.
+
+But *do* want that per agent.  So need another way of setting it.
+
+Want to be able to do --config foobar.toml and have it hold everything.
+
+ALSO want to do per-agent config as: --agent-config myagent.toml
+
+ALSO want overrides from flagsf
+
+Presumably in a runner.  Which would also set the logger, no sense having any
+complex logger otherwise.  Or yes?  Maybe b/c ident.
+
 Where --silent just devnulls.
 
 Also nice to have a specific log-level option and info is default, but error

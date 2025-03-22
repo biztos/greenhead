@@ -3,6 +3,7 @@ module github.com/biztos/greenhead
 go 1.24.1
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/chzyer/readline v1.5.1
 	github.com/fatih/color v1.18.0
 	github.com/oklog/ulid/v2 v2.1.0
