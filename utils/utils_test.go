@@ -66,7 +66,9 @@ func TestDurOk(t *testing.T) {
 
 	require := require.New(t)
 
-	s := utils.Dur(time.Now())
+	start := time.Now()
+	time.Sleep(time.Nanosecond)
+	s := utils.Dur(start)
 	d, err := time.ParseDuration(s)
 	require.NoError(err)
 
@@ -80,7 +82,9 @@ func TestDurLogOk(t *testing.T) {
 
 	require := require.New(t)
 
-	a := utils.DurLog(time.Now())
+	start := time.Now()
+	time.Sleep(time.Nanosecond)
+	a := utils.DurLog(start)
 	require.Equal(2, len(a), "has two elements")
 
 	label, ok := a[0].(string)
