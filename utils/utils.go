@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/titanous/json5"
 )
 
 // MustJsonString marshals v to a string or panics trying.
@@ -46,20 +48,15 @@ func DurLog(t time.Time) []any {
 
 // Comma-separated list of lowercased file extensions that can be Marshaled
 // or Unmarshaled in this package.
-const MarshalFileExtensions = ".toml,.json"
-
-var canMarshalExt map[string]bool // set in init, easier to check against
+const UnmarshalFileExtensions = ".toml,.json,.json5"
 
 // UnmarshalFile reads file and unmarshals it into v if possible.
 //
-// TOML is the canonical format, and should be used for any struct tags.
-//
-// Any other format will be converted to TOML.
-//
-// For supported formats see ToTomlSupports.
+// Intended for reading config files, the default format is TOML.  Any other
+// types in UnmarshalFileExtensions will be converted to TOML first.
 func UnmarshalFile(file string, v any) error {
 	ext := strings.ToLower(filepath.Ext(file))
-	if !canMarshalExt[ext] {
+	if !slices.Contains(strings.Split(UnmarshalFileExtensions, ","), ext) {
 		return fmt.Errorf("unsupported extension: %q", ext)
 	}
 	b, err := os.ReadFile(file)
@@ -70,9 +67,9 @@ func UnmarshalFile(file string, v any) error {
 		switch ext {
 		case ".toml":
 			// already have.
-		case ".json":
+		case ".json", ".json5":
 			x := &map[string]any{}
-			if err := json.Unmarshal(b, x); err != nil {
+			if err := json5.Unmarshal(b, x); err != nil {
 				return fmt.Errorf("error parsing JSON: %w", err)
 			}
 			b, err = toml.Marshal(x)
@@ -86,26 +83,4 @@ func UnmarshalFile(file string, v any) error {
 		return fmt.Errorf("error unmarshaling TOML: %w", err)
 	}
 	return nil
-}
-
-// MarshalFile marshals v in the format required and writes it to file.
-//
-// TOML is the canonical format, and should be used for any struct tags.
-//
-// Any other format will be converted from the TOML.
-//
-// For supported formats see ToTomlSupports.
-func MarshalFile(v any, file string) error {
-	ext := strings.ToLower(filepath.Ext(file))
-	if !canMarshalExt[ext] {
-		return fmt.Errorf("unsupported extension %s", ext)
-	}
-	return fmt.Errorf("TODO")
-}
-
-func init() {
-	canMarshalExt = map[string]bool{}
-	for _, s := range strings.Split(MarshalFileExtensions, ",") {
-		canMarshalExt[s] = true
-	}
 }

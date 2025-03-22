@@ -1,3 +1,3 @@
 {
-	"nope": null
+    "array_with_null": [true,null]
 }

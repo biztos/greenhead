@@ -1,0 +1,8 @@
+// runner_simple.json5
+{
+	"debug": true,           // log at DEBUG level (default is INFO)
+	"log_file": "file.log",  // log to this file
+	"silent": true,          // do NOT print output (overrides silent)
+	"stream": true,          // stream output as it arrives
+	"dump_dir": "dump.dir",  // dump all completions into this directory
+}

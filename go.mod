@@ -10,6 +10,7 @@ require (
 	github.com/sashabaranov/go-openai v1.38.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/titanous/json5 v1.0.0
 	golang.org/x/image v0.25.0
 )
 

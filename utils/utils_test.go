@@ -51,7 +51,7 @@ func TestUnmarshalFileErrJsonCanNotToml(t *testing.T) {
 	cfg := &runner.Config{}
 	path := filepath.Join("testdata", "can_not_toml.json")
 	err := utils.UnmarshalFile(path, cfg)
-	exp := "error unmarshaling TOML: toml: line 2: expected '.' or '=', but got '?' instead"
+	exp := "error marshaling TOML: toml: cannot encode array with nil element"
 	require.EqualError(err, exp, "error")
 
 }
@@ -88,6 +88,22 @@ func TestUnmarshalFileJsonOK(t *testing.T) {
 
 	cfg := &runner.Config{}
 	path := filepath.Join("testdata", "runner_simple.json")
+	err := utils.UnmarshalFile(path, cfg)
+	require.NoError(err)
+	require.True(cfg.Debug, "debug")
+	require.True(cfg.Silent, "silent")
+	require.True(cfg.Stream, "stream")
+	require.Equal("file.log", cfg.LogFile, "log_file")
+	require.Equal("dump.dir", cfg.DumpDir, "dump_dir")
+
+}
+
+func TestUnmarshalFileJson5OK(t *testing.T) {
+
+	require := require.New(t)
+
+	cfg := &runner.Config{}
+	path := filepath.Join("testdata", "runner_simple.json5")
 	err := utils.UnmarshalFile(path, cfg)
 	require.NoError(err)
 	require.True(cfg.Debug, "debug")
