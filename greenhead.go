@@ -19,6 +19,9 @@ var Run = cmd.Execute
 // Register exposes the register submodule's Register function.
 var Register = registry.Register
 
+// Clear exposes the register submodule's Clear function.
+var Clear = registry.Clear
+
 // NewTool exposes the tools submodule's NewTool function.
 //
 // (We can't use a var for this because of the "generic" type.)
