@@ -286,7 +286,7 @@ func (a *Agent) Check(ctx context.Context) error {
 func NewAgent(cfg *Config) (*Agent, error) {
 
 	// Start with basics:
-	agent := &Agent{
+	a := &Agent{
 		ULID:   ulid.Make(),
 		config: cfg.Copy(),
 	}
@@ -301,7 +301,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 		return nil, fmt.Errorf("error initializing client for type %q: %w",
 			cfg.Type, err)
 	}
-	agent.client = client
+	a.client = client
 	client.SetStreaming(cfg.Stream)
 	client.SetModel(cfg.Model)
 	client.SetShowCalls(cfg.ShowCalls)
@@ -330,39 +330,49 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error with print colors: %w", err)
 	}
-	agent.printFunc = pfunc
+	a.printFunc = pfunc
 	client.SetPrintFunc(pfunc)
 
 	// Set up the logger.
+	if err := a.InitLogger(cfg.LogFile, cfg.Debug); err != nil {
+		return nil, fmt.Errorf("error initializing logger: %w", err)
+	}
+
+	return a, nil
+
+}
+
+// InitLogger sets up a slog.Logger to log to the file (or Stderr) at Info or
+// Debug level, then calls SetLogger with it.
+func (a *Agent) InitLogger(file string, debug bool) error {
+
 	var handler *slog.JSONHandler
 	level := slog.LevelInfo
-	if cfg.Debug {
+	if debug {
 		level = slog.LevelDebug
 	}
-	if cfg.LogFile == "" {
+	if file == "" {
 		// Log to standard error.
 		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 			Level: level,
 		})
 	} else {
 		// Log to file.
-		file, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		fh, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, fmt.Errorf("failed to open log file: %w", err)
+			return fmt.Errorf("failed to open log file: %w", err)
 		}
 
-		handler = slog.NewJSONHandler(file, &slog.HandlerOptions{
+		handler = slog.NewJSONHandler(fh, &slog.HandlerOptions{
 			Level: level,
 		})
 	}
 
-	agent.SetLogger(slog.New(handler).With(
+	a.SetLogger(slog.New(handler).With(
 		"agent",
-		agent.Ident(),
+		a.Ident(),
 	))
-
-	return agent, nil
-
+	return nil
 }
 
 // RunCompletion runs a completion request for the given prompt, returning its

@@ -44,14 +44,6 @@ var RootCmd = &cobra.Command{
 			return fmt.Errorf("error loading config: %w", err)
 		}
 
-		// Sanity checks (should have more):
-		if Config.Stream && Config.Silent {
-			return fmt.Errorf("flags --stream and --silent cannot be used together")
-		}
-
-		// TODO: create any tools from configs
-		// TODO: remove any tools not listed in config if the config lists tools at top level
-
 		return nil
 	},
 }

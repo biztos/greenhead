@@ -3,44 +3,35 @@ package runner
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chzyer/readline"
 
-	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/registry"
 	"github.com/biztos/greenhead/tools"
 )
 
 // RunChat runs an interactive chat session.
-//
-// TODO: take the agent as arg here.
-func RunChat(agt *agent.Agent) error {
+func (r *Runner) RunChat() error {
 
-	// Hmm, gonna want a way to suppress logging or log to file here.
-	tmp, err := os.CreateTemp("", "wtf-log-*.log")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
+	// Require exactly one agent, at least for now.
+	if len(r.Agents) != 1 {
+		return fmt.Errorf("chat requires one agent configured, not %d",
+			len(r.Agents))
 	}
-	defer tmp.Close()
+	agent := r.Agents[0]
 
-	// Get the absolute path to print it for demonstration
-	absPath, _ := filepath.Abs(tmp.Name())
+	// If log file is not specified, then log to a local file and skip the
+	// agent identification.
+	log_file := r.Config.LogFile
+	if log_file == "" {
+		log_file = fmt.Sprintf("%s-chat.log", agent.ULID)
+		agent.InitLogger(log_file, r.Config.Debug)
+	}
 
-	// Create a JSON handler that writes to the temp file
-	fileHandler := slog.NewJSONHandler(tmp, &slog.HandlerOptions{
-		Level: slog.LevelInfo, // TODO: this stuff for setting debug on init
-	})
-
-	// Set the default logger to use our file handler
-	agt.SetLogger(slog.New(fileHandler))
-
-	fmt.Println("Chatting with:", agt.String())
-	fmt.Println("Logs:", absPath)
+	fmt.Println("Chatting with:", agent.String())
+	fmt.Println("Logs:", log_file)
 	fmt.Println("Return twice to send prompt; empty prompt or Ctrl-D to quit.")
 	fmt.Println("Note that context is NOT cleared!")
 
@@ -62,7 +53,7 @@ func RunChat(agt *agent.Agent) error {
 			if prompt == "" {
 				break
 			}
-			_, err = agt.RunCompletion(context.Background(), prompt)
+			_, err = agent.RunCompletion(context.Background(), prompt)
 			if err != nil {
 				return err
 			}

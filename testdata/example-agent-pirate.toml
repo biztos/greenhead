@@ -1,5 +1,5 @@
 # example-agent-pirate.toml -- agent config suitable for example chat.
-name = "example"
+name = "ExamplePirate"
 type = "openai"
 model = "gpt-4o"
 tools = ["parse_url"]
