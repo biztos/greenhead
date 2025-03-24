@@ -47,7 +47,9 @@ func TestRegisterNewOK(t *testing.T) {
 	require.NoError(registry.Register(tool), "register ok")
 
 	// Did we "get" it?
-	require.Equal(tool, registry.Get("foo"), "got the tool")
+	got, err := registry.Get("foo")
+	require.NoError(err, "got ok")
+	require.Equal(tool, got, "got the tool")
 
 }
 
@@ -64,7 +66,9 @@ func TestRegisterReplaceOK(t *testing.T) {
 	require.NoError(registry.Register(tool1), "new ok")
 	require.NoError(registry.Register(tool2), "replace ok")
 
-	require.Equal(tool2, registry.Get("foo"), "got the replacement tool")
+	got, err := registry.Get("foo")
+	require.NoError(err, "got ok")
+	require.Equal(tool2, got, "got the replacement tool")
 
 }
 
@@ -82,10 +86,23 @@ func TestRemoveOK(t *testing.T) {
 	require.NoError(registry.Register(tool2), "new bar ok")
 	require.NoError(registry.Remove("bar"), "remove bar ok")
 
-	require.Nil(registry.Get("bar"), "get removed")
-	require.Equal(tool1, registry.Get("foo"), "got the remaining tool")
+	got, err := registry.Get("foo")
+	require.NoError(err, "got ok")
+	require.Equal(tool1, got, "got the remaining tool")
+	_, err = registry.Get("bar")
+	require.ErrorIs(err, registry.ErrNotRegistered, "get removed")
 
-	// require.ErrorIs(registry.ErrNotRegistered, registry.Get("bar"), "get removed")
+}
+
+func TestRemoveErrNotRegistered(t *testing.T) {
+
+	require := require.New(t)
+
+	registry.Clear()
+	defer registry.Clear()
+
+	err := registry.Remove("nonesuch")
+	require.ErrorIs(err, registry.ErrNotRegistered, "remove nonexistent")
 
 }
 
@@ -96,13 +113,16 @@ func TestNamesOrdered(t *testing.T) {
 	tool1 := testTool("foo")
 	tool2 := testTool("zoo")
 	tool3 := testTool("foo")
+	tool4 := testTool("aaa")
 
 	registry.Clear()
 	defer registry.Clear()
 
-	require.NoError(registry.Register(tool1), "new ok")
-	require.NoError(registry.Register(tool2), "new ok")
-	require.NoError(registry.Register(tool3), "replace ok")
+	require.NoError(registry.Register(tool1), "new foo ok")
+	require.NoError(registry.Register(tool2), "new zoo ok")
+	require.NoError(registry.Register(tool3), "replace foo ok")
+	require.NoError(registry.Register(tool4), "new aaa ok")
+	require.NoError(registry.Remove("aaa"), "remove aaa ok")
 
 	require.Equal([]string{"zoo", "foo"}, registry.Names(),
 		"names in registration order")

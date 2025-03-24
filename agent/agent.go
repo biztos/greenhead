@@ -312,9 +312,9 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	// TODO: support tool names like "foo*" but only here, client gets
 	// foo_bar, foo_boo
 	for _, name := range cfg.Tools {
-		tool := registry.Get(name)
-		if tool == nil {
-			return nil, fmt.Errorf("tool not registered: %s", name) // TODO: return err
+		_, err := registry.Get(name)
+		if err != nil {
+			return nil, err
 		}
 	}
 	client.SetTools(cfg.Tools)
@@ -390,9 +390,9 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 			if !slices.Contains(a.config.Tools, call.Name) {
 				return nil, fmt.Errorf("no such tool for agent: %s", call.Name)
 			}
-			tool := registry.Get(call.Name)
-			if tool == nil {
-				return nil, fmt.Errorf("tool not registered: %s", call.Name)
+			tool, err := registry.Get(call.Name)
+			if err != nil {
+				return nil, err
 			}
 			// Only log the tool args if that's configured, which by default
 			// it's not.

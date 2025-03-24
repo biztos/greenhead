@@ -16,6 +16,8 @@ import (
 	"net/url"
 
 	"github.com/biztos/greenhead"
+
+	// Make tools available:
 	_ "github.com/biztos/greenhead/tools/demo"
 )
 

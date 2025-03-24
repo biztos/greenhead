@@ -83,7 +83,7 @@ func TestShowToolError(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	err := runner.ShowTool("foo", buf)
-	require.EqualError(err, "tool not registered: foo")
+	require.EqualError(err, `tool is not registered: "foo"`)
 	require.Equal("", buf.String(), "no output")
 
 }
@@ -136,7 +136,7 @@ func TestRunToolErrorNoTool(t *testing.T) {
 	defer registry.Clear()
 
 	out, err := runner.RunTool("foo", "[")
-	require.EqualError(err, "tool not registered: foo")
+	require.EqualError(err, `tool is not registered: "foo"`)
 	require.Nil(out, "output")
 
 }

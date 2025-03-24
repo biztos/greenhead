@@ -78,11 +78,14 @@ func Remove(name string) error {
 	return nil
 }
 
-// Get returns a Tooler by name, or nil if none is found.
-func Get(name string) tools.Tooler {
+// Get returns a Tooler by name, or an ErrNotRegistered error if none is found.
+func Get(name string) (tools.Tooler, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return registered[name]
+	if registered[name] == nil {
+		return nil, fmt.Errorf("%w: %q", ErrNotRegistered, name)
+	}
+	return registered[name], nil
 }
 
 // Names returns all the registered Tooler names, in order of registration.

@@ -108,9 +108,9 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 	// Get the tools in openai format.
 	tools := make([]openai.Tool, 0, len(c.Tools))
 	for _, name := range c.Tools {
-		t := registry.Get(name)
-		if t == nil {
-			return nil, fmt.Errorf("tool not registered: %s", name)
+		t, err := registry.Get(name)
+		if err != nil {
+			return nil, err
 		}
 		tools = append(tools, t.OpenAiTool())
 	}
