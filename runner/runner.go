@@ -81,6 +81,7 @@ func (c *Config) Validate() error {
 	if c.Stream && c.Silent {
 		return fmt.Errorf("Stream and Silent can not both be enabled.")
 	}
+	// TODO: other things perhaps!
 	return nil
 }
 
@@ -101,4 +102,18 @@ func (c *Config) ConformAgents() {
 		a.LogFile = c.LogFile
 		a.DumpDir = c.DumpDir
 	}
+}
+
+// CreateAgents creates an Agent for each one configured.
+func (c *Config) CreateAgents() ([]*agent.Agent, error) {
+	agents := make([]*agent.Agent, 0, len(c.Agents))
+	for i, cfg := range c.Agents {
+		a, err := agent.NewAgent(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error creating agent %d: %w", i, err)
+		}
+		agents = append(agents, a)
+	}
+	return agents, nil
+
 }

@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	// "github.com/biztos/greenhead/config"
 	"github.com/biztos/greenhead/registry"
 	"github.com/biztos/greenhead/runner"
 )
@@ -41,20 +40,18 @@ var RootCmd = &cobra.Command{
 
 		// We already have a config with flags; load any config files, letting
 		// the flags override.
+		if err := Config.LoadConfigs(runnerConfigFile, agentConfigFiles...); err != nil {
+			return fmt.Errorf("error loading config: %w", err)
+		}
 
-		// Load the runner config, which *may* include agents and tools.
-
-		// Load the agent configs in order.
-
-		// Load the tool configs in order.
-
-		// Load configs from any specified files.
-
-		// Sanity-check configs. TODO: config.Validate() after loading!
-
+		// Sanity checks (should have more):
 		if Config.Stream && Config.Silent {
 			return fmt.Errorf("flags --stream and --silent cannot be used together")
 		}
+
+		// TODO: create any tools from configs
+		// TODO: remove any tools not listed in config if the config lists tools at top level
+
 		return nil
 	},
 }

@@ -56,15 +56,19 @@ func (c *OpenAiClient) ClearContext() {
 // Check implements ApiClient by querying the model list.
 func (c *OpenAiClient) Check(ctx context.Context) error {
 
-	c.Logger.Info("checking API with ListModels")
+	c.Logger.Info("checking")
 	start_ts := time.Now()
-	models, err := c.Client.ListModels(ctx)
+	model_list, err := c.Client.ListModels(ctx)
+	c.Logger.Info("checking", utils.DurLog(start_ts)...)
 	if err != nil {
 		return fmt.Errorf("error running check with ListModels: %w", err)
-	} else if len(models.Models) == 0 {
+	} else if len(model_list.Models) == 0 {
 		return fmt.Errorf("no models found")
 	}
-	c.Logger.Info("check successful", utils.DurLog(start_ts)...)
+	c.Logger.Info("check successful")
+	for _, model := range model_list.Models {
+		c.Logger.Debug("model", "id", model.ID)
+	}
 
 	return nil
 }

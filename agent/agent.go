@@ -273,6 +273,11 @@ func (a *Agent) SetLogger(logger *slog.Logger) {
 	a.client.SetLogger(logger)
 }
 
+// Check calls the ApiClient's Check function with ctx.
+func (a *Agent) Check(ctx context.Context) error {
+	return a.client.Check(ctx)
+}
+
 // NewAgent returns an agent initialized for use based on cfg.  If any of the
 // configured Tools are not registered, an error is returned.
 //
