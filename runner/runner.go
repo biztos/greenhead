@@ -18,6 +18,7 @@ type Config struct {
 	LogFile     string `toml:"log_file"`      // Write logs to this file instead of os.StdErr.
 	Silent      bool   `toml:"silent"`        // Suppress LLM output if not already streamed.
 	Stream      bool   `toml:"stream"`        // Stream LLM output if supported.
+	ShowCalls   bool   `toml:"stream_calls"`  // Stream (or print) tool calls (potentially leaking data).
 	DumpDir     string `toml:"dump_dir"`      // Dump all completions to JSON files in this dir.
 	LogToolArgs bool   `toml:"log_tool_args"` // Log the tool args (potentially leaking data).
 
@@ -47,6 +48,7 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		c.Debug = c.Debug || r.Debug
 		c.Silent = c.Silent || r.Silent
 		c.Stream = c.Stream || r.Stream
+		c.ShowCalls = c.ShowCalls || r.ShowCalls
 		c.LogToolArgs = c.LogToolArgs || r.LogToolArgs
 		if c.LogFile == "" {
 			c.LogFile = r.LogFile
@@ -94,6 +96,7 @@ func (c *Config) ConformAgents() {
 		a.Stream = c.Stream
 		a.Silent = c.Silent
 		a.Debug = c.Debug
+		a.ShowCalls = c.ShowCalls
 		a.LogToolArgs = c.LogToolArgs
 		a.LogFile = c.LogFile
 		a.DumpDir = c.DumpDir

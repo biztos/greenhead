@@ -43,11 +43,11 @@ type Config struct {
 	AbortOnRefusal      bool `toml:"abort_on_refusal,omitempty"` // Abort if a completion is refused by an LLM.
 
 	// Output control:
-	Color           string `toml:"color"`             // Color for console output.
-	BgColor         string `toml:"bg_color"`          // Background color for console output.
-	Stream          bool   `toml:"stream"`            // Stream responses; if streaming not possible, print them.
-	StreamToolCalls bool   `toml:"stream_tool_calls"` // Stream tool calls to console output (experimental; can leak data).
-	Silent          bool   `toml:"silent"`            // Suppress responses unless streamed.
+	Color     string `toml:"color"`             // Color for console output.
+	BgColor   string `toml:"bg_color"`          // Background color for console output.
+	Stream    bool   `toml:"stream"`            // Stream responses; if streaming not possible, print them.
+	ShowCalls bool   `toml:"stream_tool_calls"` // Show tool calls in output (experimental; can leak data).
+	Silent    bool   `toml:"silent"`            // Suppress responses unless streamed.
 
 	// Logging and debugging:
 	Debug       bool   `toml:"debug"`                   // Log at DEBUG level instead of INFO.
@@ -155,9 +155,10 @@ type ApiClient interface {
 	// SetPrintFunc should be used for printing output.
 	SetStreaming(bool)
 
-	// SetStreamToolCalls sets whether tool calls should be streamed to Stdout
-	// the same as content responses.
-	SetStreamToolCalls(bool)
+	// SetShowCalls sets whether tool calls should be streamed to Stdout
+	// the same as content responses.  This is experimental and could leak
+	// data into the session that you would rather keep private.
+	SetShowCalls(bool)
 
 	// SetPrintFunc sets the function used to print output.
 	SetPrintFunc(func(v ...any))
@@ -298,7 +299,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	agent.client = client
 	client.SetStreaming(cfg.Stream)
 	client.SetModel(cfg.Model)
-	client.SetStreamToolCalls(cfg.StreamToolCalls)
+	client.SetShowCalls(cfg.ShowCalls)
 	client.SetMaxCompletionTokens(cfg.MaxCompletionTokens)
 
 	// Add any configured context to the ApiClient.  Note that we do *not*

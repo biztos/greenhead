@@ -314,7 +314,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 					// Update function details
 					if toolCallDelta.Function.Name != "" {
 						toolCalls[index].Function.Name = toolCallDelta.Function.Name
-						if c.StreamToolCalls {
+						if c.ShowCalls {
 							frag := fmt.Sprintf("\n* Tool call: %s ", toolCallDelta.Function.Name)
 							c.PrintFunc(frag)
 						}
@@ -331,7 +331,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 						// Print tool call information as it arrives.
 						// This *should* be safe for the index, but what if it's not?
 						// NB: only do this if configured to, which by default, nope.
-						if c.StreamToolCalls {
+						if c.ShowCalls {
 							c.PrintFunc(toolCallDelta.Function.Arguments)
 						}
 					}

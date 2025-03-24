@@ -102,6 +102,8 @@ func init() {
 		"Log to this file instead of STDERR.")
 	RootCmd.PersistentFlags().StringVar(&Config.DumpDir, "dump-dir", "",
 		"Dump all LLM interactions into this dir.")
+	RootCmd.PersistentFlags().BoolVar(&Config.ShowCalls, "show-calls", false,
+		"Show tool calls with output (experimental; can leak data!).")
 	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",
 		"Config file from which to read the master configuration.")
 	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},

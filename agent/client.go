@@ -30,10 +30,10 @@ type BasicApiClient struct {
 	PreFunc  func(ApiClient, any) error
 	PostFunc func(ApiClient, any) error
 
-	Streaming       bool
-	StreamToolCalls bool
-	PrintFunc       func(a ...any)
-	Logger          *slog.Logger
+	Streaming bool
+	ShowCalls bool
+	PrintFunc func(a ...any)
+	Logger    *slog.Logger
 }
 
 // SetLogger implements ApiClient.
@@ -75,9 +75,9 @@ func (c *BasicApiClient) SetStreaming(streaming bool) {
 	c.Streaming = streaming
 }
 
-// SetStreamToolCalls implements ApiClient.
-func (c *BasicApiClient) SetStreamToolCalls(streaming bool) {
-	c.StreamToolCalls = streaming
+// SetShowCalls implements ApiClient.
+func (c *BasicApiClient) SetShowCalls(show bool) {
+	c.ShowCalls = show
 }
 
 // ClearContext implements ApiClient.

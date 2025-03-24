@@ -26,12 +26,13 @@ TODO: that config, duh.`,
 		// something like agent.NewFromConfigs(agent-config,runner-config)
 		// and get second config easy as can...
 		agent_cfg := &agent.Config{
-			Type:   "openai",
-			Model:  openai.GPT4o,
-			Name:   "WTF",
-			Tools:  []string{"parse_url"},
-			Stream: Config.Stream,
-			Color:  "lightblue",
+			Type:      "openai",
+			Model:     openai.GPT4o,
+			Name:      "WTF",
+			Tools:     []string{"parse_url"},
+			Stream:    Config.Stream,
+			ShowCalls: Config.ShowCalls,
+			Color:     "lightblue",
 			Context: []agent.ContextItem{
 				{
 					Role:    "system",
