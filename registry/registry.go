@@ -21,12 +21,16 @@ var lockedForNew = false
 
 var lockedForReplace = false
 
+var lockedForRemove = false
+
 var registered = map[string]tools.Tooler{}
 
 var ordered_names = []string{}
 
+var ErrNotRegistered = errors.New("tool is not registered")
 var ErrNewLocked = errors.New("registry is locked for new tools")
 var ErrReplaceLocked = errors.New("registry is locked for replacement tools")
+var ErrRemoveLocked = errors.New("registry is locked for removal")
 
 // Register adds a tool, replacing any same-named tool if allowed.  For any
 // non-nil return value, the tool will not have been registered.
@@ -56,6 +60,22 @@ func Register(t tools.Tooler) error {
 	registered[name] = t
 	return nil
 
+}
+
+// Remove removes a tool registration if it is registered.
+func Remove(name string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	if registered[name] == nil {
+		return fmt.Errorf("%w: %q", ErrNotRegistered, name)
+	}
+	if lockedForRemove {
+		return ErrRemoveLocked
+	}
+	delete(registered, name)
+	idx := slices.Index(ordered_names, name)
+	ordered_names = slices.Delete(ordered_names, idx, idx+1)
+	return nil
 }
 
 // Get returns a Tooler by name, or nil if none is found.
@@ -113,11 +133,12 @@ func Clear() {
 	ordered_names = []string{}
 }
 
-// Lock locks the registry for both new and replacement tools.
+// Lock locks the registry for both new and replacement tools and also for
+// removals.
 //
 // There is no corresponding Unlock function.
 //
-// Use Lock as a guard against accidentally creating tools at runtime.
+// Use Lock as a guard against accidentally changing the toolset at runtime.
 //
 // Keep in mind that a tool could call system functions; a tool could create
 // and register new tools; and an AI could (theoretically) do a "gain of
@@ -127,12 +148,12 @@ func Lock() {
 	defer mutex.Unlock()
 	lockedForNew = true
 	lockedForReplace = true
+	lockedForRemove = true
 }
 
 // LockForNew applies a selective lock, preventing only new registrations.
 //
-// If LockForReplace or Lock has been called already, replacements will remain
-// locked as well.
+// Previously-set locks are unaffected.
 func LockForNew() {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -141,10 +162,22 @@ func LockForNew() {
 
 // LockForReplace applies a selective lock, preventing only replacements.
 //
-// If LockForNew or Lock has been called already, new registrations will
-// remain locked as well.
+// Note that while this is useful for allowing new registrations while
+// blocking replacements, doing the opposite is dangerous.  When in doubt,
+// just use Lock.
+//
+// Previously-set locks are unaffected.
 func LockForReplace() {
 	mutex.Lock()
 	defer mutex.Unlock()
 	lockedForReplace = true
+}
+
+// LockForRemove applies a selective lock, preventing only removals.
+//
+// Previously-set locks are unaffected.
+func LockForRemove() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	lockedForRemove = true
 }

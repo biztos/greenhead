@@ -1,4 +1,3 @@
-// foo
-{
-
-}
+# config-full.toml -- test example of a config defining everything it can.
+debug = true
+stream = true # OR you can say silent = true

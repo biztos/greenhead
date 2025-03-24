@@ -1,5 +1,32 @@
 # TODO (ordered!)
 
+## MANAGE CONFIG OF AGENTS VS RUNNER
+
+ok to pass stuff down but force consistency of stream and silent, i.e. take
+from runner
+
+do this in parse of input configs, don't have to care at agent level
+
+after all, agent doesn't *know* waht the client does, it just assumes e.g.
+that if streamed, we print response.  (OK so it should know if it was steamd!)
+
+actually STREAM-OR-PRINT should be at the api level no? hm. not sure how to
+do for web options.
+
+so config should have something like print right?  print to console if not
+stream to console, or silent?  back to a type here.
+
+    SILENT: don't print to console
+    STREAM: print as it arrives if possible, otherwise print at end
+    ELSE: print after got
+
+leave that to the client as Agent doesn't know about streaming, and making it
+know is a PITA right?  (Well maybe... what about giving the client a writer
+it should write to for either streaming or...?)
+
+__FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
+
+Make it something you have to turn on, or something you can turn off?
 
 ## Make log opts work: --debug, --logfile and --silent
 

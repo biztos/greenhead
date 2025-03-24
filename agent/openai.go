@@ -1,11 +1,5 @@
-// openai.go
-//
-// TODO: hooks to preprocess/postprocess stuff.
-// ...want option to prepocess the whole outgoing request so you can manage context
-//
-//	this would include tool results b/c agent adds them
-//
-// ...want option to postprocess the result before the agent gets it
+// agent/openai.go
+
 package agent
 
 import (
@@ -27,96 +21,69 @@ import (
 
 var OpenAiClientDefaultModel = openai.GPT4o
 
+// OpenAiClient is an ApiClient that builds on BasicApiClient.
 type OpenAiClient struct {
-	Client          *openai.Client
-	Model           string
-	Tools           []openai.Tool
-	Stream          bool
-	StreamToolCalls bool
-	ContextMessages []openai.ChatCompletionMessage
-
-	streamPrint func(a ...any)
-	preFunc     func(any) error
-	postFunc    func(any) error
-	logger      *slog.Logger
+	BasicApiClient
+	Client  *openai.Client
+	History []openai.ChatCompletionMessage
 }
 
-// NewOpenAiClient returns a client initialized according to cfg.
-func NewOpenAiClient(cfg *Config) (ApiClient, error) {
+// NewOpenAiClient returns a client initialized for the OpenAI API.
+//
+// The environment variable OPENAI_API_KEY must be set to a valid key.
+func NewOpenAiClient() (ApiClient, error) {
 
 	token := os.Getenv("OPENAI_API_KEY")
 	client := openai.NewClient(token)
-	model := cfg.Model
-	if model == "" {
-		model = OpenAiClientDefaultModel
-	}
-	tools := make([]openai.Tool, len(cfg.Tools))
-	for idx, name := range cfg.Tools {
-		// This is redundant to the Agent checks, but you aren't guaranteed
-		// to be instantiating from an Agent, so here we go, it's cheap.
-		t := registry.Get(name)
-		if t == nil {
-			return nil, fmt.Errorf("tool not registered: %s", name)
-		}
-		tools[idx] = t.OpenAiTool()
-	}
-	sp_func, err := ColorPrintFunc(cfg.Color, cfg.BgColor)
+	return &OpenAiClient{
+		BasicApiClient{
+			Client: client,
+			Logger: slog.Default(),
+		},
+		client,
+		nil,
+	}, nil
+
+}
+
+// ClearContext implements ApiClient by clearing the initial context and also
+// the message history.
+func (c *OpenAiClient) ClearContext() {
+	c.ContextItems = nil
+	c.History = nil
+}
+
+// Check implements ApiClient by querying the model list.
+func (c *OpenAiClient) Check(ctx context.Context) error {
+
+	c.Logger.Info("checking API with ListModels")
+	start_ts := time.Now()
+	models, err := c.Client.ListModels(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("streaming colors: %w", err)
+		return fmt.Errorf("error running check with ListModels: %w", err)
+	} else if len(models.Models) == 0 {
+		return fmt.Errorf("no models found")
 	}
-	msgs := make([]openai.ChatCompletionMessage, 0, len(cfg.Context))
-	for _, item := range cfg.Context {
+	c.Logger.Info("check successful", utils.DurLog(start_ts)...)
+
+	return nil
+}
+
+// RunCompletion implements ApiClient by running the OpenAI chat completion.
+func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error) {
+
+	// Create the context we will send, in the native format.
+	msgs := make([]openai.ChatCompletionMessage, 0,
+		len(c.ContextItems)+len(c.History)+len(req.ToolResults)+1)
+	for _, item := range c.ContextItems {
 		msgs = append(msgs, openai.ChatCompletionMessage{
 			Role:    item.Role,
 			Content: item.Content,
 		})
 	}
-	return &OpenAiClient{
-		Client:          client,
-		Model:           model,
-		Stream:          cfg.Stream,
-		ContextMessages: msgs,
-		Tools:           tools,
+	msgs = append(msgs, c.History...)
 
-		streamPrint: sp_func,
-		logger:      slog.Default(),
-	}, nil
-}
-
-// SetLogger implements ApiClient.
-func (c *OpenAiClient) SetLogger(logger *slog.Logger) {
-	c.logger = logger
-}
-
-// SetPreFunc implements ApiClient.
-func (c *OpenAiClient) SetPreFunc(f func(any) error) {
-	c.preFunc = f
-}
-
-// SetPostFunc implements ApiClient.
-func (c *OpenAiClient) SetPostFunc(f func(any) error) {
-	c.postFunc = f
-}
-
-// AddContext implements ApiClient.
-func (c *OpenAiClient) AddContext(item *ContextItem) {
-	c.ContextMessages = append(c.ContextMessages, openai.ChatCompletionMessage{
-		Role:    item.Role,
-		Content: item.Content,
-	})
-}
-
-// RunCompletion implements ApiClient.
-func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error) {
-
-	// Get our message array which we will need for the request and context.
-	// We will add one response message below.
-	add_len := 1
-	if len(req.ToolResults) > 0 {
-		add_len = len(req.ToolResults)
-	}
-	msgs := make([]openai.ChatCompletionMessage, 0, len(c.ContextMessages)+add_len+1)
-	msgs = append(msgs, c.ContextMessages...)
+	// Add tool results if applicable.
 	if len(req.ToolResults) > 0 {
 		for _, tr := range req.ToolResults {
 			b, err := json.Marshal(tr.Output)
@@ -138,39 +105,49 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 		})
 	}
 
+	// Get the tools in openai format.
+	tools := make([]openai.Tool, 0, len(c.Tools))
+	for _, name := range c.Tools {
+		t := registry.Get(name)
+		if t == nil {
+			return nil, fmt.Errorf("tool not registered: %s", name)
+		}
+		tools = append(tools, t.OpenAiTool())
+	}
+
 	// Create openai-specific request.
 	oai_req := openai.ChatCompletionRequest{
-		Model:    c.Model,
-		Tools:    c.Tools,
-		Messages: msgs,
-		Stream:   c.Stream,
-		// TODO: MaxCompletionTokens support
+		Model:               c.Model,
+		Tools:               tools,
+		Messages:            msgs,
+		Stream:              c.Streaming,
+		MaxCompletionTokens: c.MaxCompletionTokens,
 		// TODO: temperature and so on -- want a custom config I guess.
 		// ...and so on...
 
 	}
-
-	if c.preFunc != nil {
-		err := c.preFunc(&oai_req)
-		if err != nil {
-			return nil, fmt.Errorf("error from preprocessing function: %w", err)
+	if c.PreFunc != nil {
+		if err := c.PreFunc(c, &oai_req); err != nil {
+			return nil, fmt.Errorf("error from preprocessor: %w", err)
 		}
 	}
-
 	// Run that -- we want to keep an eye on durations.
 	//
 	// TODO: overall instrumentation plan, this ain't it obviously, but it's
 	// a start and we could stick it in Grafana.
 	start_ts := time.Now()
-	c.logger.Info("creating chat completion", "model", c.Model, "stream", c.Stream)
+	c.Logger.Info("creating chat completion", "model", c.Model, "stream", c.Streaming)
 	res, err := c.CreateChatCompletion(ctx, oai_req)
-	c.logger.Info("created chat completion", utils.DurLog(start_ts)...)
+	// TODO: give it some thought, is this a good way to do the duration logging?
+	// We want to say what took how long, not what the result was.  Need to be
+	// able to search by the "what" and the fact of the duration.
+	c.Logger.Info("creating chat completion", utils.DurLog(start_ts)...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating chat completion: %w", err)
 	}
 	// Post-process the result before dealing with it here, if applicable.
-	if c.postFunc != nil {
-		err := c.postFunc(&res)
+	if c.PostFunc != nil {
+		err := c.PostFunc(c, &res)
 		if err != nil {
 			return nil, fmt.Errorf("error from postprocessing function: %w", err)
 		}
@@ -208,7 +185,7 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 	// Update the context window now (do NOT add to context window before
 	// running error-free, otherwise retry will be wrong).
 	msgs = append(msgs, msg)
-	c.ContextMessages = msgs
+	c.History = append(c.History, msg)
 
 	// Get our preferred tool-call format.
 	tool_calls := make([]*ToolCall, len(msg.ToolCalls))
@@ -239,63 +216,41 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 			},
 		},
 	}, nil
-
 }
 
-// Check implements ApiClient by making a call to the models endpoint, which
-// requires authentication.
-func (c *OpenAiClient) Check(ctx context.Context) error {
-	c.logger.Info("checking API with ListModels")
-	start_ts := time.Now()
-	models, err := c.Client.ListModels(ctx)
-	if err != nil {
-		return fmt.Errorf("error running check with ListModels: %w", err)
-	}
-	c.logger.Info("check successful",
-		utils.DurLog(start_ts)...)
-
-	// Not all that useful if we don't treat it as an error, but...
-	if len(models.Models) == 0 {
-		c.logger.Warn("no models found in check!")
-	}
-
-	return nil
-}
-
-// ExecuteCompletion executes a chat completion for both streaming and
+// CreateChatCompletion executes a chat completion for both streaming and
 // non-streaming cases.
-func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCompletionRequest) (res openai.ChatCompletionResponse, err error) {
+func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
 
-	if !c.Stream {
+	if !c.Streaming {
 		return c.Client.CreateChatCompletion(ctx, r)
 	}
 
 	// Streaming path is trickier; watch for Miss Steaks!
+	var empty openai.ChatCompletionResponse
 	r.Stream = true
 	r.StreamOptions = &openai.StreamOptions{IncludeUsage: true}
 
-	stream, serr := c.Client.CreateChatCompletionStream(ctx, r)
-	if serr != nil {
-		err = serr
-		return
+	stream, err := c.Client.CreateChatCompletionStream(ctx, r)
+	if err != nil {
+		return empty, err
 	}
 	defer stream.Close()
 
 	// Build up the response as we receive chunks
-	// var res = openai.ChatCompletionResponse{}
+	var res = openai.ChatCompletionResponse{}
 	var contentBuilder strings.Builder
 	var finishReason string
 	var role string
 	var toolCalls []openai.ToolCall
 	var got_usage bool
 	for {
-		response, serr := stream.Recv()
-		if errors.Is(serr, io.EOF) {
+		response, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			err = serr
-			return
+			return empty, err
 		}
 
 		// If this is the first chunk, initialize the response
@@ -309,22 +264,19 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 
 		// Handle the Usage chunk, which by definition is the last one.
 		if got_usage {
-			err = fmt.Errorf("chunk after usage: %s", utils.MustJsonString(response))
-			return
+			return empty, fmt.Errorf("chunk after usage: %s", utils.MustJsonString(response))
 		}
 		if len(response.Choices) == 0 {
 			// This is the usage chunk; there should be only one.
 			if response.Usage == nil {
-				err = fmt.Errorf("unexpected nil Usage: %v", response)
-				return
+				return empty, fmt.Errorf("unexpected nil Usage: %v", response)
 			}
 			if res.Usage.TotalTokens > 0 {
-				err = fmt.Errorf("dupe usage chunk: %v", response.Usage)
-				return
+				return empty, fmt.Errorf("dupe usage chunk: %v", response.Usage)
 			}
 
 			res.Usage = *response.Usage
-			fmt.Println("")
+			c.PrintFunc("\n")
 			got_usage = true
 			continue
 
@@ -339,7 +291,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 		content := response.Choices[0].Delta.Content
 		if content != "" {
 			contentBuilder.WriteString(content)
-			c.streamPrint(content) // Print content as it arrives
+			c.PrintFunc(content) // Print content as it arrives
 		}
 
 		// Handle tool calls (if present)
@@ -364,7 +316,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 						toolCalls[index].Function.Name = toolCallDelta.Function.Name
 						if c.StreamToolCalls {
 							frag := fmt.Sprintf("\n* Tool call: %s ", toolCallDelta.Function.Name)
-							c.streamPrint(frag)
+							c.PrintFunc(frag)
 						}
 					}
 
@@ -380,7 +332,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 						// This *should* be safe for the index, but what if it's not?
 						// NB: only do this if configured to, which by default, nope.
 						if c.StreamToolCalls {
-							c.streamPrint(toolCallDelta.Function.Arguments)
+							c.PrintFunc(toolCallDelta.Function.Arguments)
 						}
 					}
 				}
@@ -413,7 +365,11 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 	}
 
 	// Add a new line after streaming is complete
-	fmt.Println()
+	c.PrintFunc("\n")
 
 	return res, nil
+}
+
+func init() {
+	RegisterNewApiClientFunc("openai", NewOpenAiClient)
 }

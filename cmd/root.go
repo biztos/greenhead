@@ -29,11 +29,34 @@ var Exit = os.Exit // for testability
 var Stdout io.Writer = os.Stdout
 var Stderr io.Writer = os.Stderr
 
+var runnerConfigFile string
+var agentConfigFiles []string
+
 // RootCmd is the Cobra Root and may be changed to suit after initialization.
 var RootCmd = &cobra.Command{
 	Use:     Name,        // Only the first word of "Use" applies to root.
 	Version: Version,     // Nb: Version is *just* the number e.g. "1.2.3".
 	Long:    Description, // Short is ignored in root.
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+
+		// We already have a config with flags; load any config files, letting
+		// the flags override.
+
+		// Load the runner config, which *may* include agents and tools.
+
+		// Load the agent configs in order.
+
+		// Load the tool configs in order.
+
+		// Load configs from any specified files.
+
+		// Sanity-check configs. TODO: config.Validate() after loading!
+
+		if Config.Stream && Config.Silent {
+			return fmt.Errorf("flags --stream and --silent cannot be used together")
+		}
+		return nil
+	},
 }
 
 func Execute() {
@@ -72,10 +95,16 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&Config.Debug, "debug", "d", false,
 		"Log at DEBUG level (default is INFO).")
 	RootCmd.PersistentFlags().BoolVarP(&Config.Stream, "stream", "s", false,
-		"Stream LLM output where applicable.")
+		"Stream LLM output to the console.")
 	RootCmd.PersistentFlags().BoolVar(&Config.Silent, "silent", false,
-		"Stream LLM output where applicable.")
+		"Suppress LLM output.")
+	RootCmd.PersistentFlags().StringVar(&Config.LogFile, "log-file", "",
+		"Log to this file instead of STDERR.")
 	RootCmd.PersistentFlags().StringVar(&Config.DumpDir, "dump-dir", "",
-		"Dump all LLM interactions into subdirectories of this dir.")
+		"Dump all LLM interactions into this dir.")
+	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",
+		"Config file from which to read the master configuration.")
+	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},
+		"Config file from which to read the master configuration.")
 
 }

@@ -22,6 +22,7 @@ func testTool(name string) tools.Tooler {
 func resetLocksAndClear() {
 	lockedForNew = false
 	lockedForReplace = false
+	lockedForRemove = false
 	Clear()
 }
 
@@ -35,14 +36,22 @@ func TestLock(t *testing.T) {
 	// Register one:
 	require.NoError(Register(testTool("foo")), "new ok")
 
+	// Register another:
+	require.NoError(Register(testTool("bar")), "new ok")
+
 	// Register dupe:
 	require.NoError(Register(testTool("foo")), "replace ok")
+
+	// Remove one:
+	require.NoError(Remove("bar"), "remove ok")
 
 	Lock()
 	require.EqualError(Register(testTool("bar")),
 		"registry is locked for new tools", "new blocked")
 	require.EqualError(Register(testTool("foo")),
 		"registry is locked for replacement tools", "replace blocked")
+	require.EqualError(Remove("foo"),
+		"registry is locked for removal", "remove blocked")
 
 	// "Other" lock not affected by specific locks.
 	LockForReplace()
@@ -72,8 +81,9 @@ func TestLockForNew(t *testing.T) {
 	require.EqualError(Register(testTool("bar")),
 		"registry is locked for new tools", "replace blocked")
 
-	// Still can do dupe:
+	// Still can do dupe and remove:
 	require.NoError(Register(testTool("foo")), "replace ok")
+	require.NoError(Remove("foo"), "remove ok")
 
 }
 
@@ -95,7 +105,33 @@ func TestLockForReplace(t *testing.T) {
 	require.EqualError(Register(testTool("foo")),
 		"registry is locked for replacement tools", "replace blocked")
 
-	// Still can do new:
+	// Still can do new and remove:
 	require.NoError(Register(testTool("bar")), "new ok")
+	require.NoError(Remove("bar"), "remove ok")
+
+}
+
+func TestLockForRemove(t *testing.T) {
+
+	require := require.New(t)
+
+	resetLocksAndClear()
+	defer resetLocksAndClear()
+
+	// Register two:
+	require.NoError(Register(testTool("foo")), "new ok")
+	require.NoError(Register(testTool("bar")), "new ok")
+
+	// Remove one:
+	require.NoError(Remove("bar"), "remove ok")
+
+	// Deny remove:
+	LockForRemove()
+	require.EqualError(Remove("foo"),
+		"registry is locked for removal", "replace blocked")
+
+	// Still can do new and replace:
+	require.NoError(Register(testTool("bar")), "new ok")
+	require.NoError(Register(testTool("bar")), "replace ok")
 
 }

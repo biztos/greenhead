@@ -68,6 +68,27 @@ func TestRegisterReplaceOK(t *testing.T) {
 
 }
 
+func TestRemoveOK(t *testing.T) {
+
+	require := require.New(t)
+
+	tool1 := testTool("foo")
+	tool2 := testTool("bar")
+
+	registry.Clear()
+	defer registry.Clear()
+
+	require.NoError(registry.Register(tool1), "new foo ok")
+	require.NoError(registry.Register(tool2), "new bar ok")
+	require.NoError(registry.Remove("bar"), "remove bar ok")
+
+	require.Nil(registry.Get("bar"), "get removed")
+	require.Equal(tool1, registry.Get("foo"), "got the remaining tool")
+
+	// require.ErrorIs(registry.ErrNotRegistered, registry.Get("bar"), "get removed")
+
+}
+
 func TestNamesOrdered(t *testing.T) {
 
 	require := require.New(t)

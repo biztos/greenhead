@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
+	"slices"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/biztos/greenhead/registry"
-	"github.com/biztos/greenhead/tools"
-	"github.com/biztos/greenhead/utils"
 )
 
 // AgentType supported by the built-in ApiClients.
@@ -21,24 +19,52 @@ const (
 	AgentTypeOpenAi = "openai"
 )
 
+var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
+
 // Config describes the configuration of an Agent, and is usually supplied in
 // a file.
+//
+// Note that in normal operation, runner configs will take precedence over
+// agent configs.
 type Config struct {
-	Name     string         `json:"name"`               // name of the agent
-	Type     string         `json:"type"`               // type, e.g. AgentTypeOpenAi
-	Model    string         `json:"model,omitempty"`    // model for the LLM, if applicable
-	Endpoint string         `json:"endpoint,omitempty"` // endpoint if not default
-	Tools    []string       `json:"tools"`              // allowed tools
-	Stream   bool           `json:"stream"`             // stream responses to STDOUT
-	Color    string         `json:"color"`              // color for console output
-	BgColor  string         `json:"bg_color"`           // background color for console output
-	Context  []*ContextItem `json:"context,omitempty"`  // context window for client
+	Name     string   `toml:"name"`               // Name of the agent.
+	Type     string   `toml:"type"`               // Type, e.g. AgentTypeOpenAi.
+	Model    string   `toml:"model,omitempty"`    // Model for the LLM, if applicable.
+	Endpoint string   `toml:"endpoint,omitempty"` // Endpoint if not default.
+	Tools    []string `toml:"tools"`              // Allowed tools by name.
+
+	Context []ContextItem `toml:"context,omitempty"` // Context window for client.
 
 	// Safety and limits:  (Zero generally means "no limit.")
-	MaxTokens      int  `json:"max_tokens,omitempty"` // Maximum number of total tokens for all operations.
-	MaxToolChain   int  `json:"max_tokens,omitempty"` // Max number of tool calls allowed in a row.
-	AbortOnRefusal bool `json:"max_tokens,omitempty"` // Abort if a completion is refused by an LLM.
+	MaxCompletionTokens int  `toml:"max_completion_tokens"`      // Max completion tokens *per completion* (may truncate responses).
+	MaxCompletions      int  `toml:"max_completions,omitempty"`  // Max number of completions to run.
+	MaxTokens           int  `toml:"max_tokens,omitempty"`       // Max number of total tokens for all operations.
+	MaxToolChain        int  `toml:"max_tool_chain,omitempty"`   // Max number of tool call responses allowed in a row.
+	AbortOnRefusal      bool `toml:"abort_on_refusal,omitempty"` // Abort if a completion is refused by an LLM.
 
+	// Output control:
+	Color           string `toml:"color"`             // Color for console output.
+	BgColor         string `toml:"bg_color"`          // Background color for console output.
+	Stream          bool   `toml:"stream"`            // Stream responses; if streaming not possible, print them.
+	StreamToolCalls bool   `toml:"stream_tool_calls"` // Stream tool calls to console output (experimental; can leak data).
+	Silent          bool   `toml:"silent"`            // Suppress responses unless streamed.
+
+	// Logging and debugging:
+	Debug       bool   `toml:"debug"`                   // Log at DEBUG level instead of INFO.
+	LogFile     string `toml:"log_file,omitempty"`      // Log to a file.
+	DumpDir     string `toml:"dump_dir,omitempty"`      // Dump completions to this dir (can leak data).
+	LogToolArgs bool   `toml:"log_tool_args,omitempty"` // Log tool args (can leak data).
+
+}
+
+// Copy returns a deep copy of c.
+func (c *Config) Copy() *Config {
+	n := *c
+	n.Tools = make([]string, len(c.Tools))
+	copy(n.Tools, c.Tools)
+	n.Context = make([]ContextItem, len(c.Context))
+	copy(n.Context, c.Context)
+	return &n
 }
 
 // ContextItem is a high-level representation of a message to add to the
@@ -115,34 +141,65 @@ type Usage struct {
 // package differently.
 //
 // The ApiClient is responsible for maintaining its own LLM context over its
-// lifetime; the Add* functions are for setting initial context.
+// lifetime; the Add* functions are for setting initial context.  However, the
+// agent *may* do this itself with the ClearContext function.
 type ApiClient interface {
 
 	// SetLogger sets the logger that the ApiClient should use for all log
 	// calls.
 	SetLogger(*slog.Logger)
 
-	// SetPreFunc sets the preprocessor function that can manipulate the
-	// outgoing request in place before it is sent to the LLM.
-	//
-	// This can be used to limit the amount of context sent to the LLM, for
-	// example.  Tool results are included in the request, so they can also
-	// be addressed here.
-	//
-	// Implementations should include an example function if supported.
-	SetPreFunc(func(any) error)
+	// SetStreaming sets whether responses should be streamed to Stdout as
+	// they are received.  If streaming is not supported, responses should be
+	// printed when they are received.  In both cases, the print function from
+	// SetPrintFunc should be used for printing output.
+	SetStreaming(bool)
 
-	// SetPostFunc sets the postprocessor function that can manipulate the
-	// incoming response in place before it is sent to the Agent.
-	//
-	// Implementations should include an example function if supported.
-	SetPostFunc(func(any) error)
+	// SetStreamToolCalls sets whether tool calls should be streamed to Stdout
+	// the same as content responses.
+	SetStreamToolCalls(bool)
 
-	// AddContext adds a prompt or response to the LLM context.
-	AddContext(*ContextItem)
+	// SetPrintFunc sets the function used to print output.
+	SetPrintFunc(func(v ...any))
+
+	// SetPreFunc sets a function that processes the raw request before it
+	// is sent to the LLM.
+	//
+	// This allows customization of ApiClients without additional types, e.g.
+	// for content filtering.
+	//
+	// It is up to the implementation to call the pre- and post-functions in
+	// RunCompletion. If this is not supported, an error should be returned.
+	SetPreFunc(func(ApiClient, any) error) error
+
+	// SetPostFunc sets a function that processes the raw response when it is
+	// received from the LLM.
+	//
+	// It is up to the implementation to call the pre- and post-functions in
+	// RunCompletion. If this is not supported, an error should be returned.
+	SetPostFunc(func(ApiClient, any) error) error
+
+	// SetModel sets the model used by the API.  If the model is not supported
+	// it should return an error.
+	SetModel(string) error
+
+	// SetTools sets the tools that will be described to the LLM as callable.
+	//
+	// These must be available in the registry when SetTools is called.
+	SetTools([]string) error
+
+	// SetMaxCompletionTokens sets the maximum number of tokens the LLM should
+	// produce on the *next* completion.
+	SetMaxCompletionTokens(int)
+
+	// ClearContext clears any existing LLM context.
+	ClearContext()
+
+	// AddContextItem adds a prompt or response to the LLM context.
+	AddContextItem(ContextItem)
 
 	// RunCompletion runs a completion and returns
-	RunCompletion(context.Context, *CompletionRequest) (*CompletionResponse, error)
+	RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error)
 
 	// Check validates the underlying client by making a (presumably) no-cost
 	// round-trip to the configured API endpoint, e.g.
@@ -151,87 +208,149 @@ type ApiClient interface {
 	Check(context.Context) error
 }
 
-var newClientFunc = map[string]func(*Config) (ApiClient, error){}
+var newApiClientFunc = map[string]func() (ApiClient, error){}
 
-// RegisterNewClientFunc registers an agent type with a function returning a
-// client for that type.  It is normally called in the init() function of a
-// package.  Later registrations of the same name take precedence.
-func RegisterNewClientFunc(agent_type string, f func(*Config) (ApiClient, error)) {
-	newClientFunc[agent_type] = f
+// RegisterNewApiClientFunc registers an agent type with a function returning
+// an ApiClient for that type.  It is normally called in the init() function
+// of the package defining that type.
+//
+// Later registrations of the same name take precedence.
+func RegisterNewApiClientFunc(agent_type string, f func() (ApiClient, error)) {
+	newApiClientFunc[agent_type] = f
 }
 
 // Agent is a single "agentic" (tool-executing) LLM client.
 type Agent struct {
-	Id     ulid.ULID
-	Config *Config
-	Client ApiClient
-	Tools  map[string]tools.Tooler // TODO: rethink, might change in runtime!
-
-	logger *slog.Logger
+	ULID      ulid.ULID
+	client    ApiClient
+	config    *Config
+	printFunc func(a ...any)
+	logger    *slog.Logger
 }
 
-// Ident for the Agent combines Id and the configured Type and optional Name.
+// Id returns the Agent's ULID as a string.
+func (a *Agent) Id() string {
+	return a.ULID.String()
+}
+
+// Name returns the Agent's configured name, which is optional..
+//
+// Note that there is no guarantee of uniqueness for the name.
+func (a *Agent) Name() string {
+	return a.config.Name
+}
+
+// Ident returns an informative, uniquely identifying string.
 func (a *Agent) Ident() string {
-	s := fmt.Sprintf("%s:%s", a.Id, a.Config.Type)
-	if a.Config.Name != "" {
-		s += ":" + a.Config.Name
+	s := fmt.Sprintf("%s:%s", a.ULID, a.config.Type)
+	if a.config.Name != "" {
+		s = fmt.Sprintf("%s:%s", s, a.config.Name)
 	}
 	return s
 }
 
-// String provides a hopefully-useful stringification of the agent.
+// String provides a standard stringification of the agent.
 func (a *Agent) String() string {
 	return fmt.Sprintf("<Agent %s>", a.Ident())
+}
+
+// Logger returns the logger set with SetLogger.
+//
+// This is useful for logging things "as" the agent, i.e. with its ident
+// component.
+func (a *Agent) Logger() *slog.Logger {
+	return a.logger
 }
 
 // SetLogger overrides the logger in the Agent and its ApiClient.
 //
 // Note that this does *not* add the agent=<ident> attribute that is used by
-// default.  The caller should add that or its equivalent if desired.
+// default.  The caller should add that or its equivalent if desired, as does
+// NewAgent.
 func (a *Agent) SetLogger(logger *slog.Logger) {
 	a.logger = logger
-	a.Client.SetLogger(logger)
+	a.client.SetLogger(logger)
 }
 
 // NewAgent returns an agent initialized for use based on cfg.  If any of the
 // configured Tools are not registered, an error is returned.
 //
-// The logger is a default slog JSON logger to Stderr with an "agent" attr
-// defined as the agent's Ident value.
-//
 // TODO: consider the possibility of runtime tool registrations, in which case
 // what do we do to keep the agent up to date?
 func NewAgent(cfg *Config) (*Agent, error) {
-	// TODO: support tool names like "foo*"
-	// TODO: instead of keeping tools here, fetch from registry at call time,
-	// b/c it's possible they may have changed during runtime.
-	toolmap := map[string]tools.Tooler{}
-	for _, name := range cfg.Tools {
-		tool := registry.Get(name)
-		if tool == nil {
-			return nil, fmt.Errorf("tool not registered: %s", name)
-		}
-		toolmap[name] = tool
+
+	// Start with basics:
+	agent := &Agent{
+		ULID:   ulid.Make(),
+		config: cfg.Copy(),
 	}
-	cfunc := newClientFunc[cfg.Type]
+
+	// Get an ApiClient to set up:
+	cfunc := newApiClientFunc[cfg.Type]
 	if cfunc == nil {
 		return nil, fmt.Errorf("no client for type %q", cfg.Type)
 	}
-	client, err := cfunc(cfg)
+	client, err := cfunc()
 	if err != nil {
 		return nil, fmt.Errorf("error initializing client for type %q: %w",
 			cfg.Type, err)
 	}
+	agent.client = client
+	client.SetStreaming(cfg.Stream)
+	client.SetModel(cfg.Model)
+	client.SetStreamToolCalls(cfg.StreamToolCalls)
+	client.SetMaxCompletionTokens(cfg.MaxCompletionTokens)
+
+	// Add any configured context to the ApiClient.  Note that we do *not*
+	// clear the context here: if the newClientFunc wants to include premade
+	// context, we leave that alone.
 	for _, c := range cfg.Context {
-		client.AddContext(c)
+		client.AddContextItem(c)
 	}
-	agent := &Agent{
-		Id:     ulid.Make(),
-		Config: cfg,
-		Client: client,
-		Tools:  toolmap,
+
+	// Add tools to the ApiClient, checking for validity first:
+	// TODO: support tool names like "foo*" but only here, client gets
+	// foo_bar, foo_boo
+	for _, name := range cfg.Tools {
+		tool := registry.Get(name)
+		if tool == nil {
+			return nil, fmt.Errorf("tool not registered: %s", name) // TODO: return err
+		}
 	}
-	agent.SetLogger(slog.New(slog.NewJSONHandler(os.Stderr, nil)).With(
+	client.SetTools(cfg.Tools)
+
+	// Set up the streaming and color printing:
+	pfunc, err := ColorPrintFunc(cfg.Color, cfg.BgColor)
+	if err != nil {
+		return nil, fmt.Errorf("error with print colors: %w", err)
+	}
+	agent.printFunc = pfunc
+	client.SetPrintFunc(pfunc)
+
+	// Set up the logger.
+	var handler *slog.JSONHandler
+	level := slog.LevelInfo
+	if cfg.Debug {
+		level = slog.LevelDebug
+	}
+	if cfg.LogFile == "" {
+		// Log to standard error.
+		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+			Level: level,
+		})
+	} else {
+		// Log to file.
+		file, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+
+		handler = slog.NewJSONHandler(file, &slog.HandlerOptions{
+			Level: level,
+		})
+	}
+
+	agent.SetLogger(slog.New(handler).With(
 		"agent",
 		agent.Ident(),
 	))
@@ -248,20 +367,13 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 
 	raws := []*RawCompletion{}
 	req := &CompletionRequest{Content: prompt}
-	res, err := a.Client.RunCompletion(ctx, req)
+	res, err := a.client.RunCompletion(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("error running completion: %w", err)
 	}
 	raws = append(raws, res.RawCompletions...)
-	// yeah this isn't what I think.
-	did := false
 	for len(res.ToolCalls) > 0 {
-		if did {
-			a.logger.Warn("AGAIN")
-			a.logger.Info("FFS", "toolcalls", utils.MustJsonString(res.ToolCalls))
-			time.Sleep(10 * time.Second)
-		}
-		did = true
+
 		// Run all the tool calls, keeping their responses.
 		//
 		// FOR NOW we just bail on bad calls, but IRL maybe we should just
@@ -269,13 +381,26 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 		// TODO: figure out best approach for this, probably config AllowToolError
 		results := make([]*ToolResult, len(res.ToolCalls))
 		for idx, call := range res.ToolCalls {
-			tool := a.Tools[call.Name]
-			if tool == nil {
+			// NB: we have no actual guarantee that the registered tools have
+			// not changed since the last call; nor that the LLM is not trying
+			// to call a disallowed tool. Thus we need to check that the tool
+			// is both allowed, and currently registered.
+			//
+			// TODO (someday): support changing allowed tools at runtime.
+			if !slices.Contains(a.config.Tools, call.Name) {
 				return nil, fmt.Errorf("no such tool for agent: %s", call.Name)
 			}
-			// TODO: config whether this logs args, might leak private info
-			// into the logs when we don't want to.  Or debug level?
-			a.logger.Info("calling tool", "tool", call.Name, "args", call.Args)
+			tool := registry.Get(call.Name)
+			if tool == nil {
+				return nil, fmt.Errorf("tool not registered: %s", call.Name)
+			}
+			// Only log the tool args if that's configured, which by default
+			// it's not.
+			if a.config.LogToolArgs {
+				a.logger.Info("calling tool", "tool", call.Name, "args", call.Args)
+			} else {
+				a.logger.Info("calling tool", "tool", call.Name)
+			}
 			output, err := tool.Exec(context.Background(), call.Args)
 			if err != nil {
 				output = map[string]string{"error": err.Error()}
@@ -287,13 +412,18 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 		}
 		// Get a new reponse from that.
 		req := &CompletionRequest{ToolResults: results}
-		res, err = a.Client.RunCompletion(ctx, req)
+		res, err = a.client.RunCompletion(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("error running tool-result completion: %w", err)
 		}
 		raws = append(raws, res.RawCompletions...)
 		// TODO: limit loops on tools!
 	}
+
+	// TODO: limits
+	// TODO: bail on refusal
+	// TODO: save to DumpDir if desired
+	// TODO: print output if not stream and not silent
 
 	// Any tool calls have completed and we have a result plus a set of raw
 	// completions that override the current one.
@@ -302,8 +432,4 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 		RawCompletions: raws,
 	}, nil
 
-}
-
-func init() {
-	RegisterNewClientFunc("openai", NewOpenAiClient)
 }

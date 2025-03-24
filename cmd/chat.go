@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/sashabaranov/go-openai"
 	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead/agent"
@@ -26,11 +27,12 @@ TODO: that config, duh.`,
 		// and get second config easy as can...
 		agent_cfg := &agent.Config{
 			Type:   "openai",
+			Model:  openai.GPT4o,
 			Name:   "WTF",
 			Tools:  []string{"parse_url"},
 			Stream: Config.Stream,
 			Color:  "lightblue",
-			Context: []*agent.ContextItem{
+			Context: []agent.ContextItem{
 				{
 					Role:    "system",
 					Content: "You are a helpful assistant, but you speak like a pirate.",
