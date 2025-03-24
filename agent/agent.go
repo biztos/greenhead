@@ -388,15 +388,35 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 		return nil, fmt.Errorf("error running completion: %w", err)
 	}
 	raws = append(raws, res.RawCompletions...)
+	tool_call_responses := 0
 	for len(res.ToolCalls) > 0 {
+
+		// We can in theory get multiple tool calls in succession, in which
+		// case we watch for the tool chain.
+		tool_call_responses++
+		if a.config.MaxToolChain > 0 && tool_call_responses > a.config.MaxToolChain {
+			// TODO: should this really be an error?  How best to handle these
+			// abort cases?  Perhaps we should send a refusal to run tools?
+			// A quota-exceeded tool output error?
+			return nil, fmt.Errorf("max tool chain exceeded")
+		}
 
 		// Run all the tool calls, keeping their responses.
 		//
 		// FOR NOW we just bail on bad calls, but IRL maybe we should just
 		// give the LLM back an error?  Nah, CONFIG THIS.
 		// TODO: figure out best approach for this, probably config AllowToolError
+		// TODO: concurrency if the tools allow it.
 		results := make([]*ToolResult, len(res.ToolCalls))
 		for idx, call := range res.ToolCalls {
+
+			// Print tools as they arrive, if requested.
+			// (Printing at the end will be confusing if tools take longer to run.)
+			if !a.config.Stream && !a.config.Silent && a.config.ShowCalls {
+				line := fmt.Sprintf("* tool_call: %s %s\n", call.Name, call.Args)
+				a.printFunc(line)
+			}
+
 			// NB: we have no actual guarantee that the registered tools have
 			// not changed since the last call; nor that the LLM is not trying
 			// to call a disallowed tool. Thus we need to check that the tool
@@ -441,6 +461,12 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 	// TODO: save to DumpDir if desired
 	// TODO: print output if not stream and not silent
 
+	// Print output, if desired.
+	if !a.config.Stream && !a.config.Silent {
+		a.printFunc(res.Content)
+		a.printFunc("\n")
+
+	}
 	// Any tool calls have completed and we have a result plus a set of raw
 	// completions that override the current one.
 	return &CompletionResponse{
