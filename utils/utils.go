@@ -14,22 +14,32 @@ import (
 	"github.com/titanous/json5"
 )
 
-// MustJsonString marshals v to a string or panics trying.
-func MustJsonString(v any) string {
+// MustJson marshals v to a byte array or panics trying.
+func MustJson(v any) []byte {
 	b, err := json.Marshal(v)
 	if err != nil {
 		panic(err.Error())
 	}
-	return string(b)
+	return b
 }
 
-// MustJsonStringPretty marshals v to a string with indent or panics trying.
-func MustJsonStringPretty(v any) string {
+// MustJsonString marshals v to a string or panics trying.
+func MustJsonString(v any) string {
+	return string(MustJson(v))
+}
+
+// MustJsonPretty marshals v to a byte array with indent or panics trying.
+func MustJsonPretty(v any) []byte {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		panic(err.Error())
 	}
-	return string(b)
+	return b
+}
+
+// MustJsonStringPretty marshals v to a string with indent or panics trying.
+func MustJsonStringPretty(v any) string {
+	return string(MustJsonPretty(v))
 }
 
 // Dur returns the string representation of the duration since t.

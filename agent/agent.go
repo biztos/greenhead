@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/biztos/greenhead/registry"
+	"github.com/biztos/greenhead/utils"
 )
 
 // AgentType supported by the built-in ApiClients.
@@ -224,6 +226,7 @@ func RegisterNewApiClientFunc(agent_type string, f func() (ApiClient, error)) {
 type Agent struct {
 	ULID      ulid.ULID
 	client    ApiClient
+	completed int
 	config    *Config
 	printFunc func(a ...any)
 	logger    *slog.Logger
@@ -458,7 +461,6 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 
 	// TODO: limits
 	// TODO: bail on refusal
-	// TODO: save to DumpDir if desired
 	// TODO: print output if not stream and not silent
 
 	// Print output, if desired.
@@ -467,11 +469,39 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 		a.printFunc("\n")
 
 	}
-	// Any tool calls have completed and we have a result plus a set of raw
-	// completions that override the current one.
-	return &CompletionResponse{
+
+	final_res := &CompletionResponse{
 		Content:        res.Content,
 		RawCompletions: raws,
-	}, nil
+	}
+
+	// Dump the full round-trip if desired.
+	a.completed++
+	if a.config.DumpDir != "" {
+		a.DumpCompletion(req, final_res)
+	}
+
+	// Any tool calls have completed and we have a result plus a set of raw
+	// completions that override the current one.
+	return final_res, nil
+
+}
+
+// DumpCompletion writes a JSON file for the full completion into the
+// configured DumpDir, or the local directory if not set.
+func (a *Agent) DumpCompletion(req *CompletionRequest, res *CompletionResponse) error {
+
+	err := os.MkdirAll(a.config.DumpDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating dump directory: %w", err)
+
+	}
+	name := fmt.Sprintf("%s-%04d.json", a.ULID, a.completed)
+	path := filepath.Join(a.config.DumpDir, name)
+	b := utils.MustJson(map[string]any{"request": req, "response": res})
+	if err := os.WriteFile(path, b, 0666); err != nil {
+		return fmt.Errorf("error dumping completion: %w", err)
+	}
+	return nil
 
 }
