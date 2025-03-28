@@ -56,6 +56,40 @@ func DurLog(t time.Time) []any {
 	return []any{"duration", Dur(t)}
 }
 
+// MarshalJsonFile marshals v to JSON and writes the data to file.
+func MarshalJsonFile(v any, file string) error {
+
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(file, b, 0666); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MustMarshalJsonFile calls MarshalJsonFile and panics on error.
+func MustMarshalJsonFile(v any, file string) {
+
+	if err := MarshalJsonFile(v, file); err != nil {
+		panic(err)
+	}
+}
+
+// MarshalTomlFile marshals v to TOML and writes the data to file.
+func MarshalTomlFile(v any, file string) error {
+
+	b, err := toml.Marshal(v)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(file, b, 0666); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Comma-separated list of lowercased file extensions that can be Marshaled
 // or Unmarshaled in this package.
 const UnmarshalFileExtensions = ".toml,.json,.json5"

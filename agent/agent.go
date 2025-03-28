@@ -151,6 +151,11 @@ type ApiClient interface {
 	// calls.
 	SetLogger(*slog.Logger)
 
+	// SetDumpDir sets a directory into which the ApiClient *may* write any
+	// debug information such as raw requests or responses, to supplement the
+	// data dumped by the agent itself.
+	SetDumpDir(string)
+
 	// SetStreaming sets whether responses should be streamed to Stdout as
 	// they are received.  If streaming is not supported, responses should be
 	// printed when they are received.  In both cases, the print function from
@@ -230,6 +235,7 @@ type Agent struct {
 	config    *Config
 	printFunc func(a ...any)
 	logger    *slog.Logger
+	dumpdir   string
 }
 
 // Id returns the Agent's ULID as a string.
@@ -339,6 +345,22 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	// Set up the logger.
 	if err := a.InitLogger(cfg.LogFile, cfg.Debug); err != nil {
 		return nil, fmt.Errorf("error initializing logger: %w", err)
+	}
+
+	// Make sure the DumpDir exists if set, and is writable -- writing the
+	// config there should do the trick!  Note that to keep things sane we
+	// will make a subdir for the actual dump directory.
+	if cfg.DumpDir != "" {
+		a.dumpdir = filepath.Join(cfg.DumpDir, a.ULID.String())
+		if err := os.MkdirAll(a.dumpdir, 0755); err != nil {
+			return nil, fmt.Errorf("error creating dump directory: %w", err)
+		}
+		fn := fmt.Sprintf("%s-config.toml", a.ULID)
+		cfg_file := filepath.Join(a.dumpdir, fn)
+		if err := utils.MarshalTomlFile(cfg, cfg_file); err != nil {
+			return nil, fmt.Errorf("error dumping config: %w", err)
+		}
+		client.SetDumpDir(a.dumpdir)
 	}
 
 	return a, nil
@@ -491,15 +513,10 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 // configured DumpDir, or the local directory if not set.
 func (a *Agent) DumpCompletion(req *CompletionRequest, res *CompletionResponse) error {
 
-	err := os.MkdirAll(a.config.DumpDir, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating dump directory: %w", err)
-
-	}
 	name := fmt.Sprintf("%s-%04d.json", a.ULID, a.completed)
-	path := filepath.Join(a.config.DumpDir, name)
-	b := utils.MustJson(map[string]any{"request": req, "response": res})
-	if err := os.WriteFile(path, b, 0666); err != nil {
+	path := filepath.Join(a.dumpdir, name)
+	v := map[string]any{"request": req, "response": res}
+	if err := utils.MarshalJsonFile(v, path); err != nil {
 		return fmt.Errorf("error dumping completion: %w", err)
 	}
 	return nil

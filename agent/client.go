@@ -34,11 +34,17 @@ type BasicApiClient struct {
 	ShowCalls bool
 	PrintFunc func(a ...any)
 	Logger    *slog.Logger
+	DumpDir   string
 }
 
 // SetLogger implements ApiClient.
 func (c *BasicApiClient) SetLogger(logger *slog.Logger) {
 	c.Logger = logger
+}
+
+// SetDumpDir implements ApiClient.
+func (c *BasicApiClient) SetDumpDir(dir string) {
+	c.DumpDir = dir
 }
 
 // SetPrintFunc implements ApiClient.

@@ -1,2 +1,0 @@
-{"time":"2025-03-25T11:14:30.226143+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5R4CBN6EXEWTSNDB1Q436H:openai:ExamplePirate","model":"gpt-4o","stream":true}
-{"time":"2025-03-25T11:14:32.501594+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5R4CBN6EXEWTSNDB1Q436H:openai:ExamplePirate","duration":"2.274856042s"}

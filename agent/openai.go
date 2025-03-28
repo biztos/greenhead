@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -87,6 +88,10 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 	}
 	msgs = append(msgs, c.History...)
 
+	// Now get the new messages, which we will add to the History only after
+	// a successful completion (the caller may well want to retry on error).
+	new_msgs := make([]openai.ChatCompletionMessage, 0, len(req.ToolResults)+1)
+
 	// Add tool results if applicable.
 	if len(req.ToolResults) > 0 {
 		for _, tr := range req.ToolResults {
@@ -96,18 +101,19 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 				return nil, fmt.Errorf("error marshaling JSON of %T: %w",
 					tr.Output, err)
 			}
-			msgs = append(msgs, openai.ChatCompletionMessage{
+			new_msgs = append(new_msgs, openai.ChatCompletionMessage{
 				Role:       openai.ChatMessageRoleTool,
 				ToolCallID: tr.Id,
 				Content:    string(b),
 			})
 		}
 	} else {
-		msgs = append(msgs, openai.ChatCompletionMessage{
+		new_msgs = append(new_msgs, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: req.Content,
 		})
 	}
+	msgs = append(msgs, new_msgs...)
 
 	// Get the tools in openai format.
 	tools := make([]openai.Tool, 0, len(c.Tools))
@@ -132,9 +138,12 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 	}
 	if c.PreFunc != nil {
 		if err := c.PreFunc(c, &oai_req); err != nil {
-			return nil, fmt.Errorf("error from preprocessor: %w", err)
+			err = fmt.Errorf("error from preprocessor: %w", err)
+			c.DumpErr(oai_req, nil, err)
+			return nil, err
 		}
 	}
+
 	// Run that -- we want to keep an eye on durations.
 	//
 	// TODO: overall instrumentation plan, this ain't it obviously, but it's
@@ -147,31 +156,40 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 	// able to search by the "what" and the fact of the duration.
 	c.Logger.Info("creating chat completion", utils.DurLog(start_ts)...)
 	if err != nil {
-		return nil, fmt.Errorf("error creating chat completion: %w", err)
+		err = fmt.Errorf("error creating chat completion: %w", err)
+		c.DumpErr(oai_req, res, err)
+		return nil, err
 	}
 	// Post-process the result before dealing with it here, if applicable.
 	if c.PostFunc != nil {
 		err := c.PostFunc(c, &res)
 		if err != nil {
-			return nil, fmt.Errorf("error from postprocessing function: %w", err)
+			err = fmt.Errorf("error from postprocessing function: %w", err)
+			c.DumpErr(oai_req, res, err)
+			return nil, err
 		}
 	}
 
 	// Result needs to have one choice, getting multiples (or none!) is Bad.
 	if len(res.Choices) != 1 {
-		return nil, fmt.Errorf("wrong number of choices in response: %d",
+		err := fmt.Errorf("wrong number of choices in response: %d",
 			len(res.Choices))
+		c.DumpErr(oai_req, res, err)
+		return nil, err
 	}
-	msg := res.Choices[0].Message
+	res_msg := res.Choices[0].Message
 	// TODO: consider what to usefully do with FinishReason.
 	fin := string(res.Choices[0].FinishReason)
 	// TODO: consider ContentFilterResults, could be sticky bastards.
 
 	// TODO: do something else with msg.Refusal, maybe?  Need examples.
+	// TODO: need sniffable error here b/c agent has config to fail on refusal
 	// This is supposed to be "safety" related, per openai:
 	// https://platform.openai.com/docs/guides/structured-outputs/refusals?api-mode=responses
-	if msg.Refusal != "" {
-		return nil, fmt.Errorf("endpoint refused to create completion: %s", msg.Refusal)
+	if res_msg.Refusal != "" {
+		err := fmt.Errorf("endpoint refused to create completion: %s", res_msg.Refusal)
+		c.DumpErr(oai_req, res, err)
+		return nil, err
 	}
 
 	usage := &Usage{
@@ -188,29 +206,32 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 
 	// Update the context window now (do NOT add to context window before
 	// running error-free, otherwise retry will be wrong).
-	msgs = append(msgs, msg)
-	c.History = append(c.History, msg)
+	c.History = append(c.History, new_msgs...)
+	c.History = append(c.History, res_msg)
 
 	// Get our preferred tool-call format.
-	tool_calls := make([]*ToolCall, len(msg.ToolCalls))
-	for idx, tc := range msg.ToolCalls {
+	// KF wtf here?  and yet we get the first one so... what?
+	tool_calls := make([]*ToolCall, 0, len(res_msg.ToolCalls))
+	for _, tc := range res_msg.ToolCalls {
 		// watch for anything not a function
 		// TODO: figure out whether non-function tool calls get reported back
 		// or not?
 		if tc.Type != openai.ToolTypeFunction {
-			return nil, fmt.Errorf("unexpected tool call type: %s", tc.Type)
+			err := fmt.Errorf("unexpected tool call type: %s", tc.Type)
+			c.DumpErr(oai_req, res, err)
+			return nil, err
 		}
-		tool_calls[idx] = &ToolCall{
+		tool_calls = append(tool_calls, &ToolCall{
 			Id:   tc.ID,
 			Name: tc.Function.Name,
 			Args: tc.Function.Arguments,
-		}
+		})
 	}
 
 	// Return in result format with raw objects.
 	return &CompletionResponse{
 		FinishReason: fin,
-		Content:      msg.Content,
+		Content:      res_msg.Content,
 		ToolCalls:    tool_calls,
 		Usage:        usage,
 		RawCompletions: []*RawCompletion{
@@ -220,6 +241,26 @@ func (c *OpenAiClient) RunCompletion(ctx context.Context, req *CompletionRequest
 			},
 		},
 	}, nil
+}
+
+// DumpErr dumps values to "error.json" in DumpDir or panics trying.
+//
+// Nil values for req and res are allowed.
+//
+// If DumpDir is not set this is a noop.
+func (c *OpenAiClient) DumpErr(req any, res any, err error) {
+
+	if c.DumpDir == "" {
+		return
+	}
+	v := map[string]any{
+		"request":  req,
+		"response": res,
+		"error":    err.Error(),
+	}
+	file := filepath.Join(c.DumpDir, "error.json")
+	utils.MustMarshalJsonFile(v, file)
+
 }
 
 // CreateChatCompletion executes a chat completion for both streaming and

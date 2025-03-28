@@ -1,9 +1,0 @@
-{"time":"2025-03-25T11:18:07.589238+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","model":"gpt-4o","stream":true}
-{"time":"2025-03-25T11:18:09.101173+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","duration":"1.511281417s"}
-{"time":"2025-03-25T11:18:17.264479+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","model":"gpt-4o","stream":true}
-{"time":"2025-03-25T11:18:17.873296+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","duration":"608.824792ms"}
-{"time":"2025-03-25T11:18:17.87489+07:00","level":"INFO","msg":"calling tool","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","tool":"parse_url"}
-{"time":"2025-03-25T11:18:17.875168+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","model":"gpt-4o","stream":true}
-{"time":"2025-03-25T11:18:19.091083+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","duration":"1.215924583s"}
-{"time":"2025-03-25T11:18:35.804015+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","model":"gpt-4o","stream":true}
-{"time":"2025-03-25T11:18:36.192479+07:00","level":"INFO","msg":"creating chat completion","agent":"01JQ5RB5S2M0VAVGSRP6K445BJ:openai:ExamplePirate","duration":"388.462459ms"}

@@ -1,18 +1,5 @@
 # TODO (ordered!)
 
-## FIX THE TOOL CALL RESPONSE PROBLEM WTF?
-
-Looks like the context window is not keeping the tool responses, they work the
-first time but then (they are in the context) they miss the responses.
-
-Error is:
-
-```
-Error: error running completion: error creating chat completion: error, status code: 400, status: 400 Bad Request, message: An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'. The following tool_call_ids did not have response messages: call_ZVdU9kYbaCGatmjTf1TRQZtb
-```
-
-## Get the dumperoonie working, the above is easier to debug that way.
-
 ## Make the rest of runner stuff work like chat.
 
 ## MANAGE CONFIG OF AGENTS VS RUNNER
