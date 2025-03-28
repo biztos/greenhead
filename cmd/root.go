@@ -96,6 +96,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",
 		"Config file from which to read the master configuration.")
 	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},
-		"Config file from which to read the master configuration.")
+		"Config file from which to read the agent configuration.")
 
 }
