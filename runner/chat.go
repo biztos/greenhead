@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -22,11 +24,11 @@ func (r *Runner) RunChat() error {
 	}
 	agent := r.Agents[0]
 
-	// If log file is not specified, then log to a local file and skip the
-	// agent identification.
+	// If log file is not specified, then log to temp file, because running
+	// chat and logging to the console at the same time is unusable.
 	log_file := r.Config.LogFile
 	if log_file == "" {
-		log_file = fmt.Sprintf("%s-chat.log", agent.ULID)
+		log_file = filepath.Join(os.TempDir(), fmt.Sprintf("%s.log", agent.ULID))
 		agent.InitLogger(log_file, r.Config.Debug)
 	}
 
