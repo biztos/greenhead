@@ -10,6 +10,7 @@ import (
 
 // ListTools prints all registered tools to w.
 func ListTools(names_only bool, w io.Writer) {
+
 	var lines []string
 	if names_only {
 		lines = registry.Names()

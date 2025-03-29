@@ -1,30 +1,37 @@
 # TODO (ordered!)
 
+## agents show (list all *actual* commands available)
+
+Also any description?  Could be optional, no need to do anything fancy.
+
+## --nolog option (also make logfile --logfile not --log-file)
+
+nullLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
 ## Make the rest of runner stuff work like chat.
 
-## MANAGE CONFIG OF AGENTS VS RUNNER
+## Support tools defined at load in config (or theoretically at runtime)
 
-ok to pass stuff down but force consistency of stream and silent, i.e. take
-from runner
+Basic version is a tool that calls a binary with args using os.Exec with a
+timeout. (Or with no timeout?  Timeout might be nice.)
 
-do this in parse of input configs, don't have to care at agent level
+Let that be set in runner config which gets tools, agent can then be configged
+to call it.
 
-after all, agent doesn't *know* waht the client does, it just assumes e.g.
-that if streamed, we print response.  (OK so it should know if it was steamd!)
+Bigger/more-complex idea: run code in Javascript or maybe other interpreter.
 
-actually STREAM-OR-PRINT should be at the api level no? hm. not sure how to
-do for web options.
+Goja for JS would be great.  What else?  If it's easy can just add...
 
-so config should have something like print right?  print to console if not
-stream to console, or silent?  back to a type here.
+Any way to make that pluggable?  Should work actually.  Want a type that is
+"code interpreter" and then the concrete type is say JS interp built-in, can
+add others in the standard way.
 
-    SILENT: don't print to console
-    STREAM: print as it arrives if possible, otherwise print at end
-    ELSE: print after got
+These two should both be supersets of Tooler!
 
-leave that to the client as Agent doesn't know about streaming, and making it
-know is a PITA right?  (Well maybe... what about giving the client a writer
-it should write to for either streaming or...?)
+Another one, kinda scary but why TF not? An actual code interpreter the agent
+can call as a tool.  Prolog maybe: https://github.com/ichiban/prolog
+
+(Or just reuse the JS thing above.)
 
 __FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
 
@@ -58,6 +65,14 @@ Ideally want to have an extra set of configs you can set per-agent.
 Want a per-app config, a per-agent config, and a per-client extras that can
 be anything, inside of per-agent.  Knowing that per-client will need some
 special checking TBD... but probably can just r/t the json?
+
+## Run a script that can do.... whatever.... with the responses.
+
+That is to say set up another program (or JS/etc code at some point?) that
+will interact with an agent as the other end of a chat.
+
+Most of this logic will be same as using pair chat but with one half of the
+pair being outside (or inside an interpreter?).
 
 ## Set up token limits at Agent level and also in OpenAiClient
 
@@ -164,7 +179,6 @@ complain about it?
 * Remove a subcommand, e.g. disallow pair.
 * Add a subcommand.
 * Change name, etc.
-
 
 ## UNORDERED BACKLOG
 

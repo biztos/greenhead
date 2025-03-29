@@ -79,15 +79,15 @@ type ContextItem struct {
 
 // ToolCall is a high-level representation of a tool call from the LLM.
 type ToolCall struct {
-	Id   string
-	Name string
-	Args string
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Args string `json:"args"`
 }
 
 // ToolResult holds the result of a tool call.
 type ToolResult struct {
-	Id     string
-	Output any
+	Id     string `json:"id"`
+	Output any    `json:"output"`
 }
 
 // RawCompletion represents a single round-trip completion request and
@@ -95,16 +95,16 @@ type ToolResult struct {
 // assertions in the Agent.  It *must* be JSON serializable but it need not
 // be deserializable from the Agent's point of view.
 type RawCompletion struct {
-	Request  any
-	Response any
+	Request  any `json:"request"`
+	Response any `json:"response"`
 }
 
 // CompletionRequest is a high-level representation of a message to the LLM
 // from the "user."  If ToolResults are included, it is normal for Content to
 // be empty.
 type CompletionRequest struct {
-	Content     string
-	ToolResults []*ToolResult
+	Content     string        `json:"content"`
+	ToolResults []*ToolResult `json:"tool_results"`
 }
 
 // CompletionResponse is a high-level representation of a single-choice
@@ -115,11 +115,11 @@ type CompletionRequest struct {
 // (However this TODO is not super high priority -- we are mostly concerned
 // with calling our own functions, not with non-text generation.)
 type CompletionResponse struct {
-	FinishReason   string // TODO: consider not including this...
-	Content        string
-	ToolCalls      []*ToolCall
-	Usage          *Usage
-	RawCompletions []*RawCompletion
+	FinishReason   string           `json:"finish_reason"` // TODO: consider not including this...
+	Content        string           `json:"content"`
+	ToolCalls      []*ToolCall      `json:"tool_calls"`
+	Usage          *Usage           `json:"usage"`
+	RawCompletions []*RawCompletion `json:"raw_completions"`
 }
 
 // Usage is a high-level representation of token usage.  Note that the meaning
@@ -131,11 +131,11 @@ type CompletionResponse struct {
 // TODO: support audio tokens?  possible?
 // TODO: support reasoning tokens how exactly?
 type Usage struct {
-	Input       int
-	CachedInput int
-	Output      int
-	Reasoning   int
-	Total       int // nb: Total is just whatever was reported as total.
+	Input       int `json:"input"`
+	CachedInput int `json:"cached_input"`
+	Output      int `json:"output"`
+	Reasoning   int `json:"reasoning"`
+	Total       int `json:"total"` // nb: Total is just whatever was reported as total.
 }
 
 // ApiClient abstracts the API client itself, allowing the use of different

@@ -3,10 +3,6 @@
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead/runner"
@@ -14,8 +10,8 @@ import (
 
 // AgentsCmd represents the "agents" command set.
 var AgentsCmd = &cobra.Command{
-	Use:   "agents [list|check]",
-	Short: "Work with agents (without running them).",
+	Use:   "agents [list|check|run]",
+	Short: "Work with agents.",
 	Long: `The agents command helps manage the configured agents.
 
 Additional functionality will be added later (one hopes).`,
@@ -31,7 +27,12 @@ Agents are instantiated to check for configuration errors.
 
 Note that each will have a unique identifier (a ULID) when running.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runner.ListAgents(Config, os.Stdout)
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
+		}
+		r.RunListAgents(Stdout)
+		return nil
 	},
 }
 
@@ -47,22 +48,54 @@ var AgentsCheckCmd = &cobra.Command{
 	Short: "Check the configured agents.",
 	Long: `Runs each configured agent's Check function and fails on error.
 
-Agents are instantiated to check for configuration errors.
+At least one agent must be configured.
 
 Output is logged, and on success only the message "OK" is printed.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := runner.CheckAgents(Config, context.Background()); err != nil {
+		r, err := runner.NewRunner(Config)
+		if err != nil {
 			return err
 		}
-		fmt.Fprintln(Stdout, "OK")
-		return nil
+		return r.RunCheckAgents(Stdout)
+
+	},
+}
+
+var agentsRunJson = false
+
+// AgentsRunCmd represents the "agents run" subcommand.
+var AgentsRunCmd = &cobra.Command{
+	Use:   "run [--json] $MY_PROMPT",
+	Short: "Run a completion with the configured agents.",
+	Long: `Runs a single completion with each configured agent, sequentially.
+
+The completion may include tool calls, which will be executed.
+
+If --json is specified, the output will be in JSON format.
+
+In order to pipe output, e.g. to jq, it is advisable to use the --silent flag
+and not use the --stream flag.  This is the recommended way to capture output
+for multiple agents in a single run.
+`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
+		}
+		return r.RunRunAgents(Stdout, args[0], agentsRunJson)
 	},
 }
 
 func init() {
 
+	// Flags:
+	AgentsRunCmd.Flags().BoolVar(&agentsRunJson, "json", false,
+		"Print the whole completion as JSON.")
+
 	// Registration:
 	AgentsCmd.AddCommand(AgentsListCmd)
 	AgentsCmd.AddCommand(AgentsCheckCmd)
+	AgentsCmd.AddCommand(AgentsRunCmd)
 	RootCmd.AddCommand(AgentsCmd)
 }

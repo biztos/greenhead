@@ -8,7 +8,7 @@ list:
 prep:
 	@echo prep is TBD, see if we have any assets first
 
-# Run locally from source, with args passed.
+# Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version': prep
 	go run ./cmd/ghd {{ARGS}}
 

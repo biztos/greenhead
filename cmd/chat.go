@@ -13,7 +13,9 @@ var ChatCmd = &cobra.Command{
 	Long: `The chat command starts a chat session with an agent defined by the
 provided config file(s).
 
-Exactly one agent must be configured.`,
+Exactly one agent must be configured.
+
+Logs will be written to a temp file if no log file is specified.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		r, err := runner.NewRunner(Config)
