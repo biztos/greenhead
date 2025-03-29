@@ -14,13 +14,14 @@ import (
 type Config struct {
 
 	// Output control:
-	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
-	LogFile     string `toml:"log_file"`      // Write logs to this file instead of os.StdErr.
-	Silent      bool   `toml:"silent"`        // Suppress LLM output if not already streamed.
-	Stream      bool   `toml:"stream"`        // Stream LLM output if supported.
-	ShowCalls   bool   `toml:"stream_calls"`  // Stream (or print) tool calls (potentially leaking data).
-	DumpDir     string `toml:"dump_dir"`      // Dump all completions to JSON files in this dir.
-	LogToolArgs bool   `toml:"log_tool_args"` // Log the tool args (potentially leaking data).
+	Debug       bool   `toml:"debug"`            // Log at DEBUG level instead of INFO.
+	LogFile     string `toml:"log_file"`         // Write logs to this file instead of os.StdErr.
+	NoLog       bool   `toml:"no_log,omitempty"` // Do not log at all.
+	Silent      bool   `toml:"silent"`           // Suppress LLM output if not already streamed.
+	Stream      bool   `toml:"stream"`           // Stream LLM output if supported.
+	ShowCalls   bool   `toml:"stream_calls"`     // Stream (or print) tool calls (potentially leaking data).
+	DumpDir     string `toml:"dump_dir"`         // Dump all completions to JSON files in this dir.
+	LogToolArgs bool   `toml:"log_tool_args"`    // Log the tool args (potentially leaking data).
 
 	// Tools from which the agents may choose; any others are deregistered.
 	Tools       []string `toml:"tools,omitempty"` // TBD, how to define them?
@@ -50,6 +51,7 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		c.Stream = c.Stream || r.Stream
 		c.ShowCalls = c.ShowCalls || r.ShowCalls
 		c.LogToolArgs = c.LogToolArgs || r.LogToolArgs
+		c.NoLog = c.NoLog || r.NoLog
 		if c.LogFile == "" {
 			c.LogFile = r.LogFile
 		}
@@ -81,6 +83,9 @@ func (c *Config) Validate() error {
 	if c.Stream && c.Silent {
 		return fmt.Errorf("Stream and Silent can not both be enabled.")
 	}
+	if (c.LogFile != "" || c.Debug) && c.NoLog {
+		return fmt.Errorf("Logging can not be both specified and disabled.")
+	}
 	// TODO: other things perhaps!
 	return nil
 }
@@ -100,6 +105,7 @@ func (c *Config) ConformAgents() {
 		a.ShowCalls = c.ShowCalls
 		a.LogToolArgs = c.LogToolArgs
 		a.LogFile = c.LogFile
+		a.NoLog = c.NoLog
 		a.DumpDir = c.DumpDir
 	}
 }

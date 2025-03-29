@@ -4,10 +4,6 @@
 
 Also any description?  Could be optional, no need to do anything fancy.
 
-## --nolog option (also make logfile --logfile not --log-file)
-
-nullLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
-
 ## Make the rest of runner stuff work like chat.
 
 ## Support tools defined at load in config (or theoretically at runtime)

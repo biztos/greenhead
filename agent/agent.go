@@ -5,6 +5,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -54,6 +55,7 @@ type Config struct {
 	// Logging and debugging:
 	Debug       bool   `toml:"debug"`                   // Log at DEBUG level instead of INFO.
 	LogFile     string `toml:"log_file,omitempty"`      // Log to a file.
+	NoLog       bool   `toml:"no_log"`                  // Do not log at all.
 	DumpDir     string `toml:"dump_dir,omitempty"`      // Dump completions to this dir (can leak data).
 	LogToolArgs bool   `toml:"log_tool_args,omitempty"` // Log tool args (can leak data).
 
@@ -343,8 +345,13 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	client.SetPrintFunc(pfunc)
 
 	// Set up the logger.
-	if err := a.InitLogger(cfg.LogFile, cfg.Debug); err != nil {
-		return nil, fmt.Errorf("error initializing logger: %w", err)
+	if cfg.NoLog {
+		nologger := slog.New(slog.NewTextHandler(io.Discard, nil))
+		a.SetLogger(nologger)
+	} else {
+		if err := a.InitLogger(cfg.LogFile, cfg.Debug); err != nil {
+			return nil, fmt.Errorf("error initializing logger: %w", err)
+		}
 	}
 
 	// Make sure the DumpDir exists if set, and is writable -- writing the

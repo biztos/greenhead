@@ -89,6 +89,8 @@ func init() {
 		"Suppress LLM output.")
 	RootCmd.PersistentFlags().StringVar(&Config.LogFile, "log-file", "",
 		"Log to this file instead of STDERR.")
+	RootCmd.PersistentFlags().BoolVar(&Config.NoLog, "no-log", false,
+		"Do not log at all.")
 	RootCmd.PersistentFlags().StringVar(&Config.DumpDir, "dump-dir", "",
 		"Dump all LLM interactions into this dir.")
 	RootCmd.PersistentFlags().BoolVar(&Config.ShowCalls, "show-calls", false,
