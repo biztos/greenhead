@@ -1,5 +1,32 @@
 # TODO (ordered!)
 
+## FIX THE FUCKING PROPERTIES PROBLEM
+
+Since I want the generate, I *think* this will work:
+
+```
+type JsonSchema struct {
+    Type any `json:"type"`
+    Description string `json:"description,omitempty"`
+    Enum []string `json:"enum,omitempty"`
+    Properties map[string]Definition `json:"properties"`
+    // Required specifies which properties are required, if the schema type is Object.
+    Required []string `json:"required,omitempty"`
+    // Items specifies which data type an array contains, if the schema type is Array.
+    Items *Definition `json:"items,omitempty"`
+    // AdditionalProperties is used to control the handling of properties in an object
+    // that are not explicitly defined in the properties section of the schema. example:
+    // additionalProperties: true
+    // additionalProperties: false
+    // additionalProperties: jsonschema.Definition{Type: jsonschema.String}
+    AdditionalProperties any `json:"additionalProperties,omitempty"`
+}
+buggy_schema, err := ...
+schemaT = &JsonSchema{
+    Type: buggy_schema.Type, ... etc
+}
+```
+
 ## PAIR CHAT
 
 Need this to feel excited, too much redesign happening right now.
@@ -86,6 +113,15 @@ Basic command structure should be "^/" == command and if you really need to
 start a line with "/" you can start with "\/" ...
 
 What about catching ESC instead?  Can do that?
+
+## Namespacing tools?
+
+Nah.  Just whatever you put in the repo has to be "toolname_foo_bar" or I do
+not accept it.
+
+Want other people to have total freedom to define "boo" or whatever.
+
+So the TODO here is __Document This__.
 
 
 ## Create two-chat setup with tic tac toe as example.

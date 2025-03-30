@@ -6,6 +6,8 @@ import (
 
 	"github.com/biztos/greenhead/runner"
 	"github.com/spf13/cobra"
+
+	_ "github.com/biztos/greenhead/tools/tictactoe"
 )
 
 const ExitCodeWTF = 999

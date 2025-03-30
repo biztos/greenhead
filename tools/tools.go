@@ -76,9 +76,14 @@ type Tool[T any, R any] struct {
 func NewTool[T any, R any](name, desc string, f func(context.Context, T) (R, error)) *Tool[T, R] {
 	var zeroT T
 	var zeroR R
+	// TODO: replace this with something we control, b/c currently a no-args
+	// schema is omitting properties and this gets us an invalid schema!
 	schemaT, err := jsonschema.GenerateSchemaForType(zeroT)
 	if err != nil {
 		panic(fmt.Sprintf("Input Schema for %s %T: %s", name, zeroT, err))
+	}
+	if len(schemaT.Properties) == 0 {
+		// What to do?
 	}
 	return &Tool[T, R]{
 		name:  name,
