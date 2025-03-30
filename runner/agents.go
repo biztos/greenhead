@@ -13,7 +13,7 @@ import (
 
 // RunListAgents prints summary information for the configured agents.
 //
-// Note that the runner's Config is used here, not the instantiated agents.
+// Note that the runner's Config is used here, not the instantiated Agents.
 // In normal operation these will be the same.
 func (r *Runner) RunListAgents(w io.Writer) {
 	if len(r.Config.Agents) == 0 {
