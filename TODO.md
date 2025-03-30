@@ -10,6 +10,15 @@ Basic MO is like...
 
 `ghd pair run "FIRST PROMPT"`
 
+## Make sure logging to file works OK for multiple agents
+
+Might not?  Multiple fh's open is not the right way to go, what else can we
+do?
+
+Probably: prove a fail first.  Then try to define logfiles in the runner.
+Though it would be better to NOT have that specific dep.
+
+__Prove this with a test__
 
 ## Make the rest of runner stuff work like chat.
 
