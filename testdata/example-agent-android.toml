@@ -1,5 +1,6 @@
 # example-agent-android.toml -- agent config suitable for example chat.
 name = "ExampleAndroid"
+description = "An agent for the example CLI, as a Paranoid Android."
 type = "openai"
 model = "gpt-4o"
 tools = ["parse_url"]

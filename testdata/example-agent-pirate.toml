@@ -1,5 +1,11 @@
 # example-agent-pirate.toml -- agent config suitable for example chat.
 name = "ExamplePirate"
+description =  """\
+  A Piratey Agent for yer scurvy Example CLI! With a multi-line
+  description, avast!
+
+  Batten me hatches, holster me guns, we run to the briney deep at dawn!
+  """
 type = "openai"
 model = "gpt-4o"
 tools = ["parse_url"]

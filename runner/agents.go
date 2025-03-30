@@ -7,38 +7,53 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/biztos/greenhead/utils"
 )
 
 // RunListAgents prints summary information for the configured agents.
-//
-// Note that the runner's Config is used here, not the instantiated Agents.
-// In normal operation these will be the same.
 func (r *Runner) RunListAgents(w io.Writer) {
 	if len(r.Config.Agents) == 0 {
 		fmt.Fprintln(w, "<no agents>")
 		return
 	}
 
-	// Get our type and model widths from the config.
-	tw := 0
-	mw := 0
-	for _, a := range r.Config.Agents {
+	// Get our type, model, name widths from the config.
+	tw := 4
+	mw := 5
+	nw := 4
+	for _, a := range r.Agents {
 		if len(a.Type) > tw {
 			tw = len(a.Type)
 		}
 		if len(a.Model) > mw {
 			mw = len(a.Model)
 		}
+		if len(a.Name) > nw {
+			nw = len(a.Name)
+		}
 	}
 	tw += 2
 	mw += 2
-	linef := fmt.Sprintf("%%-4s %%-%ds %%-%ds %%s\n", tw, mw)
+	nw += 2
+	linef := fmt.Sprintf("%%-4s %%-%ds %%-%ds %%-%ds %%s\n", tw, mw, nw)
 
-	fmt.Fprintf(w, linef, "No.", "Type", "Model", "Name")
-	for i, a := range r.Config.Agents {
-		fmt.Fprintf(w, linef, strconv.Itoa(i), a.Type, a.Model, a.Name)
+	fmt.Fprintf(w, linef, "No.", "Type", "Model", "Name", "Description")
+	for i, a := range r.Agents {
+		// Take only first line of desc.
+		// TODO (maybe): JSON option, which could include everything including
+		// potentially tools?
+		// TODO: trim to the terminal width!
+		// 	if fd := int(os.Stdout.Fd()); term.IsTerminal(fd) {
+		// if w, _, err := term.GetSize(fd); err == nil && w > 0 {
+		// 	width = w
+		// }
+		desc := strings.TrimSpace(strings.SplitN(a.Description, "\n", 2)[0])
+		if desc != a.Description {
+			desc += "..."
+		}
+		fmt.Fprintf(w, linef, strconv.Itoa(i), a.Type, a.Model, a.Name, desc)
 	}
 }
 

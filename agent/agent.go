@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 
 	"github.com/oklog/ulid/v2"
@@ -30,11 +31,12 @@ var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
 // Note that in normal operation, runner configs will take precedence over
 // agent configs.
 type Config struct {
-	Name     string   `toml:"name"`               // Name of the agent.
-	Type     string   `toml:"type"`               // Type, e.g. AgentTypeOpenAi.
-	Model    string   `toml:"model,omitempty"`    // Model for the LLM, if applicable.
-	Endpoint string   `toml:"endpoint,omitempty"` // Endpoint if not default.
-	Tools    []string `toml:"tools"`              // Allowed tools by name.
+	Name        string   `toml:"name"`                  // Name of the agent.
+	Description string   `toml:"description,omitempty"` // Description of the agent.
+	Type        string   `toml:"type"`                  // Type, e.g. AgentTypeOpenAi.
+	Model       string   `toml:"model,omitempty"`       // Model for the LLM, if applicable.
+	Endpoint    string   `toml:"endpoint,omitempty"`    // Endpoint if not default.
+	Tools       []string `toml:"tools"`                 // Allowed tools by name.
 
 	Context []ContextItem `toml:"context,omitempty"` // Context window for client.
 
@@ -231,8 +233,15 @@ func RegisterNewApiClientFunc(agent_type string, f func() (ApiClient, error)) {
 
 // Agent is a single "agentic" (tool-executing) LLM client.
 type Agent struct {
-	ULID      ulid.ULID
+	ULID        ulid.ULID `json:"ulid"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Type        string    `json:"type"`
+	Model       string    `json:"model,omitempty"`
+
 	client    ApiClient
+	toolnames []string
+
 	completed int
 	config    *Config
 	printFunc func(a ...any)
@@ -245,18 +254,11 @@ func (a *Agent) Id() string {
 	return a.ULID.String()
 }
 
-// Name returns the Agent's configured name, which is optional..
-//
-// Note that there is no guarantee of uniqueness for the name.
-func (a *Agent) Name() string {
-	return a.config.Name
-}
-
 // Ident returns an informative, uniquely identifying string.
 func (a *Agent) Ident() string {
-	s := fmt.Sprintf("%s:%s", a.ULID, a.config.Type)
-	if a.config.Name != "" {
-		s = fmt.Sprintf("%s:%s", s, a.config.Name)
+	s := fmt.Sprintf("%s:%s", a.ULID, a.Type)
+	if a.Name != "" {
+		s = fmt.Sprintf("%s:%s", s, a.Name)
 	}
 	return s
 }
@@ -298,8 +300,12 @@ func NewAgent(cfg *Config) (*Agent, error) {
 
 	// Start with basics:
 	a := &Agent{
-		ULID:   ulid.Make(),
-		config: cfg.Copy(),
+		ULID:        ulid.Make(),
+		Name:        cfg.Name,
+		Description: cfg.Description,
+		Type:        cfg.Type,
+		Model:       cfg.Model,
+		config:      cfg.Copy(),
 	}
 
 	// Get an ApiClient to set up:
@@ -312,7 +318,8 @@ func NewAgent(cfg *Config) (*Agent, error) {
 		return nil, fmt.Errorf("error initializing client for type %q: %w",
 			cfg.Type, err)
 	}
-	a.client = client
+	a.SetClient(client)
+	client.SetTools(cfg.Tools)
 	client.SetStreaming(cfg.Stream)
 	client.SetModel(cfg.Model)
 	client.SetShowCalls(cfg.ShowCalls)
@@ -325,16 +332,10 @@ func NewAgent(cfg *Config) (*Agent, error) {
 		client.AddContextItem(c)
 	}
 
-	// Add tools to the ApiClient, checking for validity first:
-	// TODO: support tool names like "foo*" but only here, client gets
-	// foo_bar, foo_boo
-	for _, name := range cfg.Tools {
-		_, err := registry.Get(name)
-		if err != nil {
-			return nil, err
-		}
+	// Set up tools, checking for validity.
+	if err := a.SetTools(cfg.Tools); err != nil {
+		return nil, err
 	}
-	client.SetTools(cfg.Tools)
 
 	// Set up the streaming and color printing:
 	pfunc, err := ColorPrintFunc(cfg.Color, cfg.BgColor)
@@ -372,6 +373,79 @@ func NewAgent(cfg *Config) (*Agent, error) {
 
 	return a, nil
 
+}
+
+// SetClient sets the internal ApiClient to c, overriding anything set on
+// initialization.
+//
+// This allows the use of arbitrary ApiClients that are not registered in
+// this package.
+func (a *Agent) SetClient(c ApiClient) {
+	a.client = c
+}
+
+// SetTools sets the interal tools list for the agent and its ApiClient,
+// handling regexp selection and checking for validity.
+//
+// Any input string deliminated with slashes, e.g. `/foo/`, is treated as a
+// regular expression, and all registered names that match are included.
+func (a *Agent) SetTools(names []string) error {
+	valid_names, err := ValidateToolNames(names)
+	if err != nil {
+		return err
+	}
+	a.toolnames = valid_names
+	a.client.SetTools(valid_names)
+	return nil
+}
+
+// ValidateToolNames checks names for validity and returns a deduplicated and
+// (in the case of regexp names) expanded set of valid, regsitered tool names.
+//
+// If any item in names has no corresponding registered tool, an error is
+// returned.
+func ValidateToolNames(names []string) ([]string, error) {
+	reg_names := registry.Names()
+	valid_names := []string{}
+	have := map[string]bool{}
+	for _, n := range names {
+		if len(n) >= 2 && n[0] == '/' && n[len(n)-1] == '/' {
+			re, err := regexp.Compile(n[1 : len(n)-1])
+			if err != nil {
+				return nil, fmt.Errorf("invalid tool regexp %q: %w", n, err)
+			}
+			matched := false
+			for _, rn := range reg_names {
+				if re.MatchString(rn) {
+					matched = true
+					if !have[rn] {
+						have[rn] = true
+						valid_names = append(valid_names, rn)
+					}
+				}
+			}
+			if !matched {
+				return nil, fmt.Errorf("no match for tool %q", n)
+			}
+		} else {
+			if !have[n] {
+				_, err := registry.Get(n)
+				if err != nil {
+					return nil, err
+				}
+				have[n] = true
+				valid_names = append(valid_names, n)
+			}
+
+		}
+
+	}
+	return valid_names, nil
+}
+
+// Tools returns the list of tools available to the agent.
+func (a *Agent) Tools(names []string) []string {
+	return slices.Clone(a.toolnames)
 }
 
 // InitLogger sets up a slog.Logger to log to the file (or Stderr) at Info or

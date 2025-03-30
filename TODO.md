@@ -1,8 +1,15 @@
 # TODO (ordered!)
 
-## agents show (list all *actual* commands available)
+## PAIR CHAT
 
-Also any description?  Could be optional, no need to do anything fancy.
+Need this to feel excited, too much redesign happening right now.
+
+Pre-task: __make limits work__ b/c could get runaway and cost $$.
+
+Basic MO is like...
+
+`ghd pair run "FIRST PROMPT"`
+
 
 ## Make the rest of runner stuff work like chat.
 
@@ -33,35 +40,6 @@ __FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
 
 Make it something you have to turn on, or something you can turn off?
 
-## Make log opts work: --debug, --logfile and --silent
-
-OK, basics: don't want agent config to have any of the top-level debug, logfile
-and so on.
-
-But *do* want that per agent.  So need another way of setting it.
-
-Want to be able to do --config foobar.toml and have it hold everything.
-
-ALSO want to do per-agent config as: --agent-config myagent.toml
-
-ALSO want overrides from flagsf
-
-Presumably in a runner.  Which would also set the logger, no sense having any
-complex logger otherwise.  Or yes?  Maybe b/c ident.
-
-Where --silent just devnulls.
-
-Also nice to have a specific log-level option and info is default, but error
-level easy to set.
-
-## Clean up runner/agent stuff w/r/t configs, need to take config files.
-
-Ideally want to have an extra set of configs you can set per-agent.
-
-Want a per-app config, a per-agent config, and a per-client extras that can
-be anything, inside of per-agent.  Knowing that per-client will need some
-special checking TBD... but probably can just r/t the json?
-
 ## Run a script that can do.... whatever.... with the responses.
 
 That is to say set up another program (or JS/etc code at some point?) that
@@ -70,17 +48,36 @@ will interact with an agent as the other end of a chat.
 Most of this logic will be same as using pair chat but with one half of the
 pair being outside (or inside an interpreter?).
 
+__How is this different than running a server?__
+
+Basically it's the same logic as running an agent over HTTP, except the
+
 ## Set up token limits at Agent level and also in OpenAiClient
 
-## Allow regexen for agent tool lists, want e.g. demo*
-
-Whatever, maybe just say ends-with-* means "this is prefix?"
-
-That's a lot easier so start there.  Want e.g. "demo_*"
 
 ## Clean up the chat UI, make it at least somewhat fun with defaults.
 
-Stuff in wtf is a good start.
+Some ideas:
+
+```
+/spool FILE --> start spooling to FILE, write prompt/content pairs only
+    detect json, otherwise spool text
+/hist --> list prompt history (ergo keep history)
+/tools --> list tools (maybe ls for short?)
+/dump --> dump last interaction to temp file
+/!cmd --> run shell command then return
+/r!cmd --> run shell command and take stdout as prompt
+/ed --> edit current prompt in $EDITOR
+/q --> quit
+/c --> run agent check command
+/logs --> run logs thru $PAGER
+```
+
+Basic command structure should be "^/" == command and if you really need to
+start a line with "/" you can start with "\/" ...
+
+What about catching ESC instead?  Can do that?
+
 
 ## Create two-chat setup with tic tac toe as example.
 
