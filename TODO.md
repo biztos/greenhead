@@ -73,6 +73,7 @@ Some ideas:
     detect json, otherwise spool text
 /hist --> list prompt history (ergo keep history)
 /tools --> list tools (maybe ls for short?)
+/call TOOL_NAME [TOOL_ARGS] --> call a tool; sanely expand args for UX
 /dump --> dump last interaction to temp file
 /!cmd --> run shell command then return
 /r!cmd --> run shell command and take stdout as prompt

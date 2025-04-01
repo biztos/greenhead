@@ -444,7 +444,7 @@ func ValidateToolNames(names []string) ([]string, error) {
 }
 
 // Tools returns the list of tools available to the agent.
-func (a *Agent) Tools(names []string) []string {
+func (a *Agent) Tools() []string {
 	return slices.Clone(a.toolnames)
 }
 
@@ -527,9 +527,7 @@ func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionRe
 			// not changed since the last call; nor that the LLM is not trying
 			// to call a disallowed tool. Thus we need to check that the tool
 			// is both allowed, and currently registered.
-			//
-			// TODO (someday): support changing allowed tools at runtime.
-			if !slices.Contains(a.config.Tools, call.Name) {
+			if !slices.Contains(a.toolnames, call.Name) {
 				return nil, fmt.Errorf("no such tool for agent: %s", call.Name)
 			}
 			tool, err := registry.Get(call.Name)
