@@ -40,7 +40,7 @@ type Tooler interface {
 
 	// InputSchema returns a simplified JSON schema describing the underlying
 	// concrete type of the input (args).
-	InputSchema() *jsonschema.Definition
+	InputSchema() any
 
 	// Exec executes the tool.  The input string must be valid JSON conforming
 	// to the schema returned by InputSchema.
@@ -57,6 +57,25 @@ type Tooler interface {
 	OpenAiTool() openai.Tool
 }
 
+// We always need to send properties in the JSON schema!
+type propertiedSchema struct {
+	jsonschema.Definition
+	Properties map[string]any `json:"properties"`
+	Required   []string       `json:"required"`
+}
+
+// Override the jsonschema.Definition's MarshalJSON which eats Properties.
+func (p *propertiedSchema) MarshalJSON() ([]byte, error) {
+
+	type Alias propertiedSchema
+	return json.Marshal(struct {
+		Alias
+	}{
+		Alias: (Alias)(*p),
+	})
+
+}
+
 // Tool is a tool which can be called by LLMs once registered.
 //
 // T is the input type for the function; R is the return type for the
@@ -69,21 +88,24 @@ type Tool[T any, R any] struct {
 	f       func(context.Context, T) (R, error)
 	zeroT   T // arguably only need the schemas but keep around for now.
 	zeroR   R // ...because perhaps useful for error messages etc.
-	schemaT *jsonschema.Definition
+	schemaT *propertiedSchema
 }
 
 // NewTool returns a Tool for input type T and output type R.
 func NewTool[T any, R any](name, desc string, f func(context.Context, T) (R, error)) *Tool[T, R] {
 	var zeroT T
 	var zeroR R
-	// TODO: replace this with something we control, b/c currently a no-args
-	// schema is omitting properties and this gets us an invalid schema!
-	schemaT, err := jsonschema.GenerateSchemaForType(zeroT)
+	// Hackaround for the problem of schema Properties being set to omitempty.
+	schema, err := jsonschema.GenerateSchemaForType(zeroT)
 	if err != nil {
 		panic(fmt.Sprintf("Input Schema for %s %T: %s", name, zeroT, err))
 	}
-	if len(schemaT.Properties) == 0 {
-		// What to do?
+	schemaT := &propertiedSchema{*schema, map[string]any{}, schema.Required}
+	for k, v := range schema.Properties {
+		schemaT.Properties[k] = v
+	}
+	if schema.Required == nil {
+		schemaT.Required = []string{}
 	}
 	return &Tool[T, R]{
 		name:  name,
@@ -108,7 +130,7 @@ func (t *Tool[T, R]) Description() string {
 }
 
 // InputSchema implements Tooler.
-func (t *Tool[T, R]) InputSchema() *jsonschema.Definition {
+func (t *Tool[T, R]) InputSchema() any {
 	return t.schemaT
 }
 
