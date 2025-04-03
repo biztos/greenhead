@@ -109,6 +109,7 @@ Input Schema:
 
 {
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "val": {
       "type": "string"
@@ -116,8 +117,7 @@ Input Schema:
   },
   "required": [
     "val"
-  ],
-  "additionalProperties": false
+  ]
 }
 
 Return Type: string, error
