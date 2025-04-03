@@ -1,5 +1,8 @@
 # TODO (ordered!)
 
+## Runner takes prompt with @file
+
+
 ## PAIR CHAT
 
 Need this to feel excited, too much redesign happening right now.
@@ -9,6 +12,14 @@ Pre-task: __make limits work__ b/c could get runaway and cost $$.
 Basic MO is like...
 
 `ghd pair run "FIRST PROMPT"`
+
+## Autocolor for pair chat
+
+Takes first color and picks something not that for second color.
+
+Complementary?
+
+For placeholder just do blue vs green.
 
 ## Make sure logging to file works OK for multiple agents
 
@@ -191,6 +202,22 @@ complain about it?
 * Remove a subcommand, e.g. disallow pair.
 * Add a subcommand.
 * Change name, etc.
+
+## Limit tools at runner config level.
+
+This avoids having to do it at the agent level.  Just override everything if
+tools are set.
+
+Probably rather two:
+
+* allow_tools -- these tools can be used, no others can be used.
+    * impl: make good/bad list, bail if:
+        * anything from good list missing
+        * anything on both good and bad list
+        * then go remove from bad list
+* remove_tools -- just remove the named tools, bail if not exist.
+* agent_tools -- override all agents, everybody has these tools.
+* can do any combo; but run AFTER any configged tools are read in.
 
 ## UNORDERED BACKLOG
 

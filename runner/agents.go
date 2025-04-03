@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -75,10 +76,21 @@ func (r *Runner) RunCheckAgents(w io.Writer) error {
 }
 
 // RunRunAgents runs the single-prompt completion on all agents, in order.
+//
+// If prompt starts with @ then it is read from a file, e.g. `@file.txt`.
 func (r *Runner) RunRunAgents(w io.Writer, prompt string, json bool) error {
 	if len(r.Agents) == 0 {
 		return fmt.Errorf("no agents")
 	}
+	if strings.HasPrefix(prompt, "@") {
+		file := strings.TrimPrefix(prompt, "@")
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("error reading prompt file: %w", err)
+		}
+		prompt = string(b)
+	}
+
 	for _, a := range r.Agents {
 		if !json {
 			fmt.Fprintln(w, a.Ident())

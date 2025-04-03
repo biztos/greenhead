@@ -1,4 +1,6 @@
-# agent-ttt.toml -- attempt at a Tic-Tac-Toe agent.
+# DEPRECATED -- see tools/tictactoe/agent.toml
+#
+# agent.toml -- Tic-Tac-Toe agent config.
 name = "TicTacToe"
 description =  """\
   An agent that tries to play Tic Tac Toe.
@@ -20,3 +22,4 @@ content =  """\
   the second move (O's).  If you make the first move, you must tell your \
   opponent that they need to join game <game_id>. \
   """
+
