@@ -14,6 +14,8 @@ import (
 
 const ExitCodeToolsError = 2
 
+var toolsListNames bool
+
 // ToolsCmd represents the "tools" command set.
 var ToolsCmd = &cobra.Command{
 	Use:   "tools [list|show NAME]",
@@ -35,9 +37,12 @@ var ToolsListCmd = &cobra.Command{
 	Long: `Lists all the registered tools, optionally only listing names.
 
 For important caveats, see the parent command's help text.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		names_only, _ := cmd.Flags().GetBool("names")
-		runner.ListTools(names_only, os.Stdout)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
+		}
+		return r.ListTools(toolsListNames, os.Stdout)
 	},
 }
 
@@ -90,7 +95,7 @@ tool's input schema.`,
 
 func init() {
 	// Flags:
-	ToolsListCmd.Flags().Bool("names", false,
+	ToolsListCmd.Flags().BoolVar(&toolsListNames, "names", false,
 		"Show only tool names.")
 
 	// Registration:

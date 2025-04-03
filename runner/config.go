@@ -49,10 +49,6 @@ type Config struct {
 // No action is taken here outside the config structs themselves.
 func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 
-	fmt.Println("----- CHECKING AllowTools")
-	fmt.Println("nil?", c.AllowTools == nil)
-	fmt.Println("len", len(c.AllowTools))
-
 	if runnerFile != "" {
 		r := &Config{}
 		if err := utils.UnmarshalFile(runnerFile, r); err != nil {
@@ -133,19 +129,10 @@ func (c *Config) ConformAgents() {
 		a.LogFile = c.LogFile
 		a.NoLog = c.NoLog
 		a.DumpDir = c.DumpDir
-	}
-}
-
-// CreateAgents creates an Agent for each one configured.
-func (c *Config) CreateAgents() ([]*agent.Agent, error) {
-	agents := make([]*agent.Agent, 0, len(c.Agents))
-	for i, cfg := range c.Agents {
-		a, err := agent.NewAgent(cfg)
-		if err != nil {
-			return nil, fmt.Errorf("error creating agent %d: %w", i, err)
+		if c.NoTools {
+			a.Tools = nil
+		} else if len(c.AgentTools) > 0 {
+			a.Tools = c.AgentTools
 		}
-		agents = append(agents, a)
 	}
-	return agents, nil
-
 }

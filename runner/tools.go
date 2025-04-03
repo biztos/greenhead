@@ -9,7 +9,7 @@ import (
 )
 
 // ListTools prints all registered tools to w.
-func ListTools(names_only bool, w io.Writer) {
+func (r *Runner) ListTools(names_only bool, w io.Writer) error {
 
 	var lines []string
 	if names_only {
@@ -23,6 +23,7 @@ func ListTools(names_only bool, w io.Writer) {
 	for _, line := range lines {
 		fmt.Fprintln(w, line)
 	}
+	return nil
 
 }
 

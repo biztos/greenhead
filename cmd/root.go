@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/biztos/greenhead/registry"
 	"github.com/biztos/greenhead/runner"
 )
 
@@ -51,11 +50,6 @@ var RootCmd = &cobra.Command{
 func Execute() {
 	RootCmd.SetOut(Stdout)
 	RootCmd.SetErr(Stderr)
-	// TODO: probably put this in the runners?
-	// We want to enable stuff out of the config files but not after that.
-	// Anyway this lets us stop a rogue tool from registering new tools, and
-	// that's enough for now until we get the "factory" worked out.
-	registry.Lock()
 	err := RootCmd.Execute()
 	if err != nil {
 		Exit(1) // error message is printed above already.
