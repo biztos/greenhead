@@ -22,22 +22,36 @@ type Config struct {
 	DumpDir     string `toml:"dump_dir"`         // Dump all completions to JSON files in this dir.
 	LogToolArgs bool   `toml:"log_tool_args"`    // Log the tool args (potentially leaking data).
 
-	// Tools from which the agents may choose; any others are deregistered.
-	Tools       []string `toml:"tools,omitempty"` // TBD, how to define them?
-	CustomTools []string `toml:"custom_tools"`    // TBD, typed
+	// Custom tool definitions:
+	CustomTools []any `toml:"custom_tools,omitempty"` // TBD, will be custom type
+
+	// Tool access control:
+	// (Can use /regexp/ syntax.)
+	NoTools     bool     `toml:"no_tools,omitempty"`     // Unregister all tools and remove from agents.
+	AllowTools  []string `toml:"allow_tools,omitempty"`  // Only these tools will remain registered.
+	RemoveTools []string `toml:"remove_tools,omitempty"` // These tools will be unregistered.
+	AgentTools  []string `toml:"agent_tools,omitempty"`  // Override all agent Tools with this if set.
 
 	// Agent configs:
 	Agents []*agent.Config `toml:"agents,omitempty"` // Multiple Agents.
 
 }
 
-// LoadConfigs loads a runner config, followed by any agent configs, adding
-// any new nonzero values to c.  Agents are appended.  ConformAgents and
-// Validate are called before returning.
+// LoadConfigs loads a runner config, followed by any agent configs, with the
+// nonzero/non-nil values of c taking precedence.
+//
+// Agents are appended.  ConformAgents and Validate are called before
+// returning.
 //
 // This is normally used when c holds flag values and config files are loaded
 // before executing runner functions.
+//
+// No action is taken here outside the config structs themselves.
 func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
+
+	fmt.Println("----- CHECKING AllowTools")
+	fmt.Println("nil?", c.AllowTools == nil)
+	fmt.Println("len", len(c.AllowTools))
 
 	if runnerFile != "" {
 		r := &Config{}
@@ -51,6 +65,7 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		c.ShowCalls = c.ShowCalls || r.ShowCalls
 		c.LogToolArgs = c.LogToolArgs || r.LogToolArgs
 		c.NoLog = c.NoLog || r.NoLog
+		c.NoTools = c.NoTools || r.NoTools
 		if c.LogFile == "" {
 			c.LogFile = r.LogFile
 		}
@@ -58,8 +73,20 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 			c.DumpDir = r.DumpDir
 		}
 
-		// Tools and agents are added (in the flags case they would be empty).
-		c.Tools = append(c.Tools, r.Tools...)
+		// Tool selection lists are taken from the original if non-nil, else
+		// from the file.  In normal operation you will only have values here
+		// if they were set with flags, but you *could* override that.
+		if c.AllowTools == nil {
+			c.AllowTools = r.AllowTools
+		}
+		if c.RemoveTools == nil {
+			c.RemoveTools = r.RemoveTools
+		}
+		if c.AgentTools == nil {
+			c.AgentTools = r.AgentTools
+		}
+
+		// We keep all agents!
 		c.Agents = append(c.Agents, r.Agents...)
 
 	}

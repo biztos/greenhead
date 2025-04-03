@@ -99,5 +99,16 @@ func init() {
 		"Config file from which to read the master configuration.")
 	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},
 		"Config file from which to read the agent configuration.")
+	// Note: tool selection is a bit complicated and should be covered in the
+	// main help text.  It's important that these default to nil, not an empty
+	// array, as a config-file empty array might override.
+	RootCmd.PersistentFlags().StringArrayVar(&Config.AllowTools, "allow-tool", nil,
+		"Allow the use of this tool. See main help for details.")
+	RootCmd.PersistentFlags().StringArrayVar(&Config.RemoveTools, "remove-tool", nil,
+		"Remove this tool from use.")
+	RootCmd.PersistentFlags().StringArrayVar(&Config.AgentTools, "agent-tool", nil,
+		"Override all agent tool lists.")
+	RootCmd.PersistentFlags().BoolVar(&Config.NoTools, "no-tools", false,
+		"Remove all tools before running (agents will have no tools).")
 
 }
