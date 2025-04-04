@@ -15,6 +15,8 @@ import (
 )
 
 // RunChat runs an interactive chat session.
+//
+// TODO: make fun! cf. TODO.md.
 func (r *Runner) RunChat() error {
 
 	// Require exactly one agent, at least for now.
@@ -55,7 +57,7 @@ func (r *Runner) RunChat() error {
 			if prompt == "" {
 				break
 			}
-			_, err = agent.RunCompletion(context.Background(), prompt)
+			_, err = agent.RunCompletionPrompt(prompt)
 			if err != nil {
 				return err
 			}

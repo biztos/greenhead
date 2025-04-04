@@ -14,6 +14,21 @@ import (
 	"github.com/titanous/json5"
 )
 
+// MustToml marshals v to a byte array or panics trying.
+func MustToml(v any) []byte {
+	b, err := toml.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// MustTomlString marshals v to a string or panics trying.
+func MustTomlString(v any) string {
+	return string(MustToml(v))
+
+}
+
 // MustJson marshals v to a byte array or panics trying.
 func MustJson(v any) []byte {
 	b, err := json.Marshal(v)

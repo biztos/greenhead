@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -42,7 +41,7 @@ For important caveats, see the parent command's help text.`,
 		if err != nil {
 			return err
 		}
-		return r.ListTools(toolsListNames, os.Stdout)
+		return r.ListTools(toolsListNames, Stdout)
 	},
 }
 
@@ -58,7 +57,7 @@ description and input schema.
 For important caveats, see the parent command's help text.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := runner.ShowTool(args[0], os.Stdout); err != nil {
+		if err := runner.ShowTool(args[0], Stdout); err != nil {
 			BailErr(ExitCodeToolsError, err)
 		}
 	},

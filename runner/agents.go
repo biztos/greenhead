@@ -95,7 +95,7 @@ func (r *Runner) RunRunAgents(w io.Writer, prompt string, json bool) error {
 		if !json {
 			fmt.Fprintln(w, a.Ident())
 		}
-		res, err := a.RunCompletion(context.Background(), prompt)
+		res_content, err := a.RunCompletionPrompt(prompt)
 		if err != nil {
 			return fmt.Errorf("error running completion: %w", err)
 		}
@@ -103,7 +103,7 @@ func (r *Runner) RunRunAgents(w io.Writer, prompt string, json bool) error {
 			v := map[string]any{
 				"agent":    a.Ident(),
 				"prompt":   prompt,
-				"response": res.Content,
+				"response": res_content,
 			}
 			fmt.Fprintln(w, utils.MustJsonString(v))
 

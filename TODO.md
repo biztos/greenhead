@@ -219,5 +219,8 @@ Probably rather two:
 
 ## UNORDERED BACKLOG
 
-TBD
+### Support comments in config dumps.
 
+Nice to have!  But by no means urgent.  And if doing it, make it optional.
+
+github.com/pelletier/go-toml/v2

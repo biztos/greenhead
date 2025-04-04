@@ -24,41 +24,43 @@ const (
 
 var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
 
+var ErrMaxCompletions = fmt.Errorf("max completions reached")
+
 // Config describes the configuration of an Agent, and is usually supplied in
 // a file.
 //
 // Note that in normal operation, runner configs will take precedence over
 // agent configs.
 type Config struct {
-	Name        string   `toml:"name"`                  // Name of the agent.
-	Description string   `toml:"description,omitempty"` // Description of the agent.
-	Type        string   `toml:"type"`                  // Type, e.g. AgentTypeOpenAi.
-	Model       string   `toml:"model,omitempty"`       // Model for the LLM, if applicable.
-	Endpoint    string   `toml:"endpoint,omitempty"`    // Endpoint if not default.
-	Tools       []string `toml:"tools"`                 // Allowed tools by name.
+	Name        string   `toml:"name"`        // Name of the agent.
+	Description string   `toml:"description"` // Description of the agent.
+	Type        string   `toml:"type"`        // Type, e.g. AgentTypeOpenAi.
+	Model       string   `toml:"model"`       // Model for the LLM, if applicable.
+	Endpoint    string   `toml:"endpoint"`    // Endpoint if not default.
+	Tools       []string `toml:"tools"`       // Allowed tools by name.
 
-	Context []ContextItem `toml:"context,omitempty"` // Context window for client.
+	Context []ContextItem `toml:"context"` // Context window for client.
 
 	// Safety and limits:  (Zero generally means "no limit.")
-	MaxCompletionTokens int  `toml:"max_completion_tokens"`      // Max completion tokens *per completion* (may truncate responses).
-	MaxCompletions      int  `toml:"max_completions,omitempty"`  // Max number of completions to run.
-	MaxTokens           int  `toml:"max_tokens,omitempty"`       // Max number of total tokens for all operations.
-	MaxToolChain        int  `toml:"max_tool_chain,omitempty"`   // Max number of tool call responses allowed in a row.
-	AbortOnRefusal      bool `toml:"abort_on_refusal,omitempty"` // Abort if a completion is refused by an LLM.
+	MaxCompletionTokens int  `toml:"max_completion_tokens"` // Max completion tokens *per completion* (may truncate responses).
+	MaxCompletions      int  `toml:"max_completions"`       // Max number of completions to run.
+	MaxTokens           int  `toml:"max_tokens"`            // Max number of total tokens for all operations.
+	MaxToolChain        int  `toml:"max_toolchain"`         // Max number of tool call responses allowed in a row.
+	AbortOnRefusal      bool `toml:"abort_on_refusal"`      // Abort if a completion is refused by an LLM.
 
 	// Output control:
-	Color     string `toml:"color"`             // Color for console output.
-	BgColor   string `toml:"bg_color"`          // Background color for console output.
-	Stream    bool   `toml:"stream"`            // Stream responses; if streaming not possible, print them.
-	ShowCalls bool   `toml:"stream_tool_calls"` // Show tool calls in output (experimental; can leak data).
-	Silent    bool   `toml:"silent"`            // Suppress responses unless streamed.
+	Color     string `toml:"color"`           // Color for console output.
+	BgColor   string `toml:"bg_color"`        // Background color for console output.
+	Stream    bool   `toml:"stream"`          // Stream responses; if streaming not possible, print them.
+	ShowCalls bool   `toml:"show_tool_calls"` // Show tool calls in output (experimental; can leak data).
+	Silent    bool   `toml:"silent"`          // Suppress responses unless streamed.
 
 	// Logging and debugging:
-	Debug       bool   `toml:"debug"`                   // Log at DEBUG level instead of INFO.
-	LogFile     string `toml:"log_file,omitempty"`      // Log to a file.
-	NoLog       bool   `toml:"no_log"`                  // Do not log at all.
-	DumpDir     string `toml:"dump_dir,omitempty"`      // Dump completions to this dir (can leak data).
-	LogToolArgs bool   `toml:"log_tool_args,omitempty"` // Log tool args (can leak data).
+	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
+	LogFile     string `toml:"log_file"`      // Log to a file.
+	NoLog       bool   `toml:"no_log"`        // Do not log at all.
+	DumpDir     string `toml:"dump_dir"`      // Dump completions to this dir (can leak data).
+	LogToolArgs bool   `toml:"log_tool_args"` // Log tool args (can leak data).
 
 }
 
@@ -234,9 +236,9 @@ func RegisterNewApiClientFunc(agent_type string, f func() (ApiClient, error)) {
 type Agent struct {
 	ULID        ulid.ULID `json:"ulid"`
 	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
+	Description string    `json:"description"`
 	Type        string    `json:"type"`
-	Model       string    `json:"model,omitempty"`
+	Model       string    `json:"model"`
 
 	client    ApiClient
 	toolnames []string
@@ -436,18 +438,29 @@ func (a *Agent) InitLogger(file string, debug bool) error {
 	return nil
 }
 
+// RunCompletionPrompt calls RunCompletion with background context and the
+// provided prompt, returning the content of the response.
+func (a *Agent) RunCompletionPrompt(prompt string) (string, error) {
+
+	req := &CompletionRequest{Content: prompt}
+	res, err := a.RunCompletion(context.Background(), req)
+	if err != nil {
+		return "", err
+	}
+	return res.Content, nil
+}
+
 // RunCompletion runs a completion request for the given prompt, returning its
 // CompletionResult after handling any tool calls in the responses and sending
 // them back for new completions.  The *final* completion in such a chain is
 // returned, but its RawCompletions field includes all round-trips.
-func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionResponse, error) {
+func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error) {
 
-	if a.completed >= a.config.MaxCompletions {
-		return nil, fmt.Errorf("maximum completions reached: %d", a.completed)
+	if a.config.MaxCompletions > 0 && a.completed >= a.config.MaxCompletions {
+		return nil, fmt.Errorf("%w: %d", ErrMaxCompletions, a.completed)
 	}
 
 	raws := []*RawCompletion{}
-	req := &CompletionRequest{Content: prompt}
 	res, err := a.client.RunCompletion(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("error running completion: %w", err)

@@ -2,6 +2,9 @@ package runner
 
 import (
 	"fmt"
+	"io"
+
+	"github.com/BurntSushi/toml"
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/utils"
@@ -13,31 +16,31 @@ import (
 type Config struct {
 
 	// Output control:
-	Debug       bool   `toml:"debug"`            // Log at DEBUG level instead of INFO.
-	LogFile     string `toml:"log_file"`         // Write logs to this file instead of os.StdErr.
-	NoLog       bool   `toml:"no_log,omitempty"` // Do not log at all.
-	Silent      bool   `toml:"silent"`           // Suppress LLM output if not already streamed.
-	Stream      bool   `toml:"stream"`           // Stream LLM output if supported.
-	ShowCalls   bool   `toml:"stream_calls"`     // Stream (or print) tool calls (potentially leaking data).
-	DumpDir     string `toml:"dump_dir"`         // Dump all completions to JSON files in this dir.
-	LogToolArgs bool   `toml:"log_tool_args"`    // Log the tool args (potentially leaking data).
+	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
+	LogFile     string `toml:"log_file"`      // Write logs to this file instead of os.StdErr.
+	NoLog       bool   `toml:"no_log"`        // Do not log at all.
+	Silent      bool   `toml:"silent"`        // Suppress LLM output if not already streamed.
+	Stream      bool   `toml:"stream"`        // Stream LLM output if supported.
+	ShowCalls   bool   `toml:"show_calls"`    // Stream (or print) tool calls (potentially leaking data).
+	DumpDir     string `toml:"dump_dir"`      // Dump all completions to JSON files in this dir.
+	LogToolArgs bool   `toml:"log_tool_args"` // Log the tool args (potentially leaking data).
 
 	// Usage limits:
-	MaxCompletions int `toml:"max_completions,omitempty"` // Max number of completions to run.
-	MaxToolChain   int `toml:"max_toolchain,omitempty"`   // Max number of tool calls in a row.
+	MaxCompletions int `toml:"max_completions"` // Max number of completions to run.
+	MaxToolChain   int `toml:"max_toolchain"`   // Max number of tool calls in a row.
 
 	// Custom tool definitions:
-	CustomTools []any `toml:"custom_tools,omitempty"` // TBD, will be custom type
+	CustomTools []any `toml:"custom_tools"` // TBD, will be custom type
 
 	// Tool access control:
 	// (Can use /regexp/ syntax.)
-	NoTools     bool     `toml:"no_tools,omitempty"`     // Unregister all tools and remove from agents.
-	AllowTools  []string `toml:"allow_tools,omitempty"`  // Only these tools will remain registered.
-	RemoveTools []string `toml:"remove_tools,omitempty"` // These tools will be unregistered.
-	AgentTools  []string `toml:"agent_tools,omitempty"`  // Override all agent Tools with this if set.
+	NoTools     bool     `toml:"no_tools"`     // Unregister all tools and remove from agents.
+	AllowTools  []string `toml:"allow_tools"`  // Only these tools will remain registered.
+	RemoveTools []string `toml:"remove_tools"` // These tools will be unregistered.
+	AgentTools  []string `toml:"agent_tools"`  // Override all agent Tools with this if set.
 
 	// Agent configs:
-	Agents []*agent.Config `toml:"agents,omitempty"` // Multiple Agents.
+	Agents []*agent.Config `toml:"agents"` // Multiple Agents.
 
 }
 
@@ -155,4 +158,23 @@ func (c *Config) ConformAgents() {
 			a.Tools = c.AgentTools
 		}
 	}
+}
+
+// DumpJson dumps the config as indented JSON to w, or panics trying.
+func (c *Config) DumpJson(w io.Writer) {
+
+	// In order to respect the TOML struct tags, we round-trip into data.
+	b := utils.MustToml(c)
+	var v map[string]any
+	if err := toml.Unmarshal(b, &v); err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(w, utils.MustJsonStringPretty(v))
+}
+
+// DumpToml dumps the config as uncommented TOML to w, or panics trying.
+func (c *Config) DumpToml(w io.Writer) {
+
+	fmt.Fprintln(w, utils.MustTomlString(c))
+
 }
