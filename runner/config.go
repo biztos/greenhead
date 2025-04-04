@@ -22,6 +22,10 @@ type Config struct {
 	DumpDir     string `toml:"dump_dir"`         // Dump all completions to JSON files in this dir.
 	LogToolArgs bool   `toml:"log_tool_args"`    // Log the tool args (potentially leaking data).
 
+	// Usage limits:
+	MaxCompletions int `toml:"max_completions,omitempty"` // Max number of completions to run.
+	MaxToolChain   int `toml:"max_toolchain,omitempty"`   // Max number of tool calls in a row.
+
 	// Custom tool definitions:
 	CustomTools []any `toml:"custom_tools,omitempty"` // TBD, will be custom type
 
@@ -54,7 +58,7 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		if err := utils.UnmarshalFile(runnerFile, r); err != nil {
 			return err
 		}
-		// Bools and strings from the original take precedence.
+		// Bools, ints and strings from the original take precedence.
 		c.Debug = c.Debug || r.Debug
 		c.Silent = c.Silent || r.Silent
 		c.Stream = c.Stream || r.Stream
@@ -67,6 +71,12 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		}
 		if c.DumpDir == "" {
 			c.DumpDir = r.DumpDir
+		}
+		if c.MaxCompletions == 0 {
+			c.MaxCompletions = r.MaxCompletions
+		}
+		if c.MaxToolChain == 0 {
+			c.MaxToolChain = r.MaxToolChain
 		}
 
 		// Tool selection lists are taken from the original if non-nil, else
@@ -116,6 +126,10 @@ func (c *Config) Validate() error {
 // agents conform to the runner values that can be set with command-line
 // flags.
 //
+// Special cases:
+//
+// - MaxCompletions and MaxToolChain only override if nonzero.
+//
 // This is not strictly necessary, but one would expect havoc to ensue if the
 // values differ.  If you find a compelling use-case for that, please open
 // an issue.
@@ -129,6 +143,12 @@ func (c *Config) ConformAgents() {
 		a.LogFile = c.LogFile
 		a.NoLog = c.NoLog
 		a.DumpDir = c.DumpDir
+		if c.MaxCompletions != 0 {
+			a.MaxCompletions = c.MaxCompletions
+		}
+		if c.MaxToolChain != 0 {
+			a.MaxToolChain = c.MaxToolChain
+		}
 		if c.NoTools {
 			a.Tools = nil
 		} else if len(c.AgentTools) > 0 {

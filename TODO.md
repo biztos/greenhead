@@ -1,7 +1,5 @@
 # TODO (ordered!)
 
-## Runner takes prompt with @file
-
 
 ## PAIR CHAT
 

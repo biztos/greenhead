@@ -442,6 +442,10 @@ func (a *Agent) InitLogger(file string, debug bool) error {
 // returned, but its RawCompletions field includes all round-trips.
 func (a *Agent) RunCompletion(ctx context.Context, prompt string) (*CompletionResponse, error) {
 
+	if a.completed >= a.config.MaxCompletions {
+		return nil, fmt.Errorf("maximum completions reached: %d", a.completed)
+	}
+
 	raws := []*RawCompletion{}
 	req := &CompletionRequest{Content: prompt}
 	res, err := a.client.RunCompletion(ctx, req)

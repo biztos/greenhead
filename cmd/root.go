@@ -74,7 +74,13 @@ func init() {
 
 	UpdateInfo()
 
-	// The persistent flags cover the main things in Config.
+	// Config files:
+	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",
+		"Config file from which to read the master configuration.")
+	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},
+		"Config file from which to read the agent configuration.")
+
+	// Output control:
 	RootCmd.PersistentFlags().BoolVarP(&Config.Debug, "debug", "d", false,
 		"Log at DEBUG level (default is INFO).")
 	RootCmd.PersistentFlags().BoolVarP(&Config.Stream, "stream", "s", false,
@@ -89,10 +95,14 @@ func init() {
 		"Dump all LLM interactions into this dir.")
 	RootCmd.PersistentFlags().BoolVar(&Config.ShowCalls, "show-calls", false,
 		"Show tool calls with output (experimental; can leak data!).")
-	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",
-		"Config file from which to read the master configuration.")
-	RootCmd.PersistentFlags().StringArrayVar(&agentConfigFiles, "agent", []string{},
-		"Config file from which to read the agent configuration.")
+
+	// Limits:
+	RootCmd.PersistentFlags().IntVar(&Config.MaxCompletions, "max-completions", 0,
+		"Maximum number of completions to run (tool calls not included).")
+	RootCmd.PersistentFlags().IntVar(&Config.MaxToolChain, "max-toolchain", 0,
+		"Maximum number of tool calls allowed in a completion.")
+
+	// Tools:
 	// Note: tool selection is a bit complicated and should be covered in the
 	// main help text.  It's important that these default to nil, not an empty
 	// array, as a config-file empty array might override.
