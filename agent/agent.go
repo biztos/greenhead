@@ -292,6 +292,11 @@ func (a *Agent) Check(ctx context.Context) error {
 	return a.client.Check(ctx)
 }
 
+// AddContextItem calls the ApiClient's AddContextItem.
+func (a *Agent) AddContextItem(item ContextItem) {
+	a.client.AddContextItem(item)
+}
+
 // NewAgent returns an agent initialized for use based on cfg.  If any of the
 // configured Tools are not registered, an error is returned.
 //

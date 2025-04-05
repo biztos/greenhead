@@ -1,16 +1,5 @@
 # TODO (ordered!)
 
-
-## PAIR CHAT
-
-Need this to feel excited, too much redesign happening right now.
-
-Pre-task: __make limits work__ b/c could get runaway and cost $$.
-
-Basic MO is like...
-
-`ghd pair run "FIRST PROMPT"`
-
 ## Autocolor for pair chat
 
 Takes first color and picks something not that for second color.
@@ -18,6 +7,17 @@ Takes first color and picks something not that for second color.
 Complementary?
 
 For placeholder just do blue vs green.
+
+## Fix streaming response object, final in json has chunk fragments
+
+    "response": {
+          "id": "chatcmpl-BIzC5QOmHAT4l55DESswe8RDYOp6v",
+          "object": "chat.completion.chunk",
+          "created": 1743864833,
+          "model": "gpt-4o-2024-08-06",
+          "choices": [
+
+...and so on, but want it to look same as if not with -s.
 
 ## Make sure logging to file works OK for multiple agents
 

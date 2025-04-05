@@ -10,7 +10,7 @@ import (
 var ConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage configs.",
-	Long: `The config command helps manage configuration files.
+	Long: `The config commands help manage configuration files.
 
 The preferred format for config files is TOML, but JSON and JSON5 are also
 supported.`,

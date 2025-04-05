@@ -29,5 +29,17 @@ I've started a new Tic Tac Toe game. You can join the game using the ID: 01JQWYA
  9822  2025-03-31 00:25:20 go run ./cmd/ghd run "start game"  -s -d --agent=testdata/agent-ttt.toml --log-file=x --dump-dir=build --show-calls
 
 
+## Run a chatty two-agent chat for 6 completions total.
 
+Evens will end with first == second, odds with first > second.  Look for
+the original prompt in the context.
 
+```
+just run pair run "Hello!" -s -d --agent=testdata/agent-chatty.toml --agent=testdata/agent-chatty.toml --log-file=tmp.log --dump-dir=build --show-calls --max-completions=6
+```
+
+## Prettify the JSON in build
+
+```
+find build -type f -name "*.json" -exec sh -c 'jq "." {} > {}.formatted.json' \;
+```

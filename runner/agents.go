@@ -13,8 +13,8 @@ import (
 	"github.com/biztos/greenhead/utils"
 )
 
-// RunListAgents prints summary information for the configured agents.
-func (r *Runner) RunListAgents(w io.Writer) {
+// ListAgents prints summary information for the configured agents.
+func (r *Runner) ListAgents(w io.Writer) {
 	if len(r.Config.Agents) == 0 {
 		fmt.Fprintln(w, "<no agents>")
 		return
@@ -58,11 +58,11 @@ func (r *Runner) RunListAgents(w io.Writer) {
 	}
 }
 
-// RunCheckAgents runs the ApiClient Check command on configured agents, in
+// CheckAgents runs the ApiClient Check command on configured agents, in
 // order.
 //
 // Agents must be instantiated, and at least one agent must be present.
-func (r *Runner) RunCheckAgents(w io.Writer) error {
+func (r *Runner) CheckAgents(w io.Writer) error {
 	if len(r.Agents) == 0 {
 		return fmt.Errorf("no agents")
 	}
@@ -75,10 +75,10 @@ func (r *Runner) RunCheckAgents(w io.Writer) error {
 	return nil
 }
 
-// RunRunAgents runs the single-prompt completion on all agents, in order.
+// RunAgents runs the single-prompt completion on all agents, in order.
 //
 // If prompt starts with @ then it is read from a file, e.g. `@file.txt`.
-func (r *Runner) RunRunAgents(w io.Writer, prompt string, json bool) error {
+func (r *Runner) RunAgents(w io.Writer, prompt string, json bool) error {
 	if len(r.Agents) == 0 {
 		return fmt.Errorf("no agents")
 	}

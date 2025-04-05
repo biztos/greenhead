@@ -12,7 +12,7 @@ import (
 var AgentsCmd = &cobra.Command{
 	Use:   "agents [list|check|run]",
 	Short: "Work with agents.",
-	Long: `The agents command helps manage the configured agents.
+	Long: `The agents commands help manage the configured agents.
 
 Additional functionality will be added later (one hopes).`,
 }
@@ -31,7 +31,7 @@ Note that each will have a unique identifier (a ULID) when running.`,
 		if err != nil {
 			return err
 		}
-		r.RunListAgents(Stdout)
+		r.ListAgents(Stdout)
 		return nil
 	},
 }
@@ -56,7 +56,7 @@ Output is logged, and on success only the message "OK" is printed.`,
 		if err != nil {
 			return err
 		}
-		return r.RunCheckAgents(Stdout)
+		return r.CheckAgents(Stdout)
 
 	},
 }
@@ -73,6 +73,8 @@ The completion may include tool calls, which will be executed.
 
 If --json is specified, the output will be in JSON format.
 
+If the prompt begins with '@' then it will be read from a file, e.g. @foo.txt.
+
 In order to pipe output, e.g. to jq, it is advisable to use the --silent flag
 and not use the --stream flag.  This is the recommended way to capture output
 for multiple agents in a single run.
@@ -83,7 +85,7 @@ for multiple agents in a single run.
 		if err != nil {
 			return err
 		}
-		return r.RunRunAgents(Stdout, args[0], agentsRunJson)
+		return r.RunAgents(Stdout, args[0], agentsRunJson)
 	},
 }
 
