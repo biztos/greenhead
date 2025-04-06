@@ -17,11 +17,6 @@ import (
 	"github.com/biztos/greenhead/utils"
 )
 
-// AgentType supported by the built-in ApiClients.
-const (
-	AgentTypeOpenAi = "openai"
-)
-
 var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
 
 var ErrMaxCompletions = fmt.Errorf("max completions reached")
@@ -141,84 +136,6 @@ type Usage struct {
 	Output      int `json:"output"`
 	Reasoning   int `json:"reasoning"`
 	Total       int `json:"total"` // nb: Total is just whatever was reported as total.
-}
-
-// ApiClient abstracts the API client itself, allowing the use of different
-// clients for the various LLM APIs -- or in some cases, using the same client
-// package differently.
-//
-// The ApiClient is responsible for maintaining its own LLM context over its
-// lifetime; the Add* functions are for setting initial context.  However, the
-// agent *may* do this itself with the ClearContext function.
-type ApiClient interface {
-
-	// SetLogger sets the logger that the ApiClient should use for all log
-	// calls.
-	SetLogger(*slog.Logger)
-
-	// SetDumpDir sets a directory into which the ApiClient *may* write any
-	// debug information such as raw requests or responses, to supplement the
-	// data dumped by the agent itself.
-	SetDumpDir(string)
-
-	// SetStreaming sets whether responses should be streamed to Stdout as
-	// they are received.  If streaming is not supported, responses should be
-	// printed when they are received.  In both cases, the print function from
-	// SetPrintFunc should be used for printing output.
-	SetStreaming(bool)
-
-	// SetShowCalls sets whether tool calls should be streamed to Stdout
-	// the same as content responses.  This is experimental and could leak
-	// data into the session that you would rather keep private.
-	SetShowCalls(bool)
-
-	// SetPrintFunc sets the function used to print output.
-	SetPrintFunc(func(v ...any))
-
-	// SetPreFunc sets a function that processes the raw request before it
-	// is sent to the LLM.
-	//
-	// This allows customization of ApiClients without additional types, e.g.
-	// for content filtering.
-	//
-	// It is up to the implementation to call the pre- and post-functions in
-	// RunCompletion. If this is not supported, an error should be returned.
-	SetPreFunc(func(ApiClient, any) error) error
-
-	// SetPostFunc sets a function that processes the raw response when it is
-	// received from the LLM.
-	//
-	// It is up to the implementation to call the pre- and post-functions in
-	// RunCompletion. If this is not supported, an error should be returned.
-	SetPostFunc(func(ApiClient, any) error) error
-
-	// SetModel sets the model used by the API.  If the model is not supported
-	// it should return an error.
-	SetModel(string) error
-
-	// SetTools sets the tools that will be described to the LLM as callable.
-	//
-	// These must be available in the registry when SetTools is called.
-	SetTools([]string) error
-
-	// SetMaxCompletionTokens sets the maximum number of tokens the LLM should
-	// produce on the *next* completion.
-	SetMaxCompletionTokens(int)
-
-	// ClearContext clears any existing LLM context.
-	ClearContext()
-
-	// AddContextItem adds a prompt or response to the LLM context.
-	AddContextItem(ContextItem)
-
-	// RunCompletion runs a completion and returns
-	RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error)
-
-	// Check validates the underlying client by making a (presumably) no-cost
-	// round-trip to the configured API endpoint, e.g.
-	//
-	//     https://api.openai.com/v1/models
-	Check(context.Context) error
 }
 
 var newApiClientFunc = map[string]func() (ApiClient, error){}
