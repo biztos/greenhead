@@ -194,6 +194,12 @@ func (a *Agent) Logger() *slog.Logger {
 	return a.logger
 }
 
+// SetPrintFunc overrides the print function in the Agent and its ApiClient.
+func (a *Agent) SetPrintFunc(f func(...any)) {
+	a.printFunc = f
+	a.client.SetPrintFunc(f)
+}
+
 // SetLogger overrides the logger in the Agent and its ApiClient.
 //
 // Note that this does *not* add the agent=<ident> attribute that is used by
@@ -265,8 +271,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error with print colors: %w", err)
 	}
-	a.printFunc = pfunc
-	client.SetPrintFunc(pfunc)
+	a.SetPrintFunc(pfunc)
 
 	// Set up the logger.
 	if cfg.NoLog {

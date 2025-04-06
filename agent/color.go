@@ -13,6 +13,8 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+var ErrColorNotSupported = fmt.Errorf("color not supported")
+
 // ColorPrintFunc returns the colorized print function to use for streaming.
 //
 // If both input color names are blank, a simple fmt.Print wrapper is used.
@@ -40,13 +42,13 @@ func PrintColor(fg_name, bg_name string) (*pcolor.Color, error) {
 
 	fg, have := colornames.Map[strings.ToLower(fg_name)] // 147 should be enough for anyone!
 	if !have {
-		return nil, fmt.Errorf("color not supported: %s", fg_name)
+		return nil, fmt.Errorf("%w: %s", ErrColorNotSupported, fg_name)
 	}
 	col := pcolor.RGB(int(fg.R), int(fg.G), int(fg.B))
 	if bg_name != "" {
 		bg, have := colornames.Map[strings.ToLower(bg_name)]
 		if !have {
-			return nil, fmt.Errorf("bg color not supported: %s", bg_name)
+			return nil, fmt.Errorf("%w: %s", ErrColorNotSupported, bg_name)
 		}
 		col = col.AddBgRGB(int(bg.R), int(bg.G), int(bg.B))
 	}
@@ -63,8 +65,8 @@ func PrintColorPairSample(w io.Writer, fg, bg, prefix string) error {
 	}
 	col.Fprint(w, prefix, colorMsg(fg, bg))
 
-	pair_fg := FindComplementaryColor(fg)
-	pair_bg := FindComplementaryColor(bg)
+	pair_fg, _ := FindComplementaryColor(fg) // known-good from above.
+	pair_bg, _ := FindComplementaryColor(bg)
 	pair_col, err := PrintColor(pair_fg, pair_bg)
 	if err != nil {
 		return err
@@ -101,13 +103,16 @@ func ColorDistance(c1, c2 color.RGBA) float64 {
 // different.
 //
 // It is potentially quite slow, and should only be called at startup.
-func FindComplementaryColor(name string) string {
+func FindComplementaryColor(name string) (string, error) {
 
 	if name == "" {
-		return ""
+		return "", nil
 	}
 
-	baseColor := colornames.Map[strings.ToLower(name)]
+	baseColor, have := colornames.Map[strings.ToLower(name)]
+	if !have {
+		return "", fmt.Errorf("%w: %s", ErrColorNotSupported, name)
+	}
 
 	// Define what's "too similar" and "too different"
 	const minDistance = 100.0 // Colors should be at least this different
@@ -140,13 +145,13 @@ func FindComplementaryColor(name string) string {
 
 	// Return the closest candidate that meets our criteria
 	if len(candidates) > 0 {
-		return candidates[0].name
+		return candidates[0].name, nil
 	}
 
 	// Fallback is...?
 	if baseColor != colornames.Lightblue {
-		return "lightblue"
+		return "lightblue", nil
 	} else {
-		return "black" // or what?
+		return "black", nil // or what?
 	}
 }

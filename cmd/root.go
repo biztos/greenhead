@@ -97,7 +97,7 @@ func init() {
 		"Show tool calls with output (experimental; can leak data!).")
 
 	// Limits:
-	RootCmd.PersistentFlags().IntVar(&Config.MaxCompletions, "max-completions", 100,
+	RootCmd.PersistentFlags().IntVarP(&Config.MaxCompletions, "max-completions", "m", 100,
 		"Maximum number of completions to run (tool calls not included).")
 	RootCmd.PersistentFlags().IntVar(&Config.MaxToolChain, "max-toolchain", 10,
 		"Maximum number of tool calls allowed in a completion.")
