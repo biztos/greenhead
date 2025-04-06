@@ -89,6 +89,28 @@ for multiple agents in a single run.
 	},
 }
 
+// AgentsColorCmd represents the "agents color" subcommand.
+var AgentsColorCmd = &cobra.Command{
+	Use:   "color [NAME...]",
+	Short: "Print configured agent (and named) colors.",
+	Long: `For any configured agents, and any names passed as arguments,
+prints a short summary in that color and its pair color.
+
+For named colors, a foreground/background pair can be specified as "fg/bg":
+
+	yellow/white
+
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
+		}
+		return r.PrintColors(Stdout, args...)
+	},
+}
+
 func init() {
 
 	// Flags:
@@ -99,5 +121,6 @@ func init() {
 	AgentsCmd.AddCommand(AgentsListCmd)
 	AgentsCmd.AddCommand(AgentsCheckCmd)
 	AgentsCmd.AddCommand(AgentsRunCmd)
+	AgentsCmd.AddCommand(AgentsColorCmd)
 	RootCmd.AddCommand(AgentsCmd)
 }

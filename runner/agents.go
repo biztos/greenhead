@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/utils"
 )
 
@@ -110,5 +111,32 @@ func (r *Runner) RunAgents(w io.Writer, prompt string, json bool) error {
 		}
 
 	}
+	return nil
+}
+
+// PrintColors prints the colors and their pair colors for all Agents, and
+// also for any extra arg colors passed in.
+func (r *Runner) PrintColors(w io.Writer, args ...string) error {
+
+	for i, c := range r.Config.Agents {
+
+		prefix := fmt.Sprintf("Agent %d: ", i+1)
+		agent.PrintColorPairSample(w, c.Color, c.BgColor, prefix)
+
+	}
+	for i, n := range args {
+		fg := n
+		bg := ""
+		parts := strings.SplitN(n, "/", 2)
+		if len(parts) > 1 {
+			fg = parts[0]
+			bg = parts[1]
+		}
+		prefix := fmt.Sprintf("Arg %d: ", i+1)
+		if err := agent.PrintColorPairSample(w, fg, bg, prefix); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
