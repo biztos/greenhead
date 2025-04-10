@@ -301,7 +301,7 @@ func (c *OpenAiClient) CreateChatCompletion(ctx context.Context, r openai.ChatCo
 		// If this is the first chunk, initialize the response
 		if res.ID == "" {
 			res.ID = response.ID
-			res.Object = response.Object // TODO: remove ".chunk"
+			res.Object = strings.TrimSuffix(response.Object, ".chunk")
 			res.Created = response.Created
 			res.Model = response.Model
 			res.SystemFingerprint = response.SystemFingerprint

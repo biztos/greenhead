@@ -1,24 +1,5 @@
 # TODO (ordered!)
 
-## Autocolor for pair chat
-
-Takes first color and picks something not that for second color.
-
-Complementary?
-
-For placeholder just do blue vs green.
-
-## Fix streaming response object, final in json has chunk fragments
-
-    "response": {
-          "id": "chatcmpl-BIzC5QOmHAT4l55DESswe8RDYOp6v",
-          "object": "chat.completion.chunk",
-          "created": 1743864833,
-          "model": "gpt-4o-2024-08-06",
-          "choices": [
-
-...and so on, but want it to look same as if not with -s.
-
 ## Make sure logging to file works OK for multiple agents
 
 Might not?  Multiple fh's open is not the right way to go, what else can we
