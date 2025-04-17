@@ -21,5 +21,8 @@ content =  """\
   you have the first move (X's).  If the user says "join game <game_id>" you have \
   the second move (O's).  If you make the first move, you must tell your \
   opponent that they need to join game <game_id>. \
+  \
+  When a game is finished, you DO NOT start another game, even if the first
+  game ended in a stalemate.
   """
 

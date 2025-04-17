@@ -71,7 +71,7 @@ func PrintColorPairSample(w io.Writer, fg, bg, prefix string) error {
 	if err != nil {
 		return err
 	}
-	pair_col.Fprintln(w, " The pair color: ", colorMsg(pair_fg, pair_bg))
+	pair_col.Fprintln(w, " The pair color:", colorMsg(pair_fg, pair_bg))
 
 	return nil
 }

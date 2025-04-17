@@ -15,18 +15,24 @@ import (
 // NewGameInput represents the input to a new Game.
 type NewGameInput struct{}
 
+// StateInput represents the input to view a game state.
+type StateInput struct {
+	GameId string `json:"game_id"`
+}
+
+// StateResult represents a non-error game board.
+type StateResult struct {
+	State      string `json:"state"`
+	NextPlayer string `json:"next_player"`
+	Board      string `json:"board"`
+}
+
 // MoveInput represents a move in a Game.
 type MoveInput struct {
 	GameId string `json:"game_id"`
 	Row    int    `json:"row"`
 	Col    int    `json:"col"`
 	Player string `json:"player"`
-}
-
-// MoveResult represents a non-error move result in a Game.
-type MoveResult struct {
-	Result string `json:"result"`
-	Board  string `json:"board"`
 }
 
 // Game represents a game of Tic Tac Toe on a 3x3 grid of cells,
@@ -48,6 +54,14 @@ func NewGame() *Game {
 		Id:    ulid.Make().String(),
 		cells: cells,
 	}
+}
+
+// NextPlayer returns the next player (X for a fresh game).
+func (g *Game) NextPlayer() string {
+	if g.last_player == "X" {
+		return "O"
+	}
+	return "X"
 }
 
 // Board draws the game board in text.
@@ -106,29 +120,36 @@ func (g *Game) State() string {
 
 }
 
-// Move attempts to make a move for player "X" or "Y".
-//
-// If the move is allowed, State is called and the result returned.
-func (g *Game) Move(row, col int, player string) (string, error) {
+// Move attempts to make a move for player "X" or "O".
+func (g *Game) Move(row, col int, player string) error {
 
 	if player != "X" && player != "O" {
-		return "", fmt.Errorf("player must be either X or O")
+		return fmt.Errorf("player must be either X or O")
 	}
 	if row < 0 || col < 0 || row > 2 || col > 2 {
-		return "", fmt.Errorf("out of bounds: Tic Tac Toe is played on a 3x3 grid")
+		return fmt.Errorf("out of bounds: Tic Tac Toe is played on a 3x3 grid")
 	}
 	if g.last_player == player {
-		return "", fmt.Errorf("it is not %s's turn", player)
+		return fmt.Errorf("it is not %s's turn", player)
 	}
 	taken := g.cells[row][col]
 	if taken != "-" {
-		return "", fmt.Errorf("that cell is already taken by %s", taken)
+		return fmt.Errorf("that cell is already taken by %s", taken)
 	}
 	g.cells[row][col] = player
 	g.last_player = player
 
-	return g.State(), nil
+	return nil
 
+}
+
+// StateResult returns a StateResult for the current state of Game g.
+func (g *Game) StateResult() StateResult {
+	return StateResult{
+		State:      g.State(),
+		NextPlayer: g.NextPlayer(),
+		Board:      g.Board(),
+	}
 }
 
 func init() {
@@ -143,26 +164,40 @@ func init() {
 			return g, nil
 		},
 	)
-	move := tools.NewTool[MoveInput, MoveResult](
-		"tictactoe_move",
-		"Make a move in a Tic Tac Toe game, occupying a cell for player X or O.",
-		func(ctx context.Context, in MoveInput) (MoveResult, error) {
+	state := tools.NewTool[StateInput, StateResult](
+		"tictactoe_state",
+		"Check the current game state and show the board.",
+		func(ctx context.Context, in StateInput) (StateResult, error) {
 			g, have := games[in.GameId]
 			if !have {
-				return MoveResult{}, fmt.Errorf("game not found for game_id %q", in.GameId)
+				return StateResult{},
+					fmt.Errorf("game not found for game_id %q", in.GameId)
 			}
-			s, err := g.Move(in.Row, in.Col, in.Player)
-			if err != nil {
-				return MoveResult{}, err
+			return g.StateResult(), nil
+		},
+	)
+
+	move := tools.NewTool[MoveInput, StateResult](
+		"tictactoe_move",
+		"Make a move in a Tic Tac Toe game, occupying a cell for player X or O.",
+		func(ctx context.Context, in MoveInput) (StateResult, error) {
+			g, have := games[in.GameId]
+			if !have {
+				return StateResult{},
+					fmt.Errorf("game not found for game_id %q", in.GameId)
 			}
-			return MoveResult{
-				Result: s,
-				Board:  g.Board(),
-			}, nil
+			if err := g.Move(in.Row, in.Col, in.Player); err != nil {
+				return StateResult{}, err
+			}
+			return g.StateResult(), nil
+
 		},
 	)
 
 	if err := registry.Register(new); err != nil {
+		panic(err)
+	}
+	if err := registry.Register(state); err != nil {
 		panic(err)
 	}
 	if err := registry.Register(move); err != nil {
