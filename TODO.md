@@ -1,4 +1,16 @@
-# TODO (ordered!)
+# TODO (ordered! sorta!)
+
+## Stop-words of some kind, at agent config and also for flags.
+
+Easiest is probably a regexp that matches the agent's return content.
+
+So for TTT we could say /won|stalemate/i or something like that.
+
+(Fucking /i in fucking Go fucking regexp...)
+
+Then if you reach it, we just stop.
+
+StopMatch maybe?  --stop-match='foo.*'
 
 ## Make sure logging to file works OK for multiple agents
 
@@ -87,16 +99,6 @@ Want other people to have total freedom to define "boo" or whatever.
 
 So the TODO here is __Document This__.
 
-
-## Create two-chat setup with tic tac toe as example.
-
-Coordinate how?
-
-Here's one: `ghd team run --config=one.json --config=two.json`
-
-Where you have M:M?  Pair off each possible set and let them run?
-
-InitialPrompt in config?
 
 ## Tool for running arbitrary external commands, that could be in config.
 
