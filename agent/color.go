@@ -84,7 +84,7 @@ func colorMsg(fg, bg string) string {
 		return fmt.Sprintf("%q is a lovely color by itself.", fg)
 	}
 	if bg != "" {
-		return fmt.Sprintf("%q is our lovely background color.")
+		return fmt.Sprintf("%q is our lovely background color.", bg)
 	}
 	return "the default colors will have to do."
 }
