@@ -32,9 +32,10 @@ var agentConfigFiles []string
 
 // RootCmd is the Cobra Root and may be changed to suit after initialization.
 var RootCmd = &cobra.Command{
-	Use:     Name,        // Only the first word of "Use" applies to root.
-	Version: Version,     // Nb: Version is *just* the number e.g. "1.2.3".
-	Long:    Description, // Short is ignored in root.
+	Use:          Name,        // Only the first word of "Use" applies to root.
+	Version:      Version,     // Nb: Version is *just* the number e.g. "1.2.3".
+	Long:         Description, // Short is ignored in root.
+	SilenceUsage: true,        // Do not spam usage all the time!
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 
 		// We already have a config with flags; load any config files, letting
@@ -57,6 +58,9 @@ func Execute() {
 }
 
 // BailErr bails out with the given error code and error message to Stderr.
+//
+// Use this when you need more control over the error behavior than RunE
+// provides.
 func BailErr(code int, err error) {
 	fmt.Fprintln(Stderr, err.Error())
 	Exit(code)

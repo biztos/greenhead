@@ -1,28 +1,21 @@
 # TODO (ordered! sorta!)
 
-## Stop-words of some kind, at agent config and also for flags.
+## Unify regexps to allow flags for /i, /s, /m
 
-Easiest is probably a regexp that matches the agent's return content.
+But *do* still support them as regexp.Regexp in the config!  Just with
+custom marshal/unmarshal perhaps.
 
-So for TTT we could say /won|stalemate/i or something like that.
+Or not?  Asking for trouble to have custom types for configs?
 
-(Fucking /i in fucking Go fucking regexp...)
+Problem is I like /i, /s; but I don't want to expect people to know too much
+about Golang syntax in order to write basically useful regexen.
 
-Then if you reach it, we just stop.
+## DECIDE: open up or lock down the Agent?
 
-StopMatch maybe?  --stop-match='foo.*'
+Currently half-half.  Probably lock down, make it opaque.
 
-## Make sure logging to file works OK for multiple agents
+But it needs to be possible to make one with a custom client.
 
-Might not?  Multiple fh's open is not the right way to go, what else can we
-do?
-
-Probably: prove a fail first.  Then try to define logfiles in the runner.
-Though it would be better to NOT have that specific dep.
-
-__Prove this with a test__
-
-## Make the rest of runner stuff work like chat.
 
 ## Support tools defined at load in config (or theoretically at runtime)
 
@@ -61,7 +54,9 @@ pair being outside (or inside an interpreter?).
 
 __How is this different than running a server?__
 
-Basically it's the same logic as running an agent over HTTP, except the
+Basically it's the same logic as running an agent over HTTP?
+
+__USE CASE IS WHAT?__ maybe just reformat stuff?
 
 ## Set up token limits at Agent level and also in OpenAiClient
 
@@ -207,3 +202,4 @@ Probably rather two:
 Nice to have!  But by no means urgent.  And if doing it, make it optional.
 
 github.com/pelletier/go-toml/v2
+

@@ -26,6 +26,29 @@ var ErrMaxCompletions = fmt.Errorf("%w: max completions reached", ErrStopped)
 
 var ErrMatchStopped = fmt.Errorf("%w: content match", ErrStopped)
 
+var fileWriters = map[string]io.Writer{}
+
+// FileWriter returns a writer to the file at path, opening it if none has
+// been opened yet.  It is not concurrency-safe, and does not care if the
+// writer has been closed.
+//
+// Note: this is not particularly robust, because logging directly to a file
+// should only be done in testing and simple one-off deployments.
+func FileWriter(path string) (io.Writer, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	if fileWriters[abs] == nil {
+		f, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+		fileWriters[abs] = f
+	}
+	return fileWriters[abs], nil
+}
+
 // Config describes the configuration of an Agent, and is usually supplied in
 // a file.
 //
@@ -356,7 +379,7 @@ func (a *Agent) InitLogger(file string, debug bool) error {
 		})
 	} else {
 		// Log to file.
-		fh, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		fh, err := FileWriter(file)
 		if err != nil {
 			return fmt.Errorf("failed to open log file: %w", err)
 		}
