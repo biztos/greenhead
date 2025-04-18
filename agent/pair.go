@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-var ErrFirstCompletion = fmt.Errorf("error running first completion in pair")
-var ErrSecondCompletion = fmt.Errorf("error running second completion in pair")
+var ErrFirstCompletion = fmt.Errorf("first completion in pair")
+var ErrSecondCompletion = fmt.Errorf("second completion in pair")
 
 // CompletionPair represents a round-trip of completions for the two agents.
 type CompletionPair struct {

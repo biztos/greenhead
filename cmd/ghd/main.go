@@ -1,7 +1,3 @@
-// cmd/ghd: GREENHEAD
-//
-// What will it end up doing?
-
 package main
 
 import (

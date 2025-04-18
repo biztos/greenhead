@@ -26,6 +26,7 @@ TODO: equivalent of this, but in an external package.  Hard? Easy?
 
 Maybe just hook into pre/postrun funcs?`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		return fmt.Errorf("nothing doing here ATM, WTF")
 
 	},

@@ -45,7 +45,9 @@ func (r *Runner) RunPair(prompt string, w io.Writer) error {
 
 	pair := agent.NewPair(first, second, r.Config.MaxCompletions)
 	err := pair.Run(context.Background(), prompt)
-	if !errors.Is(err, agent.ErrMaxCompletions) {
+	if errors.Is(err, agent.ErrStopped) {
+		fmt.Fprintln(w, err)
+	} else if err != nil {
 		return err
 	}
 

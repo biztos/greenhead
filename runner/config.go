@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"io"
+	"regexp"
 
 	"github.com/BurntSushi/toml"
 
@@ -38,6 +39,9 @@ type Config struct {
 	AllowTools  []string `toml:"allow_tools"`  // Only these tools will remain registered.
 	RemoveTools []string `toml:"remove_tools"` // These tools will be unregistered.
 	AgentTools  []string `toml:"agent_tools"`  // Override all agent Tools with this if set.
+
+	// Safety:
+	StopMatches []*regexp.Regexp `toml:"stop_matches"` // Stop if any output matches any of these.
 
 	// Agent configs:
 	Agents []*agent.Config `toml:"agents"` // Multiple Agents.
@@ -93,6 +97,11 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		}
 		if c.AgentTools == nil {
 			c.AgentTools = r.AgentTools
+		}
+
+		// StopMatches are handled the same as AllowTools.
+		if c.StopMatches == nil {
+			c.StopMatches = r.StopMatches
 		}
 
 		// We keep all agents!
@@ -156,6 +165,9 @@ func (c *Config) ConformAgents() {
 			a.Tools = nil
 		} else if len(c.AgentTools) > 0 {
 			a.Tools = c.AgentTools
+		}
+		if len(c.StopMatches) > 0 {
+			a.StopMatches = c.StopMatches
 		}
 	}
 }

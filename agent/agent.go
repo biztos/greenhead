@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 
 	"github.com/oklog/ulid/v2"
@@ -19,7 +20,11 @@ import (
 
 var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
 
-var ErrMaxCompletions = fmt.Errorf("max completions reached")
+var ErrStopped = fmt.Errorf("stopped")
+
+var ErrMaxCompletions = fmt.Errorf("%w: max completions reached", ErrStopped)
+
+var ErrMatchStopped = fmt.Errorf("%w: content match", ErrStopped)
 
 // Config describes the configuration of an Agent, and is usually supplied in
 // a file.
@@ -37,11 +42,12 @@ type Config struct {
 	Context []ContextItem `toml:"context"` // Context window for client.
 
 	// Safety and limits:  (Zero generally means "no limit.")
-	MaxCompletionTokens int  `toml:"max_completion_tokens"` // Max completion tokens *per completion* (may truncate responses).
-	MaxCompletions      int  `toml:"max_completions"`       // Max number of completions to run.
-	MaxTokens           int  `toml:"max_tokens"`            // Max number of total tokens for all operations.
-	MaxToolChain        int  `toml:"max_toolchain"`         // Max number of tool call responses allowed in a row.
-	AbortOnRefusal      bool `toml:"abort_on_refusal"`      // Abort if a completion is refused by an LLM.
+	MaxCompletionTokens int              `toml:"max_completion_tokens"` // Max completion tokens *per completion* (may truncate responses).
+	MaxCompletions      int              `toml:"max_completions"`       // Max number of completions to run.
+	MaxTokens           int              `toml:"max_tokens"`            // Max number of total tokens for all operations.
+	MaxToolChain        int              `toml:"max_toolchain"`         // Max number of tool call responses allowed in a row.
+	AbortOnRefusal      bool             `toml:"abort_on_refusal"`      // Abort if a completion is refused by an LLM.
+	StopMatches         []*regexp.Regexp `toml:"stop_matches"`          // Abort if any content matches any regexp set here.
 
 	// Output control:
 	Color     string `toml:"color"`           // Color for console output.
@@ -66,6 +72,8 @@ func (c *Config) Copy() *Config {
 	copy(n.Tools, c.Tools)
 	n.Context = make([]ContextItem, len(c.Context))
 	copy(n.Context, c.Context)
+	n.StopMatches = make([]*regexp.Regexp, len(c.StopMatches))
+	copy(n.StopMatches, c.StopMatches)
 	return &n
 }
 
@@ -459,10 +467,6 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 		// TODO: limit loops on tools!
 	}
 
-	// TODO: limits
-	// TODO: bail on refusal
-	// TODO: print output if not stream and not silent
-
 	// Print output, if desired.
 	if !a.config.Stream && !a.config.Silent {
 		a.printFunc(res.Content)
@@ -480,6 +484,17 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 	if a.config.DumpDir != "" {
 		a.DumpCompletion(req, final_res)
 	}
+
+	// Now that we have our debug info, apply any controls that could end the
+	// completion cycle.
+	for _, re := range a.config.StopMatches {
+		if re.MatchString(res.Content) {
+			return nil, fmt.Errorf("%w: %q", ErrMatchStopped, re.String())
+		}
+	}
+
+	// TODO: limits
+	// TODO: bail on refusal
 
 	// Any tool calls have completed and we have a result plus a set of raw
 	// completions that override the current one.

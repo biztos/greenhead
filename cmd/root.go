@@ -102,6 +102,11 @@ func init() {
 	RootCmd.PersistentFlags().IntVar(&Config.MaxToolChain, "max-toolchain", 10,
 		"Maximum number of tool calls allowed in a completion.")
 
+	// Safety:
+	RootCmd.PersistentFlags().Var(&RegexpArrayValue{regexps: &Config.StopMatches},
+		"stop-match",
+		"Stop running if any completion content matches.")
+
 	// Tools:
 	// Note: tool selection is a bit complicated and should be covered in the
 	// main help text.  It's important that these default to nil, not an empty
