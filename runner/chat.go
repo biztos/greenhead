@@ -1,17 +1,12 @@
 package runner
 
 import (
-	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/chzyer/readline"
-
-	"github.com/biztos/greenhead/registry"
-	"github.com/biztos/greenhead/tools"
 )
 
 // RunChat runs an interactive chat session.
@@ -69,25 +64,4 @@ func (r *Runner) RunChat() error {
 	fmt.Println("* DONE")
 
 	return nil
-}
-
-// TODO: obviously not do this shit here!  useful for demo though.
-type ParseUrlInput struct {
-	Url string `json:"url"`
-}
-
-func ParseUrl(ctx context.Context, in ParseUrlInput) (*url.URL, error) {
-	return url.Parse(in.Url) // context ignored
-}
-func init() {
-
-	parse_url := tools.NewTool[ParseUrlInput, *url.URL](
-		"parse_url",
-		"Parses an URL and returns its parts in a struct.",
-		ParseUrl,
-	)
-	if err := registry.Register(parse_url); err != nil {
-		panic(err)
-	}
-
 }
