@@ -1,10 +1,10 @@
-// cmd/example/main.go -- a simple example of custom tools.
+// cmd/example/main.go -- a simple example of a custom binary.
 //
 // This uses the default setup, with a custom function parse_url defined here,
-// and the demo tools loaded from their submodule.
+// and some modifications to the commands.
 //
 // This should serve as a demonstration of the "easy" path to deploying custom
-// tools in agents.
+// runners
 //
 // To check that it registered the tools, use:
 //
@@ -13,17 +13,43 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"strings"
+
+	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead"
-
-	// Make tools available:
-	_ "github.com/biztos/greenhead/tools/demo"
+	_ "github.com/biztos/greenhead/tools/all"
 )
 
 func main() {
 	// Use a custom name but keep the default description.
 	greenhead.CustomApp("example", "1.0.0", "SuperCorp URL Parser", "")
+
+	// Disallow chat, we don't trust you!
+	greenhead.RemoveCommand("chat")
+
+	// Never let the program run in silent mode.
+	//
+	// Note: to lock down and only use a set config file, use ResetFlags.
+	greenhead.RemoveFlag("silent")
+
+	// Add a custom command.
+	greenhead.AddCommand(&cobra.Command{
+		Use:   "hello [NAME...]",
+		Short: "Say hello.",
+		Long:  `Greets the provided name.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			greeting := "HELLO"
+			if len(args) > 0 {
+				greeting += " " + strings.Join(args, " ")
+			}
+			fmt.Println(strings.ToUpper(greeting))
+			return nil
+		},
+	})
+
 	greenhead.Run()
 }
 

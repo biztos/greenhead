@@ -7,6 +7,10 @@ package greenhead
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/biztos/greenhead/cmd"
 	"github.com/biztos/greenhead/registry"
@@ -45,4 +49,78 @@ func CustomApp(name, version, title, description string) {
 	}
 	cmd.UpdateInfo()
 
+}
+
+var ErrCommandNotFound = fmt.Errorf("command not found in the root")
+
+// AddCommand adds command c to the Cobra root command.
+//
+// This is useful for building custom binaries with default subcommands and
+// also custom commands.
+func AddCommand(c *cobra.Command) {
+	cmd.RootCmd.AddCommand(c)
+}
+
+// RemoveCommand removes a command from the Cobra root command.
+//
+// This is useful for building custom binaries with *less* functionality than
+// the default.
+//
+// Panics if the command is not found.
+func RemoveCommand(name string) {
+	// Create a new slice without the command to be removed
+	new_commands := []*cobra.Command{}
+
+	old_commands := cmd.RootCmd.Commands()
+	for _, c := range old_commands {
+		if c.Name() != name {
+			new_commands = append(new_commands, c)
+		}
+	}
+	if len(old_commands) == len(new_commands) {
+		panic("no such command: " + name)
+	}
+
+	// Clear all commands
+	cmd.RootCmd.ResetCommands()
+
+	// Add back all commands except the one to be removed
+	for _, c := range new_commands {
+		cmd.RootCmd.AddCommand(c)
+	}
+}
+
+// ResetFlages resets the Cobra root command flags, disabling all persistent
+// flags.
+//
+// This is useful for building binaries that rely on a fixed configuration.
+func ResetFlags() {
+	cmd.RootCmd.ResetFlags()
+}
+
+// RemoveFlag removes a flag from the Cobra root command.
+//
+// This is useful for building binaries that have fewer options; however, take
+// care that the options are not simply defined in a config file.
+//
+// Panics if the flag does not exist.
+func RemoveFlag(name string) {
+
+	have := false
+	new_flags := pflag.NewFlagSet(cmd.RootCmd.Name(), pflag.ContinueOnError)
+	cmd.RootCmd.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Name == name {
+			have = true
+		} else {
+			new_flags.AddFlag(flag)
+		}
+	})
+
+	// Replace the command's persistent flags
+	cmd.RootCmd.ResetFlags()
+	cmd.RootCmd.PersistentFlags().AddFlagSet(new_flags)
+
+	if !have {
+		panic("no such flag: " + name)
+	}
 }
