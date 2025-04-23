@@ -1,5 +1,22 @@
 # TODO (ordered! sorta!)
 
+## AddCommand/RemoveCommand/RemoveFlag at the top level
+
+Very useful for customization.  Also want to RemoveFlag in order to customize!
+
+So for instance you could make it so you can't specify agents, or can't set a
+config file (the default would be used only).
+
+Maybe even have a "safe mode" where you can only specify some output things?
+
+THIS MAY BE OVERKILL but as long as I'm doing AddCommand it's not that hard.
+
+Arguably yes...
+
+What about do it in Perl?
+
+__EVEN IF THIS IS DUMB WE SHOULD DO THE OTHER THING FOR ADDCOMMAND!__
+
 ## Unify regexps to allow flags for /i, /s, /m
 
 But *do* still support them as regexp.Regexp in the config!  Just with
