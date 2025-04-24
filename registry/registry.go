@@ -8,11 +8,11 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 	"sync"
 
+	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/tools"
 )
 
@@ -97,46 +97,30 @@ func Names() []string {
 
 }
 
-// MatchingNames checks names for validity and returns a deduplicated and
-// (in the case of regexp names) expanded set of valid, registered tool names.
+// MatchingNames checks returns a deduplicated and (in the case of regexps)
+// expanded set of valid, registered tool names.
 //
-// If any item in names has no corresponding registered tool, an error is
+// If any item in want has no corresponding registered tool, an error is
 // returned.
-func MatchingNames(names []string) ([]string, error) {
+func MatchingNames(want []*rgxp.OptionalRgxp) ([]string, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	matched_names := make([]string, 0, len(ordered_names))
 	have := map[string]bool{}
-	for _, n := range names {
-		if len(n) >= 2 && n[0] == '/' && n[len(n)-1] == '/' {
-			re, err := regexp.Compile(n[1 : len(n)-1])
-			if err != nil {
-				return nil, fmt.Errorf("invalid tool regexp %q: %w", n, err)
-			}
-			matched := false
-			for _, rn := range ordered_names {
-				if re.MatchString(rn) {
-					matched = true
-					if !have[rn] {
-						have[rn] = true
-						matched_names = append(matched_names, rn)
-					}
+	for _, r := range want {
+		got_any := false
+		for _, n := range ordered_names {
+			if (r.IsRegexp() && r.MatchString(n)) || n == r.String() {
+				got_any = true
+				if !have[n] {
+					matched_names = append(matched_names, n)
+					have[n] = true
 				}
 			}
-			if !matched {
-				return nil, fmt.Errorf("no match for tool %q", n)
-			}
-		} else {
-			if !have[n] {
-				if registered[n] == nil {
-					return nil, fmt.Errorf("%w: %q", ErrNotRegistered, n)
-				}
-				have[n] = true
-				matched_names = append(matched_names, n)
-			}
-
 		}
-
+		if !got_any {
+			return nil, fmt.Errorf("no match for tool %q", r.String())
+		}
 	}
 	return matched_names, nil
 }

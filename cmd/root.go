@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/runner"
 )
 
@@ -19,6 +20,15 @@ var Title = "Greenhead Agent Runner"
 var Description = `Runs AI (LLM) agents.
 
 More soon!
+
+Special flag types:
+
+*Array:       flag allowing multiple uses, e.g. --foo=A --foo=B
+
+rgxpArray:    regular expressions in the format /pattern/[ism]
+
+optRgxpArray: as rgxpArray, but plain strings (not in the above format) can
+              be used for exact matches.
 `
 
 var Config = &runner.Config{}
@@ -107,7 +117,7 @@ func init() {
 		"Maximum number of tool calls allowed in a completion.")
 
 	// Safety:
-	RootCmd.PersistentFlags().Var(&RegexpArrayValue{regexps: &Config.StopMatches},
+	RootCmd.PersistentFlags().Var(&rgxp.RgxpArrayValue{Rgxps: &Config.StopMatches},
 		"stop-match",
 		"Stop running if any completion content matches.")
 
@@ -115,11 +125,14 @@ func init() {
 	// Note: tool selection is a bit complicated and should be covered in the
 	// main help text.  It's important that these default to nil, not an empty
 	// array, as a config-file empty array might override.
-	RootCmd.PersistentFlags().StringArrayVar(&Config.AllowTools, "allow-tool", nil,
-		"Allow the use of this tool. See main help for details.")
-	RootCmd.PersistentFlags().StringArrayVar(&Config.RemoveTools, "remove-tool", nil,
-		"Remove this tool from use.")
-	RootCmd.PersistentFlags().StringArrayVar(&Config.AgentTools, "agent-tool", nil,
+	RootCmd.PersistentFlags().Var(&rgxp.OptionalRgxpArrayValue{OptionalRgxps: &Config.AllowTools},
+		"allow-tool",
+		"Allow tool use. See main help for details.")
+	RootCmd.PersistentFlags().Var(&rgxp.OptionalRgxpArrayValue{OptionalRgxps: &Config.RemoveTools},
+		"remove-tool",
+		"Disallow tool use. See main help for details.")
+	RootCmd.PersistentFlags().Var(&rgxp.OptionalRgxpArrayValue{OptionalRgxps: &Config.AgentTools},
+		"agent-tool",
 		"Override all agent tool lists.")
 	RootCmd.PersistentFlags().BoolVar(&Config.NoTools, "no-tools", false,
 		"Remove all tools before running (agents will have no tools).")

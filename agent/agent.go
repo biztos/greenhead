@@ -9,12 +9,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/biztos/greenhead/registry"
+	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/utils"
 )
 
@@ -55,22 +55,22 @@ func FileWriter(path string) (io.Writer, error) {
 // Note that in normal operation, runner configs will take precedence over
 // agent configs.
 type Config struct {
-	Name        string   `toml:"name"`        // Name of the agent.
-	Description string   `toml:"description"` // Description of the agent.
-	Type        string   `toml:"type"`        // Type, e.g. AgentTypeOpenAi.
-	Model       string   `toml:"model"`       // Model for the LLM, if applicable.
-	Endpoint    string   `toml:"endpoint"`    // Endpoint if not default.
-	Tools       []string `toml:"tools"`       // Allowed tools by name.
+	Name        string               `toml:"name"`        // Name of the agent.
+	Description string               `toml:"description"` // Description of the agent.
+	Type        string               `toml:"type"`        // Type, e.g. AgentTypeOpenAi.
+	Model       string               `toml:"model"`       // Model for the LLM, if applicable.
+	Endpoint    string               `toml:"endpoint"`    // Endpoint if not default.
+	Tools       []*rgxp.OptionalRgxp `toml:"tools"`       // Allowed tools by name or regexp.
 
 	Context []ContextItem `toml:"context"` // Context window for client.
 
 	// Safety and limits:  (Zero generally means "no limit.")
-	MaxCompletionTokens int              `toml:"max_completion_tokens"` // Max completion tokens *per completion* (may truncate responses).
-	MaxCompletions      int              `toml:"max_completions"`       // Max number of completions to run.
-	MaxTokens           int              `toml:"max_tokens"`            // Max number of total tokens for all operations.
-	MaxToolChain        int              `toml:"max_toolchain"`         // Max number of tool call responses allowed in a row.
-	AbortOnRefusal      bool             `toml:"abort_on_refusal"`      // Abort if a completion is refused by an LLM.
-	StopMatches         []*regexp.Regexp `toml:"stop_matches"`          // Abort if any content matches any regexp set here.
+	MaxCompletionTokens int          `toml:"max_completion_tokens"` // Max completion tokens *per completion* (may truncate responses).
+	MaxCompletions      int          `toml:"max_completions"`       // Max number of completions to run.
+	MaxTokens           int          `toml:"max_tokens"`            // Max number of total tokens for all operations.
+	MaxToolChain        int          `toml:"max_toolchain"`         // Max number of tool call responses allowed in a row.
+	AbortOnRefusal      bool         `toml:"abort_on_refusal"`      // Abort if a completion is refused by an LLM.
+	StopMatches         []*rgxp.Rgxp `toml:"stop_matches"`          // Abort if any content matches any regexp set here.
 
 	// Output control:
 	Color     string `toml:"color"`           // Color for console output.
@@ -91,11 +91,11 @@ type Config struct {
 // Copy returns a deep copy of c.
 func (c *Config) Copy() *Config {
 	n := *c
-	n.Tools = make([]string, len(c.Tools))
+	n.Tools = make([]*rgxp.OptionalRgxp, len(c.Tools))
 	copy(n.Tools, c.Tools)
 	n.Context = make([]ContextItem, len(c.Context))
 	copy(n.Context, c.Context)
-	n.StopMatches = make([]*regexp.Regexp, len(c.StopMatches))
+	n.StopMatches = make([]*rgxp.Rgxp, len(c.StopMatches))
 	copy(n.StopMatches, c.StopMatches)
 	return &n
 }
@@ -279,7 +279,6 @@ func NewAgent(cfg *Config) (*Agent, error) {
 			cfg.Type, err)
 	}
 	a.SetClient(client)
-	client.SetTools(cfg.Tools)
 	client.SetStreaming(cfg.Stream)
 	client.SetModel(cfg.Model)
 	client.SetShowCalls(cfg.ShowCalls)
@@ -345,11 +344,8 @@ func (a *Agent) SetClient(c ApiClient) {
 
 // SetTools sets the interal tools list for the agent and its ApiClient,
 // handling regexp selection and checking for validity.
-//
-// Any input string deliminated with slashes, e.g. `/foo/`, is treated as a
-// regular expression, and all registered names that match are included.
-func (a *Agent) SetTools(names []string) error {
-	valid_names, err := registry.MatchingNames(names)
+func (a *Agent) SetTools(want []*rgxp.OptionalRgxp) error {
+	valid_names, err := registry.MatchingNames(want)
 	if err != nil {
 		return err
 	}

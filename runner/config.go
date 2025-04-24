@@ -3,11 +3,11 @@ package runner
 import (
 	"fmt"
 	"io"
-	"regexp"
 
 	"github.com/BurntSushi/toml"
 
 	"github.com/biztos/greenhead/agent"
+	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/utils"
 )
 
@@ -35,13 +35,13 @@ type Config struct {
 
 	// Tool access control:
 	// (Can use /regexp/ syntax.)
-	NoTools     bool     `toml:"no_tools"`     // Unregister all tools and remove from agents.
-	AllowTools  []string `toml:"allow_tools"`  // Only these tools will remain registered.
-	RemoveTools []string `toml:"remove_tools"` // These tools will be unregistered.
-	AgentTools  []string `toml:"agent_tools"`  // Override all agent Tools with this if set.
+	NoTools     bool                 `toml:"no_tools"`     // Unregister all tools and remove from agents.
+	AllowTools  []*rgxp.OptionalRgxp `toml:"allow_tools"`  // Only these tools will remain registered.
+	RemoveTools []*rgxp.OptionalRgxp `toml:"remove_tools"` // These tools will be unregistered.
+	AgentTools  []*rgxp.OptionalRgxp `toml:"agent_tools"`  // Override all agent Tools with this if set.
 
 	// Safety:
-	StopMatches []*regexp.Regexp `toml:"stop_matches"` // Stop if any output matches any of these.
+	StopMatches []*rgxp.Rgxp `toml:"stop_matches"` // Stop if any output matches any of these.
 
 	// Agent configs:
 	Agents []*agent.Config `toml:"agents"` // Multiple Agents.
