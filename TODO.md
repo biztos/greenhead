@@ -1,23 +1,9 @@
 # TODO (ordered! sorta!)
 
-## Unify regexps to allow flags for /i, /s, /m
 
-But *do* still support them as regexp.Regexp in the config!  Just with
-custom marshal/unmarshal perhaps.
+## ExternalTools
 
-Or not?  Asking for trouble to have custom types for configs?
-
-Problem is I like /i, /s; but I don't want to expect people to know too much
-about Golang syntax in order to write basically useful regexen.
-
-## DECIDE: open up or lock down the Agent?
-
-Currently half-half.  Probably lock down, make it opaque.
-
-But it needs to be possible to make one with a custom client.
-
-
-## Support tools defined at load in config (or theoretically at runtime)
+Support tools defined at load in config (or theoretically at runtime)
 
 Basic version is a tool that calls a binary with args using os.Exec with a
 timeout. (Or with no timeout?  Timeout might be nice.)
@@ -43,6 +29,25 @@ can call as a tool.  Prolog maybe: https://github.com/ichiban/prolog
 __FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
 
 Make it something you have to turn on, or something you can turn off?
+
+## Default config file
+
+    /opt/ghd/config.toml
+
+Settable at runner level for customs.
+
+Should show up as default in options.
+
+However -- when reading the file, should special-case and say that if no
+such file exists you will still try to run.  Whereas specifying a file in
+flags should choke if the file is not there.
+
+## DECIDE: open up or lock down the Agent?
+
+Currently half-half.  Probably lock down, make it opaque.
+
+But it needs to be possible to make one with a custom client.
+
 
 ## Run a script that can do.... whatever.... with the responses.
 
