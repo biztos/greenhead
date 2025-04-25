@@ -47,7 +47,6 @@ func CustomApp(name, version, title, description string) {
 	if description != "" {
 		cmd.Description = description
 	}
-	cmd.UpdateInfo()
 
 }
 
@@ -90,7 +89,12 @@ func RemoveCommand(name string) {
 	}
 }
 
-// ResetFlages resets the Cobra root command flags, disabling all persistent
+// ResetCommands resets the Cobra root command subcommands.
+func ResetCommands() {
+	cmd.RootCmd.ResetCommands()
+}
+
+// ResetFlags resets the Cobra root command flags, disabling all persistent
 // flags.
 //
 // This is useful for building binaries that rely on a fixed configuration.

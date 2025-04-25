@@ -30,17 +30,27 @@ __FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
 
 Make it something you have to turn on, or something you can turn off?
 
-## Default config file
+## Make "tools run" take an arg instead of stdin
 
-    /opt/ghd/config.toml
+Stdin is stupid, let it take an arg but file-style like @foo, same logic is
+in agents run.
 
-Settable at runner level for customs.
+## Make sure all the runner commands take io.Writer first
 
-Should show up as default in options.
+Otherwise shitshow.
 
-However -- when reading the file, should special-case and say that if no
-such file exists you will still try to run.  Whereas specifying a file in
-flags should choke if the file is not there.
+## MAYBE Default config file w/complex logic
+
+__PROBLEM:__ if you say default is /foo.toml and want to ignore it if not
+found, you have to handle --config=/foo.toml which *should* throw if not
+found.
+
+Also problem: no idea where to look for that file, i.e. we are not saying
+(nor want to say) where you should put the binary.
+
+One solution is to have a settable default but not use it out of the box.
+Custom binaries only.  But then can't easily have it in the flag settings b/c
+that's in init and the var is used then.
 
 ## DECIDE: open up or lock down the Agent?
 

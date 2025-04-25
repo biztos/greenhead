@@ -56,9 +56,13 @@ var RootCmd = &cobra.Command{
 
 		return nil
 	},
+	CompletionOptions: cobra.CompletionOptions{HiddenDefaultCmd: true},
 }
 
 func Execute() {
+	RootCmd.Use = Name
+	RootCmd.Version = Version
+	RootCmd.Long = fmt.Sprintf("%s (%s)\n\n%s", Title, Name, Description)
 	RootCmd.SetOut(Stdout)
 	RootCmd.SetErr(Stderr)
 	err := RootCmd.Execute()
@@ -76,17 +80,7 @@ func BailErr(code int, err error) {
 	Exit(code)
 }
 
-// UpdateInfo updates the help and usage info from the package variables.
-func UpdateInfo() {
-	RootCmd.Use = Name
-	RootCmd.Version = Version
-	RootCmd.Long = fmt.Sprintf("%s (%s)\n\n%s", Title, Name, Description)
-
-}
-
 func init() {
-
-	UpdateInfo()
 
 	// Config files:
 	RootCmd.PersistentFlags().StringVar(&runnerConfigFile, "config", "",

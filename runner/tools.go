@@ -9,7 +9,7 @@ import (
 )
 
 // ListTools prints all registered tools to w.
-func (r *Runner) ListTools(names_only bool, w io.Writer) error {
+func (r *Runner) ListTools(w io.Writer, names_only bool) error {
 
 	var lines []string
 	if names_only {
@@ -29,7 +29,7 @@ func (r *Runner) ListTools(names_only bool, w io.Writer) error {
 
 // ShowTool prints tool help to w, or returns an error if no tool is
 // registered for name.
-func ShowTool(name string, w io.Writer) error {
+func ShowTool(w io.Writer, name string) error {
 	t, err := registry.Get(name)
 	if err != nil {
 		return err

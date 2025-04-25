@@ -73,11 +73,11 @@ type Config struct {
 	StopMatches         []*rgxp.Rgxp `toml:"stop_matches"`          // Abort if any content matches any regexp set here.
 
 	// Output control:
-	Color     string `toml:"color"`           // Color for console output.
-	BgColor   string `toml:"bg_color"`        // Background color for console output.
-	Stream    bool   `toml:"stream"`          // Stream responses; if streaming not possible, print them.
-	ShowCalls bool   `toml:"show_tool_calls"` // Show tool calls in output (experimental; can leak data).
-	Silent    bool   `toml:"silent"`          // Suppress responses unless streamed.
+	Color     string `toml:"color"`      // Color for console output.
+	BgColor   string `toml:"bg_color"`   // Background color for console output.
+	Stream    bool   `toml:"stream"`     // Stream responses; if streaming not possible, print them.
+	ShowCalls bool   `toml:"show_calls"` // Show tool calls in output (experimental; can leak data).
+	Silent    bool   `toml:"silent"`     // Suppress responses unless streamed.
 
 	// Logging and debugging:
 	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.

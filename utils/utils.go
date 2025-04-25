@@ -29,6 +29,19 @@ func MustTomlString(v any) string {
 
 }
 
+// MustUnToml unmarshals b to v or panics trying.
+func MustUnToml(b []byte, v any) {
+	err := toml.Unmarshal(b, v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// MustUnTomlString unmarshals s to v or panics trying.
+func MustUnTomlString(s string, v any) {
+	MustUnToml([]byte(s), v)
+}
+
 // MustJson marshals v to a byte array or panics trying.
 func MustJson(v any) []byte {
 	b, err := json.Marshal(v)

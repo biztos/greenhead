@@ -41,7 +41,7 @@ For important caveats, see the parent command's help text.`,
 		if err != nil {
 			return err
 		}
-		return r.ListTools(toolsListNames, Stdout)
+		return r.ListTools(Stdout, toolsListNames)
 	},
 }
 
@@ -57,7 +57,7 @@ description and input schema.
 For important caveats, see the parent command's help text.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := runner.ShowTool(args[0], Stdout); err != nil {
+		if err := runner.ShowTool(Stdout, args[0]); err != nil {
 			BailErr(ExitCodeToolsError, err)
 		}
 	},
