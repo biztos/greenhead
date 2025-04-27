@@ -11,6 +11,7 @@
 # --reverse  - reverse text of each arg
 # --stdin    - echo standard input after args
 # --stderr   - echo to standard error instead of standard output
+# --sleep=W  - sleep for W fractional seconds before printing each arg line.
 # --exit=C   - exit with code C after operation
 #
 # Headers always go to standard output. The first line is always the ID and
@@ -21,7 +22,7 @@
 # The --stdin flag should be used as a configured PreArg to test the SendInput
 # option; the --stderr flag should be used as a configured PreArg to test the
 # output handling; and the --exit option should be used as a configured PreArg
-# to test error handling.
+# to test error handling, as should the --sleep option for timeouts.
 
 use strict;
 use warnings;
@@ -30,11 +31,13 @@ use feature 'say';
 use Getopt::Long;
 use Digest::MD5 qw(md5_hex);
 use IO::File;
+use Time::HiRes qw(sleep);
 
 my $seed      = 0;
 my $indent    = 0;
 my $prefix    = "";
 my $exit_code = 0;
+my $sleep     = 0;
 my @headers;
 my $reverse;
 my $stderr;
@@ -51,6 +54,7 @@ MAIN: {
         "reverse"  => \$reverse,      # flag
         "stderr"   => \$stderr,       # flag
         "stdin"    => \$stdin,        # flag
+        "sleep=f"  => \$sleep,        # numeric (float)
         "exit=i"   => \$exit_code,    # numeric (integer)
         "help"     => \$help,         # flag (special)
     ) or die("Error in command line arguments\n");
@@ -90,6 +94,9 @@ sub print_help_and_exit {
 sub say_what {
     my $what = shift @_;
     chomp $what;
+    if ($sleep) {
+        sleep $sleep;
+    }
     if ($reverse) {
         $what = reverse $what;
     }

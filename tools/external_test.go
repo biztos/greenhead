@@ -8,7 +8,9 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
+	"github.com/biztos/greenhead/registry"
 	"github.com/biztos/greenhead/tools"
+	"github.com/biztos/greenhead/utils"
 )
 
 func ToyCommand() string {
@@ -24,7 +26,7 @@ func ToyCommand() string {
 // Return a full config to exercise the toy command; trim as needed.
 func ToyConfig() *tools.ExternalToolConfig {
 	return &tools.ExternalToolConfig{
-		Name:        "toy",
+		Name:        "echo_format",
 		Description: "Echo args back with formatting.",
 		Command:     ToyCommand(),
 		Args: []*tools.ExternalToolArg{
@@ -61,9 +63,141 @@ func ToyConfig() *tools.ExternalToolConfig {
 		},
 		PreArgs:   []string{"--stdin"},
 		SendInput: true,
-		NoArgs:    false,
 	}
 
+}
+
+func TestNewExternalToolOK(t *testing.T) {
+
+	require := require.New(t)
+
+	tool, err := tools.NewExternalTool(ToyConfig())
+	require.NoError(err, "NewExternalTool")
+
+	require.Equal("echo_format", tool.Name())
+	require.Equal("Echo args back with formatting.", tool.Description())
+	// This is a little ridiculous but it does prove we have a valid Tooler.
+	// (At compile time, which is the ridiculous bit.)
+	require.NoError(registry.Register(tool))
+
+}
+
+func TestNewExternalToolFailsBadConfig(t *testing.T) {
+
+	require := require.New(t)
+
+	_, err := tools.NewExternalTool(&tools.ExternalToolConfig{})
+	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
+
+}
+
+func TestExternalToolInputSchemaOK(t *testing.T) {
+
+	require := require.New(t)
+
+	tool, err := tools.NewExternalTool(ToyConfig())
+	require.NoError(err, "NewExternalTool")
+
+	exp := `{
+  "type": "object",
+  "properties": {
+    "seed": {
+      "type": "number"
+    },
+    "header": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "indent": {
+      "type": "integer"
+    },
+    "prefix": {
+      "type": "string"
+    },
+    "reverse": {
+      "type": "boolean"
+    },
+    "line": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "seed",
+    "header",
+    "indent",
+    "prefix",
+    "reverse",
+    "line"
+  ]
+}
+`
+	got := utils.MustJsonStringPretty(tool.InputSchema())
+	require.JSONEq(exp, got) // random hash order could bit us otherwise.
+}
+
+func TestExternalToolOpenAiToolOK(t *testing.T) {
+
+	require := require.New(t)
+
+	tool, err := tools.NewExternalTool(ToyConfig())
+	require.NoError(err, "NewExternalTool")
+
+	exp := `{
+  "type": "function",
+  "function": {
+    "name": "echo_format",
+    "description": "Echo args back with formatting.",
+    "strict": true,
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "seed": {
+          "type": "number"
+        },
+        "header": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "indent": {
+          "type": "integer"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "reverse": {
+          "type": "boolean"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "seed",
+        "header",
+        "indent",
+        "prefix",
+        "reverse",
+        "line"
+      ]
+    }
+  }
+}
+`
+	got := utils.MustJsonStringPretty(tool.OpenAiTool())
+	// require.Equal("", got)
+	require.JSONEq(exp, got) // random hash order could bit us otherwise.
 }
 
 func TestExternalToolConfigValidateOK(t *testing.T) {
@@ -72,16 +206,6 @@ func TestExternalToolConfigValidateOK(t *testing.T) {
 
 	// our toy config must always be valid, duh.
 	require.NoError(ToyConfig().Validate())
-
-}
-
-func TestExternalToolConfigValidateNoArgsNoValidateOK(t *testing.T) {
-	require := require.New(t)
-	cfg := ToyConfig()
-	cfg.SendInput = true
-	cfg.NoArgs = true
-	cfg.NoValidate = true
-	require.NoError(cfg.Validate())
 
 }
 
@@ -101,28 +225,6 @@ func TestExternalToolConfigValidateFailsNoDescription(t *testing.T) {
 	err := cfg.Validate()
 	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
 	require.ErrorContains(err, `empty description for "foo"`)
-}
-
-func TestExternalToolConfigValidateFailsNoArgsWithoutSendInput(t *testing.T) {
-
-	require := require.New(t)
-	cfg := ToyConfig()
-	cfg.SendInput = false
-	cfg.NoArgs = true
-	err := cfg.Validate()
-	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
-	require.ErrorContains(err, `args must be sent if input not sent for "toy"`)
-}
-
-func TestExternalToolConfigValidateFailsNoValidateWithoutSendInput(t *testing.T) {
-
-	require := require.New(t)
-	cfg := ToyConfig()
-	cfg.SendInput = false
-	cfg.NoValidate = true
-	err := cfg.Validate()
-	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
-	require.ErrorContains(err, `arg validation can not be disabled for "toy"`)
 }
 
 func TestExternalToolConfigValidateFailsNoCommand(t *testing.T) {
@@ -178,7 +280,7 @@ func TestExternalToolConfigValidateFailsBadToolArg(t *testing.T) {
 	err := cfg.Validate()
 	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
 	require.ErrorIs(err, tools.ErrExternalToolArgInvalid)
-	require.ErrorContains(err, `"toy" arg 0`)
+	require.ErrorContains(err, `"echo_format" arg 0`)
 	require.ErrorContains(err, "neither key nor flag specified")
 
 }
@@ -194,7 +296,7 @@ func TestExternalToolConfigValidateFailsDupeToolKey(t *testing.T) {
 	}
 	err := cfg.Validate()
 	require.ErrorIs(err, tools.ErrExternalToolConfigInvalid)
-	require.ErrorContains(err, `"toy" arg 1`)
+	require.ErrorContains(err, `"echo_format" arg 1`)
 	require.ErrorContains(err, `duplicate key "foo"`)
 
 }

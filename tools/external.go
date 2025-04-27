@@ -1,9 +1,13 @@
 package tools
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 
 	"github.com/biztos/greenhead/utils"
 )
@@ -66,9 +70,7 @@ type ExternalToolConfig struct {
 	Command     string             `toml:"command"`     // Path to the executable command.
 	Args        []*ExternalToolArg `toml:"args"`        // Options/args as defined above.
 	PreArgs     []string           `toml:"pre_args"`    // Args to include verbatim in every call.
-	SendInput   bool               `toml:"send_input"`  // Send command input JSON on STDIN.
-	NoArgs      bool               `toml:"no_args"`     // Do *NOT* send Args if SendInput is true.
-	NoValidate  bool               `toml:"no_validate"` // Do *NOT* validate if SendInput is true.
+	SendInput   bool               `toml:"send_input"`  // Send raw input JSON on STDIN instead of args.
 }
 
 var ErrExternalToolConfigInvalid = fmt.Errorf("invalid external tool config")
@@ -76,7 +78,6 @@ var ErrExternalToolConfigInvalid = fmt.Errorf("invalid external tool config")
 // Validate checks that c has correct values:
 //
 // - Name and Description must not be empty.
-// - NoArgs and NoValidate require SendInput.
 // - Command must point to an executable file.
 // - Args must all validate, and not have redundant keys.
 func (c *ExternalToolConfig) Validate() error {
@@ -102,16 +103,6 @@ func (c *ExternalToolConfig) Validate() error {
 		return fmt.Errorf("%w: command not executable for %q: %w",
 			ErrExternalToolConfigInvalid, c.Name, err)
 	}
-	if !c.SendInput {
-		if c.NoArgs {
-			return fmt.Errorf("%w: args must be sent if input not sent for %q",
-				ErrExternalToolConfigInvalid, c.Name)
-		}
-		if c.NoValidate {
-			return fmt.Errorf("%w: arg validation can not be disabled for %q",
-				ErrExternalToolConfigInvalid, c.Name)
-		}
-	}
 
 	have_key := map[string]bool{}
 	for i, arg := range c.Args {
@@ -130,46 +121,191 @@ func (c *ExternalToolConfig) Validate() error {
 
 }
 
-// Schema returns a JSON schema from the c.
-func (c *ExternalToolConfig) Schema() (map[string]any, error) {
-
-	// "parameters": {
-	//   "type": "object",
-	//   "additionalProperties": false,
-	//   "properties": {
-	//     "game_id": {
-	//       "type": "string"
-	//     }
-	//   },
-	//   "required": [
-	//     "game_id"
-	//   ],
-	// }
-	obj := map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-	}
-
-	return obj, nil
-
-}
-
 // ExternalTool represents a Tooler that executes an external binary.
 //
 // Nonzero return codes are considered errors.
 type ExternalTool struct {
-	cfg    *ExternalToolConfig
-	argMap map[string]*ExternalToolArg
+	cfg     *ExternalToolConfig
+	argMap  map[string]*ExternalToolArg
+	argList []string
 }
 
 // NewExternalTool creates an ExternalTool from cfg.
 func NewExternalTool(cfg *ExternalToolConfig) (*ExternalTool, error) {
 
-	// Check that command exists and can be run.
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 
-	// Convert Options and Args to a schema.
+	argMap := make(map[string]*ExternalToolArg, len(cfg.Args))
+	argList := make([]string, 0, len(cfg.Args))
+	for _, arg := range cfg.Args {
+		argMap[arg.Key] = arg // already normalized in validation.
+		argList = append(argList, arg.Key)
+	}
 
-	// Keep a copy of the config, we need it when running.
+	return &ExternalTool{
+		cfg:     cfg,
+		argMap:  argMap,
+		argList: argList,
+	}, nil
+}
 
-	return nil, nil
+// Name implements Tooler.
+func (t *ExternalTool) Name() string {
+	return t.cfg.Name
+}
+
+// Description implements Tooler.
+func (t *ExternalTool) Description() string {
+	return t.cfg.Description
+}
+
+// Help implements Tooler.
+func (t *ExternalTool) Help() string {
+
+	s := fmt.Sprintf("%s\n\n%s\n\n", t.cfg.Name, t.cfg.Description)
+
+	// Hmm, how to handle this?  Can we just use NewTool?
+	// no because no way to coerce the type is there?
+
+	return s
+}
+
+// ValidateInput validates input against the InputSchema and returns the
+// cleaned object if input is valid.
+//
+// Cleanup currently addresses only the conversion of float64 types to int
+// where the arg specifies an "integer" type.
+func (t *ExternalTool) ValidateInput(input string) (map[string]any, error) {
+
+	// TODO: cache schemas! Here and for InputSchema.
+	schema := t.InputSchema().(jsonschema.Definition)
+
+	var v map[string]any
+	b := []byte(input)
+	if err := jsonschema.VerifySchemaAndUnmarshal(schema, b, &v); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+
+	// return map[string]any{"schema": d}, nil
+
+}
+
+// InputSchema implements Tooler, returning the "parameters" object for the
+// tool definition.
+func (t *ExternalTool) InputSchema() any {
+
+	// TODO: handle optionals.
+	// Spec is pretty weird about it, AI not helping right now.
+	props := map[string]jsonschema.Definition{}
+	for _, n := range t.argList {
+		a := t.argMap[n]
+		p := jsonschema.Definition{}
+		if a.Repeat {
+			p.Type = jsonschema.Array
+			p.Items = &jsonschema.Definition{Type: jsonschema.DataType(a.Type)}
+		} else {
+			p.Type = jsonschema.DataType(a.Type)
+		}
+		props[a.Key] = p
+	}
+
+	return jsonschema.Definition{
+		Type:                 jsonschema.Object,
+		AdditionalProperties: false,
+		Properties:           props,
+		Required:             t.argList,
+	}
+}
+
+var ErrExternalToolInputBadType = fmt.Errorf("wrong type for arg in tool input")
+
+// CommandArgs returns the full set of arguments to send to the command based
+// on the input JSON.  ValidateInput is called before further processing.
+func (t *ExternalTool) CommandArgs(input string) ([]string, error) {
+
+	// The validation guarantees our type safety for casts below.
+	// (Fun task: try to find a case where it doesn't.)
+	input_map, err := t.ValidateInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now we build our list, erroring out if we need to on the way.
+	// TODO: revisit the valGetter[T] idea b/c probably faster. But bench it.
+	// TODO: handle weird optional stuff openai-style.
+	all_args := make([]string, len(t.cfg.PreArgs))
+	copy(all_args, t.cfg.PreArgs)
+	for _, k := range t.argList {
+		arg := t.argMap[k]
+		prop := input_map[k]
+		vals := []any{}
+		if arg.Repeat {
+			array, ok := prop.([]any)
+			if !ok {
+				return nil, fmt.Errorf("%w: %q",
+					ErrExternalToolInputBadType, k)
+			}
+			for _, val := range array {
+				vals = append(vals, val)
+			}
+		} else {
+			vals = append(vals, prop)
+		}
+
+		// Boolean options get special handling; all else is same-same.
+		if arg.Type == "boolean" && arg.Flag != "" {
+			for _, v := range vals {
+				if v.(bool) == true {
+					all_args = append(all_args, arg.Flag)
+				}
+			}
+			continue
+
+		}
+
+		// All other values are stringified with the default Go style; if this
+		// this turns out to be a problem, we revisit.
+		// (And presumably we could make it a lot faster if we care, since
+		// we know the types and could just use a big ugly switch.)
+		svals := make([]string, 0, len(vals))
+		for _, val := range vals {
+			svals = append(svals, fmt.Sprint(val))
+		}
+		if arg.Flag == "" {
+			// Plan arg, use as-is.
+			all_args = append(all_args, svals...)
+		} else {
+			// Flag arg, use pair.
+			for _, s := range svals {
+				all_args = append(all_args, arg.Flag, s)
+			}
+		}
+
+	}
+
+	return all_args, nil
+}
+
+// Exec implements Tooler.
+func (t *ExternalTool) Exec(ctx context.Context, input string) (any, error) {
+	return nil, fmt.Errorf("TODO")
+}
+
+// OpenAiTool implements Tooler.
+// TODO: move this elsewhere!
+func (t *ExternalTool) OpenAiTool() openai.Tool {
+	return openai.Tool{
+		Type: openai.ToolTypeFunction,
+		Function: &openai.FunctionDefinition{
+			Name:        t.cfg.Name,
+			Description: t.cfg.Description,
+			Strict:      true, // TODO: what does this mean?
+			// TODO: prove this works, it *should* be good to go.
+			Parameters: t.InputSchema(),
+		},
+	}
 }

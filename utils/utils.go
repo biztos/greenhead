@@ -71,6 +71,19 @@ func MustJsonStringPretty(v any) string {
 	return string(MustJsonPretty(v))
 }
 
+// MustUnJson unmarshals b to v or panics trying.
+func MustUnJson(b []byte, v any) {
+	err := json.Unmarshal(b, v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// MustUnJsonString unmarshals s to v or panics trying.
+func MustUnJsonString(s string, v any) {
+	MustUnJson([]byte(s), v)
+}
+
 // Dur returns the string representation of the duration since t.
 func Dur(t time.Time) string {
 	return time.Since(t).String()

@@ -170,7 +170,7 @@ func (t *Tool[T, R]) OpenAiTool() openai.Tool {
 		Function: &openai.FunctionDefinition{
 			Name:        t.name,
 			Description: t.desc,
-			Strict:      true, // TODO: what does this mean?
+			Strict:      true,
 			// TODO: prove this works, it *should* be good to go.
 			Parameters: t.schemaT,
 		},
