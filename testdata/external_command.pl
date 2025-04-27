@@ -23,6 +23,7 @@ use warnings;
 use feature 'say';
 use Getopt::Long;
 use Digest::MD5 qw(md5_hex);
+use IO::File;
 
 my $seed   = 0;
 my $indent = 0;
@@ -30,6 +31,7 @@ my $prefix = "";
 my @headers;
 my $stderr;
 my $stdin;
+my $help;
 
 MAIN: {
 
@@ -40,7 +42,10 @@ MAIN: {
         "header=s" => \@headers,    # array
         "stderr"   => \$stderr,     # flag
         "stdin"    => \$stdin,      # flag
+        "help"     => \$help,       # flag (special)
     ) or die("Error in command line arguments\n");
+
+    print_help_and_exit() if $help;
 
     srand( int($seed) ) if $seed;
     say md5_hex( rand $seed );
@@ -52,6 +57,22 @@ MAIN: {
             say_what($line);
         }
     }
+}
+
+sub print_help_and_exit {
+
+    my $fh = IO::File->new( $0, '<' ) or die "opening myself for read: $!";
+    while ( my $line = <$fh> ) {
+        if ( $line =~ s/^#// ) {
+            if ( $line =~ s/^ // ) {
+                print $line;
+            }
+        }
+        else {
+            last;
+        }
+    }
+    exit 0;
 }
 
 sub say_what {

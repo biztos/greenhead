@@ -1,6 +1,5 @@
 # TODO (ordered! sorta!)
 
-
 ## ExternalTools
 
 Support tools defined at load in config (or theoretically at runtime)
@@ -30,6 +29,35 @@ __FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
 
 Make it something you have to turn on, or something you can turn off?
 
+## Use Glamour for rendering incoming stuff, also for streaming!
+
+Glamour has nice Markdown to ASNI rendering.  Ideally want to back up and
+re-render whenever we have both:
+
+* reached the end of a block we think is useful
+* finished getting a chunk to render
+
+One problem is keeping track of the stuff we already printed, e.g. by lines.
+(Fun problem but what priority?)
+
+Other problem is what represents a point at which to re-render -- and should
+we maybe add stuff as temporary markdown?
+
+For instance we get a code block, it's nice to start rendering it as code.
+So add on a closing marker.  Same maybe true of other things?  Unsure.
+
+Printing the streaming response is neat but this would be neater.
+
+__Starting point is maybe using this for non-streaming output__ and then...
+what about the print funcs? Could just start with render to ASCII and then
+print in color, could work.
+
+Those change to styles maybe?  Nice to keep the colors, I like that. But then
+I have a whole fucking color scheme for keeping the output aligned with the
+original color... yikes.
+
+__THIS IS A RABBIT HOLE AND YOU HAVE MORE IMPORTANT SHIT TO WORRY ABOUT__
+
 ## Make "tools run" take an arg instead of stdin
 
 Stdin is stupid, let it take an arg but file-style like @foo, same logic is
@@ -39,18 +67,6 @@ in agents run.
 
 Otherwise shitshow.
 
-## MAYBE Default config file w/complex logic
-
-__PROBLEM:__ if you say default is /foo.toml and want to ignore it if not
-found, you have to handle --config=/foo.toml which *should* throw if not
-found.
-
-Also problem: no idea where to look for that file, i.e. we are not saying
-(nor want to say) where you should put the binary.
-
-One solution is to have a settable default but not use it out of the box.
-Custom binaries only.  But then can't easily have it in the flag settings b/c
-that's in init and the var is used then.
 
 ## DECIDE: open up or lock down the Agent?
 
@@ -218,3 +234,18 @@ Nice to have!  But by no means urgent.  And if doing it, make it optional.
 
 github.com/pelletier/go-toml/v2
 
+## MAYBE Default config file w/complex logic
+
+No hurry here, *really* no hurry!  Normal use is probably just to define
+agents on the command line.
+
+__PROBLEM:__ if you say default is /foo.toml and want to ignore it if not
+found, you have to handle --config=/foo.toml which *should* throw if not
+found.
+
+Also problem: no idea where to look for that file, i.e. we are not saying
+(nor want to say) where you should put the binary.
+
+One solution is to have a settable default but not use it out of the box.
+Custom binaries only.  But then can't easily have it in the flag settings b/c
+that's in init and the var is used then.

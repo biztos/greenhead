@@ -34,7 +34,7 @@ func TestListToolsNoTools(t *testing.T) {
 	require.NoError(err, "NewRunner errs not")
 
 	buf := new(bytes.Buffer)
-	require.NoError(r.ListTools(true, buf), "ListTools errs not")
+	require.NoError(r.ListTools(buf, true), "ListTools errs not")
 
 	exp := "<no tools>\n"
 	require.Equal(exp, buf.String(), "list output")
@@ -55,7 +55,7 @@ func TestListToolsNameOnly(t *testing.T) {
 	require.NoError(err, "NewRunner errs not")
 
 	buf := new(bytes.Buffer)
-	require.NoError(r.ListTools(true, buf), "ListTools errs not")
+	require.NoError(r.ListTools(buf, true), "ListTools errs not")
 
 	exp := "foo\nbar\n"
 	require.Equal(exp, buf.String(), "list output")
@@ -76,7 +76,7 @@ func TestListToolsLong(t *testing.T) {
 	require.NoError(err, "NewRunner errs not")
 
 	buf := new(bytes.Buffer)
-	require.NoError(r.ListTools(false, buf), "ListTools errs not")
+	require.NoError(r.ListTools(buf, false), "ListTools errs not")
 
 	exp := "foo    - foo ok\nbarzoo - barzoo ok\n"
 	require.Equal(exp, buf.String(), "list output")
@@ -91,7 +91,7 @@ func TestShowToolError(t *testing.T) {
 	defer registry.Clear()
 
 	buf := new(bytes.Buffer)
-	err := runner.ShowTool("foo", buf)
+	err := runner.ShowTool(buf, "foo")
 	require.EqualError(err, `tool is not registered: "foo"`)
 	require.Equal("", buf.String(), "no output")
 
@@ -107,7 +107,7 @@ func TestShowToolOK(t *testing.T) {
 	require.NoError(registry.Register(testTool("foo")), "reg foo")
 
 	buf := new(bytes.Buffer)
-	err := runner.ShowTool("foo", buf)
+	err := runner.ShowTool(buf, "foo")
 	require.NoError(err, "show tool")
 	exp := `foo
 

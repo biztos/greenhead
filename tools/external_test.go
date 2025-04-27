@@ -6,27 +6,45 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/biztos/greenhead/tools"
+	"github.com/biztos/greenhead/utils"
 )
 
-func TestExternalToolConfigCopyOK(t *testing.T) {
-	require := require.New(t)
-	c := &tools.ExternalToolConfig{
-		Name:        "list_files",
-		Description: "The UNIX `ls` command, used to list files and directories.",
-		Command:     "/bin/ls",
-		Options: []tools.ExternalToolOption{
-			{"-l", "long", "List files in the long format."},
-			{"-A", "all", "List all files, including dotfiles."},
-		},
-		Args: []string{"[FILE...]"},
+var AllOptsToml = `# TOML to exercise all options on the toy command.
+
+options:
+`
+
+func ToyConfig() *tools.ExternalToolConfig {
+	cfg := &tools.ExternalToolConfig{}
+	utils.MustUnTomlString(AllOptsToml, cfg)
+	return cfg
+}
+
+func SingleArgConfig(arg *tools.ExternalToolArg) *tools.ExternalToolConfig {
+
+	return &tools.ExternalToolConfig{
+		Name:        "name",
+		Description: "desc",
+		Command:     "cmd",
+		Args:        []*tools.ExternalToolArg{arg},
+		PreArgs:     []string{},
 	}
-	n := c.Copy()
-	require.EqualValues(n, c)
-	c.Name = "changed"
-	c.Options = append(c.Options, tools.ExternalToolOption{})
-	c.Args = append(c.Args, "more")
-	require.Equal("list_files", n.Name, "Name not linked")
-	require.Equal(2, len(n.Options), "Options not linked")
-	require.Equal([]string{"[FILE...]"}, n.Args, "Args not linked")
+}
+
+func TestExternalToolArgValidateOK(t *testing.T) {
+
+	require := require.New(t)
+
+	arg := &tools.ExternalToolArg{
+		Flag:        "--indent",
+		Key:         "indent_level",
+		Type:        "integer",
+		Connector:   "",
+		Description: "Indent with this many spaces.",
+		Optional:    true,
+		Repeat:      false,
+	}
+	err := arg.Validate()
+	require.NoError(err)
 
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -155,4 +156,25 @@ func UnmarshalFile(file string, v any) error {
 		return fmt.Errorf("error unmarshaling TOML: %w", err)
 	}
 	return nil
+}
+
+// IsExecutable checks whether a file is (i.e., appears to be) executable.
+func IsExecutable(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	mode := info.Mode()
+	if !mode.IsRegular() {
+		return false, nil
+	}
+
+	if runtime.GOOS == "windows" {
+		ext := strings.ToLower(filepath.Ext(path))
+		return ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com", nil
+	}
+
+	// Check if any execution bit is set
+	return mode&0111 != 0, nil
 }

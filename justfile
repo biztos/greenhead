@@ -6,7 +6,7 @@ list:
 
 # Prepare assets etc.
 prep:
-	@echo prep is TBD, see if we have any assets first
+	cd assets && binsanity src
 
 # Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version': prep
