@@ -10,14 +10,11 @@ import (
 
 // ExternalToolArg represents an argument (or option) for a command.
 //
-// Note that the Connector affects how options are passed to the command.
-// If there is a Connector, the Flag and incoming value will be sent as a
-// single arg.  This is usually not advisable.
+// An option has a flag; an argument has no flag.
 type ExternalToolArg struct {
 	Flag        string `toml:"spec"`        // Flag to use in option, e.g. "-foo"; empty for args.
-	Key         string `toml:"key"`         // Key for schema; defaults to Flag, ergo required for args.
+	Key         string `toml:"key"`         // Key for schema; defaults to trimmed Flag; required for args.
 	Type        string `toml:"type"`        // Type for schema; defaults to boolean.
-	Connector   string `toml:"connector"`   // Connector of flag to value.
 	Description string `toml:"description"` // Description, used in the schema, no default.
 	Optional    bool   `toml:"optional"`    // Is the arg optional or required?
 	Repeat      bool   `toml:"repeat"`      // Can repeat this arg (use array in schema).
@@ -29,12 +26,12 @@ var ErrExternalToolArgInvalid = fmt.Errorf("external tool arg invalid")
 
 // Validate sanity-checks the values of arg a, setting defaults as needed.
 //
-// It is called from the ExternalToolConfig.Validate function.
+// It is called from the config's Validate and need not be called separately.
 func (a *ExternalToolArg) Validate() error {
 
 	// Either flag or key must be set, otherwise we can't make a schema.
 	if a.Key == "" {
-		a.Key = a.Flag
+		a.Key = strings.Trim(a.Flag, "-")
 	}
 	if a.Key == "" {
 		return fmt.Errorf("%w: neither key nor flag specified",
@@ -43,55 +40,35 @@ func (a *ExternalToolArg) Validate() error {
 
 	// Type must be one of SupportedTypes.
 	if a.Type == "" {
-		a.Type = "boolean"
+		// For an arg with no flag, it defaults to string (just an arg).
+		if a.Flag == "" {
+			a.Type = "string"
+		} else {
+			// Otherwise it's treated as a classic on/off flag.
+			a.Type = "boolean"
+		}
 	}
 	if !slices.Contains(ExternalToolArgTypes, a.Type) {
 		return fmt.Errorf("%w: unsupported type for %q: %q",
 			ErrExternalToolArgInvalid, a.Key, a.Type)
 	}
 
-	// Connector is for options only, i.e. requires flag.
-	if a.Connector != "" && a.Flag == "" {
-		return fmt.Errorf("%w: connector without flag for %q: %q",
-			ErrExternalToolArgInvalid, a.Key, a.Connector)
-	}
-	// NB: we do *not* default the connector to anything, because the call
-	// will be much cleaner without a connector.
-
 	return nil
 
 }
-
-// TODO: send incoming payload as JSON text, validation *optional*
-// TODO: optionals have type of ["real-type","null"]
-//   https://platform.openai.com/docs/guides/function-calling?api-mode=chat
-
-// hmm, we will need to round-trip this, from the input schema back...
-// also we need a type for the input, but we can't dynamically create a type
-// ...not matter if we gen the schema without the type, right?
-
-// // config example
-// var x = ExternalToolConfig{
-// 	Name:        "list_files",
-// 	Description: "The UNIX `ls` command, used to list files and directories.",
-// 	Command:     "/bin/ls",
-// 	Args: []string{
-// 		{"-l", "long", "List files in the long format."},
-// 		{"-A", "all", "List all files, including dotfiles."},
-// 	},
-// 	Args: {"[FILE...]"},
-// }
 
 // ExternalToolConfig represents the configuration of an ExternalTool.
 //
 // This is used within a Runner config.
 type ExternalToolConfig struct {
-	Name        string
-	Description string
-	Command     string // Path to the executable command.
-	Args        []*ExternalToolArg
-
-	PreArgs []string // Args to include before any specific tool args.
+	Name        string             `toml:"name"`        // Name, required.
+	Description string             `toml:"description"` // Description, required.
+	Command     string             `toml:"command"`     // Path to the executable command.
+	Args        []*ExternalToolArg `toml:"args"`        // Options/args as defined above.
+	PreArgs     []string           `toml:"pre_args"`    // Args to include verbatim in every call.
+	SendInput   bool               `toml:"send_input"`  // Send command input JSON on STDIN.
+	NoArgs      bool               `toml:"no_args"`     // Do *NOT* send Args if SendInput is true.
+	NoValidate  bool               `toml:"no_validate"` // Do *NOT* validate if SendInput is true.
 }
 
 var ErrExternalToolConfigInvalid = fmt.Errorf("invalid external tool config")
@@ -99,8 +76,9 @@ var ErrExternalToolConfigInvalid = fmt.Errorf("invalid external tool config")
 // Validate checks that c has correct values:
 //
 // - Name and Description must not be empty.
+// - NoArgs and NoValidate require SendInput.
 // - Command must point to an executable file.
-// - Args must all have allowed values, and not have redundant keys.
+// - Args must all validate, and not have redundant keys.
 func (c *ExternalToolConfig) Validate() error {
 
 	if strings.TrimSpace(c.Name) == "" {
@@ -111,6 +89,10 @@ func (c *ExternalToolConfig) Validate() error {
 		return fmt.Errorf("%w: empty description for %q",
 			ErrExternalToolConfigInvalid, c.Name)
 	}
+	if strings.TrimSpace(c.Command) == "" {
+		return fmt.Errorf("%w: empty command for %q",
+			ErrExternalToolConfigInvalid, c.Name)
+	}
 	can_exec, err := utils.IsExecutable(c.Command)
 	if err != nil {
 		return fmt.Errorf("%w: command error for %q: %w",
@@ -119,6 +101,16 @@ func (c *ExternalToolConfig) Validate() error {
 	if !can_exec {
 		return fmt.Errorf("%w: command not executable for %q: %w",
 			ErrExternalToolConfigInvalid, c.Name, err)
+	}
+	if !c.SendInput {
+		if c.NoArgs {
+			return fmt.Errorf("%w: args must be sent if input not sent for %q",
+				ErrExternalToolConfigInvalid, c.Name)
+		}
+		if c.NoValidate {
+			return fmt.Errorf("%w: arg validation can not be disabled for %q",
+				ErrExternalToolConfigInvalid, c.Name)
+		}
 	}
 
 	have_key := map[string]bool{}

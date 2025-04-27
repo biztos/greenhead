@@ -249,3 +249,12 @@ Also problem: no idea where to look for that file, i.e. we are not saying
 One solution is to have a settable default but not use it out of the box.
 Custom binaries only.  But then can't easily have it in the flag settings b/c
 that's in init and the var is used then.
+
+## MAYBE tools.ExternalToolArg.Connector
+
+We had an `ExternalToolArg.Connector` field to cause options to be coupled
+with their values, as in --foo=RECEIVED_FOO_VAL.  The need for this is
+speculative though, for POSIX we should not have to worry about it.
+
+__DO NOT DO THIS WITHOUT A REAL-WORLD USE-CASE__
+
