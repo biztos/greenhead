@@ -1,8 +1,10 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"slices"
 	"strings"
 
@@ -65,12 +67,13 @@ func (a *ExternalToolArg) Validate() error {
 //
 // This is used within a Runner config.
 type ExternalToolConfig struct {
-	Name        string             `toml:"name"`        // Name, required.
-	Description string             `toml:"description"` // Description, required.
-	Command     string             `toml:"command"`     // Path to the executable command.
-	Args        []*ExternalToolArg `toml:"args"`        // Options/args as defined above.
-	PreArgs     []string           `toml:"pre_args"`    // Args to include verbatim in every call.
-	SendInput   bool               `toml:"send_input"`  // Send raw input JSON on STDIN instead of args.
+	Name          string             `toml:"name"`           // Name, required.
+	Description   string             `toml:"description"`    // Description, required.
+	Command       string             `toml:"command"`        // Path to the executable command.
+	Args          []*ExternalToolArg `toml:"args"`           // Options/args as defined above.
+	PreArgs       []string           `toml:"pre_args"`       // Args to include verbatim in every call.
+	SendInput     bool               `toml:"send_input"`     // Send raw input JSON on STDIN instead of args.
+	CombineOutput bool               `toml:"combine_output"` // Include STDERR after STDOUT in result.
 }
 
 var ErrExternalToolConfigInvalid = fmt.Errorf("invalid external tool config")
@@ -224,8 +227,19 @@ func (t *ExternalTool) InputSchema() any {
 var ErrExternalToolInputBadType = fmt.Errorf("wrong type for arg in tool input")
 
 // CommandArgs returns the full set of arguments to send to the command based
-// on the input JSON.  ValidateInput is called before further processing.
+// on the input JSON.  ValidateInput is called if SendInput is false.
+//
+// Note that the args do not include the t.Command.
 func (t *ExternalTool) CommandArgs(input string) ([]string, error) {
+
+	// Base args are always the same set.
+	all_args := make([]string, len(t.cfg.PreArgs))
+	copy(all_args, t.cfg.PreArgs)
+
+	// If you want your raw input, you get your raw input.
+	if t.cfg.SendInput {
+		return all_args, nil
+	}
 
 	// The validation guarantees our type safety for casts below.
 	// (Fun task: try to find a case where it doesn't.)
@@ -237,8 +251,7 @@ func (t *ExternalTool) CommandArgs(input string) ([]string, error) {
 	// Now we build our list, erroring out if we need to on the way.
 	// TODO: revisit the valGetter[T] idea b/c probably faster. But bench it.
 	// TODO: handle weird optional stuff openai-style.
-	all_args := make([]string, len(t.cfg.PreArgs))
-	copy(all_args, t.cfg.PreArgs)
+
 	for _, k := range t.argList {
 		arg := t.argMap[k]
 		prop := input_map[k]
@@ -290,9 +303,110 @@ func (t *ExternalTool) CommandArgs(input string) ([]string, error) {
 	return all_args, nil
 }
 
+// CommandError represents an error returned from an external command.
+//
+// To obtain the exit code you must examine the Unwrap return value, which
+// may be a *exec.ExitError.
+type CommandError struct {
+	err    error
+	Stdout string
+	Stderr string
+}
+
+// NewCommandError returns a CommandError with its underlying error set to
+// err, or err wrapped with Stderr if Stderr is not empty.
+//
+// There is no limit to the amount of Stderr included, but it is
+// space-trimmed.
+func NewCommandError(err error, stdout string, stderr string) CommandError {
+
+	if stderr != "" {
+		err = fmt.Errorf("%w: %s", err, strings.TrimSpace(stderr))
+	}
+	return CommandError{err, stdout, stderr}
+}
+
+// Error implements the error interface.
+func (e CommandError) Error() string {
+	return e.err.Error()
+}
+
+// Unwrap returns the underlying error in e.
+func (e CommandError) Unwrap() error {
+	return e.err
+}
+
+// Detail returns a detailed human-readable version of e.
+func (e CommandError) Detail() string {
+	s := fmt.Sprintf("CommmandError: %s\n", e.Error())
+	s += "-------------------------------------------------------------\n"
+	if e.Stdout == "" {
+		s += "<No Stdout>\n"
+	} else {
+		s += "Stdout:\n"
+		s += "-------------------------------------------------------------\n"
+		s += e.Stdout + "\n"
+	}
+	s += "-------------------------------------------------------------\n"
+	if e.Stderr == "" {
+		s += "<No Stderr>\n"
+	} else {
+		s += "Stderr:\n"
+		s += "-------------------------------------------------------------\n"
+		s += e.Stderr + "\n"
+	}
+	s += "-------------------------------------------------------------\n"
+	return s
+}
+
+var ErrCommandTimedOut = fmt.Errorf("command timed out")
+var ErrCommandCanceled = fmt.Errorf("command canceled")
+var ErrCommandFailed = fmt.Errorf("command failed")
+
 // Exec implements Tooler.
 func (t *ExternalTool) Exec(ctx context.Context, input string) (any, error) {
-	return nil, fmt.Errorf("TODO")
+
+	// Prepare the command
+	args, err := t.CommandArgs(input)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(ctx, t.cfg.Command, args...)
+	if t.cfg.SendInput {
+		cmd.Stdin = strings.NewReader(input)
+	}
+
+	// Capture stdout and stderr
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Run the command
+	err = cmd.Run()
+
+	// Check for errors.
+	ctx_err := ctx.Err()
+	var cmd_err error
+	if ctx_err == context.Canceled {
+		cmd_err = fmt.Errorf("%w: %w", cmd_err, err)
+	} else if ctx_err == context.DeadlineExceeded {
+		cmd_err = ErrCommandTimedOut
+	} else if err != nil {
+		cmd_err = ErrCommandFailed
+	}
+	if cmd_err != nil {
+		return nil, NewCommandError(
+			fmt.Errorf("%w: %w", cmd_err, err),
+			stdout.String(),
+			stderr.String(),
+		)
+	}
+	if t.cfg.CombineOutput {
+		return stdout.String() + stderr.String(), nil
+	} else {
+		return stdout.String(), nil
+	}
+
 }
 
 // OpenAiTool implements Tooler.

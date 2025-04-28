@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 const ExitCodeWTF = 999
 
 var TheTool *tools.ExternalTool
+var TheToolConfig *tools.ExternalToolConfig
 
 // WtfCmd is for work in progress.
 var WtfCmd = &cobra.Command{
@@ -43,18 +45,21 @@ Maybe just hook into pre/postrun funcs?`,
 			"line": ["one","two"]
 		}`
 
+		// TheToolConfig.PreArgs = []string{"--exit", "3"} // force bailout
+
 		cmd_args, err := TheTool.CommandArgs(fakein)
 		if err != nil {
 			return err
-
 		}
-		fmt.Println(cmd_args)
-		// res, err := tool.Exec(context.Background(), "foo")
-		// if err != nil {
-		// 	return err
-		// }
-		// fmt.Println("SUCCESS")
-		// fmt.Println(res)
+		fmt.Println("ARGS:", cmd_args)
+		res, err := TheTool.Exec(context.Background(), fakein)
+		if err != nil {
+			// In this case we know we can coerce the error.
+			fmt.Println(err.(tools.CommandError).Detail())
+			return err
+		}
+		fmt.Println("SUCCESS")
+		fmt.Println(res)
 		return nil
 
 	},
@@ -64,7 +69,8 @@ func init() {
 	RootCmd.AddCommand(WtfCmd)
 
 	// Set up an external tool with the toy command.
-	cfg := &tools.ExternalToolConfig{
+	// (tweak above, yay globals)
+	TheToolConfig = &tools.ExternalToolConfig{
 		Name:        "echo_format",
 		Description: "Echo args back with formatting.",
 		Command:     "testdata/external_command.pl",
@@ -100,10 +106,11 @@ func init() {
 				Repeat:      true,
 			},
 		},
-		PreArgs:   []string{"--stderr"},
-		SendInput: false,
+		PreArgs:       []string{},
+		SendInput:     false,
+		CombineOutput: true,
 	}
-	tool, err := tools.NewExternalTool(cfg)
+	tool, err := tools.NewExternalTool(TheToolConfig)
 	if err != nil {
 		panic(err)
 	}

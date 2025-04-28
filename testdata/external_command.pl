@@ -72,7 +72,10 @@ MAIN: {
         }
     }
 
-    exit $exit_code;
+    if ($exit_code) {
+        say STDERR "exit $exit_code";
+        exit $exit_code;
+    }
 }
 
 sub print_help_and_exit {
