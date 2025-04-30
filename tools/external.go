@@ -175,6 +175,8 @@ func (t *ExternalTool) Help() string {
 	return s
 }
 
+var ErrInvalidInput = fmt.Errorf("command input invalid")
+
 // ValidateInput validates input against the InputSchema and returns the
 // cleaned object if input is valid.
 //
@@ -188,12 +190,10 @@ func (t *ExternalTool) ValidateInput(input string) (map[string]any, error) {
 	var v map[string]any
 	b := []byte(input)
 	if err := jsonschema.VerifySchemaAndUnmarshal(schema, b, &v); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 
 	return v, nil
-
-	// return map[string]any{"schema": d}, nil
 
 }
 

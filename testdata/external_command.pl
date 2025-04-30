@@ -11,7 +11,7 @@
 # --reverse  - reverse text of each arg
 # --stdin    - echo standard input after args
 # --stderr   - echo to standard error instead of standard output
-# --sleep=W  - sleep for W fractional seconds before printing each arg line.
+# --sleep=W  - sleep for W fractional seconds after printing each arg line.
 # --exit=C   - exit with code C after operation
 #
 # Headers always go to standard output. The first line is always the ID and
@@ -43,6 +43,8 @@ my $reverse;
 my $stderr;
 my $stdin;
 my $help;
+
+BEGIN { $| = 1; }
 
 MAIN: {
 
@@ -97,9 +99,6 @@ sub print_help_and_exit {
 sub say_what {
     my $what = shift @_;
     chomp $what;
-    if ($sleep) {
-        sleep $sleep;
-    }
     if ($reverse) {
         $what = reverse $what;
     }
@@ -110,5 +109,8 @@ sub say_what {
         say STDOUT " " x $indent, $prefix, $what;
     }
 
+    if ($sleep) {
+        sleep $sleep;
+    }
 }
 

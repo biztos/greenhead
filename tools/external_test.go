@@ -1,9 +1,12 @@
 package tools_test
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
@@ -12,6 +15,8 @@ import (
 	"github.com/biztos/greenhead/tools"
 	"github.com/biztos/greenhead/utils"
 )
+
+var ToyCommandValid = false // set in init
 
 func ToyCommand() string {
 	cwd, _ := os.Getwd()
@@ -61,9 +66,102 @@ func ToyConfig() *tools.ExternalToolConfig {
 				Repeat:      true,
 			},
 		},
-		PreArgs:   []string{"--stdin"},
-		SendInput: true,
+		PreArgs:       []string{},
+		SendInput:     false,
+		CombineOutput: true,
 	}
+
+}
+
+func TestExternalToolExecOK(t *testing.T) {
+
+	if !ToyCommandValid {
+		t.Skip("toy command missing or invalid")
+	}
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 4,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	exp := `691f4bcc60fad8d9f0f8eb5b0189d538
+h1
+h2
+    --one
+    --two
+`
+
+	res, err := tool.Exec(context.Background(), input)
+	require.NoError(err, "exec")
+	require.Equal(exp, res)
+
+}
+
+func TestExternalToolExecFailBadInput(t *testing.T) {
+
+	if !ToyCommandValid {
+		t.Skip("toy command missing or invalid")
+	}
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{ "foo": 1.2 }`
+
+	_, err = tool.Exec(context.Background(), input)
+	require.ErrorIs(err, tools.ErrInvalidInput)
+
+}
+
+func TestExternalToolExecFailTimeout(t *testing.T) {
+
+	if !ToyCommandValid {
+		t.Skip("toy command missing or invalid")
+	}
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+
+	cfg.PreArgs = []string{"--stderr", "--sleep", "10.0"} // we get first arg
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 0,
+	"prefix": "--",
+	"header": [],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	// NOTE: tune this if we have to run with very slow Perl for some reason.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second/8)
+	defer cancel()
+
+	_, err = tool.Exec(ctx, input)
+	require.ErrorIs(err, tools.ErrCommandTimedOut)
+	cerr := err.(tools.CommandError)
+
+	// We autoflush so we get some output here.  IRL you might not.
+	require.Equal("691f4bcc60fad8d9f0f8eb5b0189d538\n", cerr.Stdout)
+	require.Equal("--one\n", cerr.Stderr)
 
 }
 
@@ -400,5 +498,21 @@ func TestExternalToolArgValidateUntypedArgDefaultsOK(t *testing.T) {
 	}
 	require.NoError(arg.Validate())
 	require.EqualValues(exp, arg)
+
+}
+
+func init() {
+	// Make sure the toy command is available and the config valid.
+	// (This exercises some code that is also unit-tested, which is fine.
+	// If this fails, the test will fail with (possibly) more info.)
+	cfg := ToyConfig()
+	_, err := tools.NewExternalTool(cfg)
+	if err != nil {
+		fmt.Println("TOY COMMAND:", err)
+		ToyCommandValid = false
+	} else {
+		fmt.Println("TOY COMMAND:", cfg.Command)
+		ToyCommandValid = true
+	}
 
 }
