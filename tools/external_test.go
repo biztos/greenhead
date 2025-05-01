@@ -17,15 +17,11 @@ import (
 )
 
 var ToyCommandValid = false // set in init
-
-func ToyCommand() string {
-	cwd, _ := os.Getwd()
-	top := filepath.Dir(cwd)
-	path, err := filepath.Abs(filepath.Join(top, "testdata", "external_command.pl"))
-	if err != nil {
-		panic(err)
+var ToyCommandPath = ""     // set in init
+func SkipInvalidToy(t *testing.T) {
+	if !ToyCommandValid {
+		t.Skip("no valid toy command available, tried this: " + ToyCommandPath)
 	}
-	return path
 }
 
 // Return a full config to exercise the toy command; trim as needed.
@@ -33,7 +29,7 @@ func ToyConfig() *tools.ExternalToolConfig {
 	return &tools.ExternalToolConfig{
 		Name:        "echo_format",
 		Description: "Echo args back with formatting.",
-		Command:     ToyCommand(),
+		Command:     ToyCommandPath,
 		Args: []*tools.ExternalToolArg{
 			{
 				Flag:        "--seed",
@@ -75,9 +71,7 @@ func ToyConfig() *tools.ExternalToolConfig {
 
 func TestExternalToolExecOK(t *testing.T) {
 
-	if !ToyCommandValid {
-		t.Skip("toy command missing or invalid")
-	}
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -110,9 +104,7 @@ h2
 
 func TestExternalToolExecFailBadInput(t *testing.T) {
 
-	if !ToyCommandValid {
-		t.Skip("toy command missing or invalid")
-	}
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -130,9 +122,7 @@ func TestExternalToolExecFailBadInput(t *testing.T) {
 
 func TestExternalToolExecFailTimeout(t *testing.T) {
 
-	if !ToyCommandValid {
-		t.Skip("toy command missing or invalid")
-	}
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -165,7 +155,47 @@ func TestExternalToolExecFailTimeout(t *testing.T) {
 
 }
 
+func TestExternalToolExecFailNonZeroExit(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+
+	cfg.PreArgs = []string{"--stderr", "--exit", "3"}
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 0,
+	"prefix": "--",
+	"header": [],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	// NOTE: tune this if we have to run with very slow Perl for some reason.
+	ctx := context.Background()
+
+	_, err = tool.Exec(ctx, input)
+	require.ErrorIs(err, tools.ErrCommandFailed)
+	cerr := err.(tools.CommandError)
+
+	// We autoflush so we get some output here.  IRL you might not.
+	require.Equal("691f4bcc60fad8d9f0f8eb5b0189d538\n", cerr.Stdout)
+	require.Equal("--one\n--two\nexit 3\n", cerr.Stderr)
+
+	// Whatever was flushed to STDERR should also be in our error.
+	require.Equal("command failed: exit status 3: --one\n--two\nexit 3",
+		cerr.Error())
+
+}
+
 func TestNewExternalToolOK(t *testing.T) {
+
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -190,6 +220,8 @@ func TestNewExternalToolFailsBadConfig(t *testing.T) {
 }
 
 func TestExternalToolInputSchemaOK(t *testing.T) {
+
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -240,6 +272,8 @@ func TestExternalToolInputSchemaOK(t *testing.T) {
 }
 
 func TestExternalToolOpenAiToolOK(t *testing.T) {
+
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -299,6 +333,8 @@ func TestExternalToolOpenAiToolOK(t *testing.T) {
 }
 
 func TestExternalToolConfigValidateOK(t *testing.T) {
+
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -369,6 +405,8 @@ func TestExternalToolConfigValidateFailsCommandNotExecutable(t *testing.T) {
 
 func TestExternalToolConfigValidateFailsBadToolArg(t *testing.T) {
 
+	SkipInvalidToy(t)
+
 	require := require.New(t)
 
 	cfg := ToyConfig()
@@ -384,6 +422,8 @@ func TestExternalToolConfigValidateFailsBadToolArg(t *testing.T) {
 }
 
 func TestExternalToolConfigValidateFailsDupeToolKey(t *testing.T) {
+
+	SkipInvalidToy(t)
 
 	require := require.New(t)
 
@@ -502,11 +542,21 @@ func TestExternalToolArgValidateUntypedArgDefaultsOK(t *testing.T) {
 }
 
 func init() {
+
+	// Set up the toy command.
+	cwd, _ := os.Getwd()
+	top := filepath.Dir(cwd)
+	path, err := filepath.Abs(filepath.Join(top, "testdata", "external_command.pl"))
+	if err != nil {
+		panic(err)
+	}
+	ToyCommandPath = path
+
 	// Make sure the toy command is available and the config valid.
 	// (This exercises some code that is also unit-tested, which is fine.
 	// If this fails, the test will fail with (possibly) more info.)
 	cfg := ToyConfig()
-	_, err := tools.NewExternalTool(cfg)
+	_, err = tools.NewExternalTool(cfg)
 	if err != nil {
 		fmt.Println("TOY COMMAND:", err)
 		ToyCommandValid = false

@@ -23,6 +23,9 @@
 # option; the --stderr flag should be used as a configured PreArg to test the
 # output handling; and the --exit option should be used as a configured PreArg
 # to test error handling, as should the --sleep option for timeouts.
+#
+# NOTE: this *should* work on Windows if your .pl extension is correctly
+# associated.
 
 use strict;
 use warnings;
