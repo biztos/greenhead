@@ -24,7 +24,7 @@ func SkipInvalidToy(t *testing.T) {
 	}
 }
 
-// Return a full config to exercise the toy command; trim as needed.
+// Return a full config to exercise the toy command; modify as needed.
 func ToyConfig() *tools.ExternalToolConfig {
 	return &tools.ExternalToolConfig{
 		Name:        "echo_format",
@@ -102,6 +102,119 @@ h2
 
 }
 
+func TestExternalToolExecNoCombineOutputOK(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+	cfg.CombineOutput = false
+	cfg.PreArgs = []string{"--stderr"}
+
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 4,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	// Should have only stdout; line args should be on stdin.
+	exp := `691f4bcc60fad8d9f0f8eb5b0189d538
+h1
+h2
+`
+
+	res, err := tool.Exec(context.Background(), input)
+	require.NoError(err, "exec")
+	require.Equal(exp, res)
+
+}
+
+// Tested elsewhere but not explicitly, so...
+func TestExternalToolExecCombineOutputOK(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+	cfg.CombineOutput = true
+	cfg.PreArgs = []string{"--stderr"}
+
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 4,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	exp := `691f4bcc60fad8d9f0f8eb5b0189d538
+h1
+h2
+    --one
+    --two
+`
+
+	res, err := tool.Exec(context.Background(), input)
+	require.NoError(err, "exec")
+	require.Equal(exp, res)
+
+}
+
+func TestExternalToolExecSendInputOK(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	// Set up the config to pipe the input to stdin, but also print something
+	// to both stdin and stdout.
+	cfg := ToyConfig()
+	cfg.SendInput = true
+	cfg.CombineOutput = true
+	cfg.PreArgs = []string{"--stdin", "--stderr", "--seed", "1.2", "hello"}
+
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 4,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	exp := `691f4bcc60fad8d9f0f8eb5b0189d538
+hello
+{
+	"seed": 1.2,
+	"indent": 4,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}
+`
+
+	res, err := tool.Exec(context.Background(), input)
+	require.NoError(err, "exec")
+	require.Equal(exp, res)
+
+}
+
 func TestExternalToolExecFailBadInput(t *testing.T) {
 
 	SkipInvalidToy(t)
@@ -128,7 +241,7 @@ func TestExternalToolExecFailTimeout(t *testing.T) {
 
 	cfg := ToyConfig()
 
-	cfg.PreArgs = []string{"--stderr", "--sleep", "10.0"} // we get first arg
+	cfg.PreArgs = []string{"--stderr", "--sleep", "10.0"}
 	tool, err := tools.NewExternalTool(cfg)
 	require.NoError(err, "new")
 
@@ -153,6 +266,54 @@ func TestExternalToolExecFailTimeout(t *testing.T) {
 	require.Equal("691f4bcc60fad8d9f0f8eb5b0189d538\n", cerr.Stdout)
 	require.Equal("--one\n", cerr.Stderr)
 
+	// Whatever was flushed to STDERR should also be in our error.
+	// TODO: see if this works on Windows (we *want* to care, anyway).
+	require.Equal("command timed out: signal: killed: --one",
+		cerr.Error())
+
+}
+
+func TestExternalToolExecFailCancel(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	cfg := ToyConfig()
+
+	cfg.PreArgs = []string{"--stderr", "--sleep", "10.0"} // we get first arg
+	tool, err := tools.NewExternalTool(cfg)
+	require.NoError(err, "new")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 0,
+	"prefix": "--",
+	"header": [],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel the context in a separate goroutine before the Exec completes.
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	_, err = tool.Exec(ctx, input)
+	require.ErrorIs(err, tools.ErrCommandCanceled)
+	cerr := err.(tools.CommandError)
+
+	// We autoflush so we get some output here.  IRL you might not.
+	require.Equal("691f4bcc60fad8d9f0f8eb5b0189d538\n", cerr.Stdout)
+	require.Equal("--one\n", cerr.Stderr)
+
+	// Whatever was flushed to STDERR should also be in our error.
+	require.Equal("command canceled: signal: killed: --one",
+		cerr.Error())
+
 }
 
 func TestExternalToolExecFailNonZeroExit(t *testing.T) {
@@ -176,10 +337,7 @@ func TestExternalToolExecFailNonZeroExit(t *testing.T) {
 	"line": ["one","two"]
 }`
 
-	// NOTE: tune this if we have to run with very slow Perl for some reason.
-	ctx := context.Background()
-
-	_, err = tool.Exec(ctx, input)
+	_, err = tool.Exec(context.Background(), input)
 	require.ErrorIs(err, tools.ErrCommandFailed)
 	cerr := err.(tools.CommandError)
 
@@ -190,6 +348,73 @@ func TestExternalToolExecFailNonZeroExit(t *testing.T) {
 	// Whatever was flushed to STDERR should also be in our error.
 	require.Equal("command failed: exit status 3: --one\n--two\nexit 3",
 		cerr.Error())
+
+}
+
+func TestCommandArgsBoolFlagFalseOK(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	tool, err := tools.NewExternalTool(ToyConfig())
+	require.NoError(err, "NewExternalTool")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 0,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": false,
+	"line": ["one","two"]
+}`
+
+	// NB: order should match the config order not the input order!
+	exp := []string{
+		"--seed", "1.2",
+		"--header", "h1",
+		"--header", "h2",
+		"--indent", "0",
+		"--prefix", "--",
+		"one", "two",
+	}
+	args, err := tool.CommandArgs(input)
+	require.NoError(err, "CommandArgs")
+	require.Equal(exp, args)
+
+}
+
+func TestCommandArgsBoolFlagTrueOK(t *testing.T) {
+
+	SkipInvalidToy(t)
+
+	require := require.New(t)
+
+	tool, err := tools.NewExternalTool(ToyConfig())
+	require.NoError(err, "NewExternalTool")
+
+	input := `{
+	"seed": 1.2,
+	"indent": 0,
+	"prefix": "--",
+	"header": ["h1","h2"],
+	"reverse": true,
+	"line": ["one","two"]
+}`
+
+	// NB: order should match the config order not the input order!
+	exp := []string{
+		"--seed", "1.2",
+		"--header", "h1",
+		"--header", "h2",
+		"--indent", "0",
+		"--prefix", "--",
+		"--reverse", // bool flag included b/c true
+		"one", "two",
+	}
+	args, err := tool.CommandArgs(input)
+	require.NoError(err, "CommandArgs")
+	require.Equal(exp, args)
 
 }
 

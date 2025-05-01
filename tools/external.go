@@ -257,11 +257,10 @@ func (t *ExternalTool) CommandArgs(input string) ([]string, error) {
 		prop := input_map[k]
 		vals := []any{}
 		if arg.Repeat {
-			array, ok := prop.([]any)
-			if !ok {
-				return nil, fmt.Errorf("%w: %q",
-					ErrExternalToolInputBadType, k)
-			}
+			// We trust the validation we did above, and cast to array.
+			// If for some reason this doesn't work, figure out why and handle
+			// it (no sense having something we can't test).
+			array := prop.([]any)
 			for _, val := range array {
 				vals = append(vals, val)
 			}
@@ -388,7 +387,7 @@ func (t *ExternalTool) Exec(ctx context.Context, input string) (any, error) {
 	ctx_err := ctx.Err()
 	var cmd_err error
 	if ctx_err == context.Canceled {
-		cmd_err = fmt.Errorf("%w: %w", cmd_err, err)
+		cmd_err = ErrCommandCanceled
 	} else if ctx_err == context.DeadlineExceeded {
 		cmd_err = ErrCommandTimedOut
 	} else if err != nil {
