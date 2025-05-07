@@ -1,99 +1,48 @@
-# greenhead
+# Greenhead - Agentic LLM Runner
 
-LLM thing based on convo with Sam in เชียงใหม่
+Greenhead is a framework for building and running AI Agents. It is a Go
+package, and a CLI, and a way of making custom CLIs.
 
-## Pluggable Headless Agentic AI
+There are four main ways to use Greenhead:
 
-Basic idea is:
+1. Run the command-line program to use any built-in or external tools.
+2. Easily build your own program with any tools you care to define.
+3. Use the Go packages to build anything you want.
+4. Contribute tools for others to use.
 
-* You can plug in functions that are callable by the AIs.
-* You can run "headless" -- put the AI in a simple endpoint.
-* You can connect two (or more?) to each other.
+Greenhead wants these use-cases to be as easy as possible while still being
+powerful enough to build Skynet. _(Just kidding?)__
 
-(Maybe "headless" isn't the best description for that?)
+## Motivation
 
-## Demo MVP Features
+Many people have tasks they would like AI assistance with, but connecting the
+tools for Agents is too difficult.
 
-Just to prove it out, seems like we'll need:
+Some of these tools can be defined as functions; others already exist as
+binaries on the user's system.
 
-1. Pluggable, i.e. you can add functions without touching other code.
-2. Useful set of "toy" functions to start with -- things easy to demo.
-3. Simple CLI so you can play with the thing.
-4. Simple HTTP API.  (TBD -- not just re-exposing the OpenAI one.)
-5. Simple HTML wrapper for that so you can 
-6. Ability to connect two agents to each other.
+Greenhead presents a uniform way of setting up both kinds of tools and
+presenting them to the AI. This, we hope, will make adoption of Agentic AI
+easier in situations where programming from scratch is not realistic, but
+full control of the environment is required.
 
-Also very cool but not really "minimal" -- ability to have more than the two,
-i.e. a converstation, potentially brokered?
+## Running the Command-Line Program
 
-## Difficulties
+The standard CLI as shipped is named `ghd` and includes a help feature:
 
-### Plug-ins
+    ghd help config
 
-First hard thing is the plug-in plan considering no dynamic loading in Go.
-Probably acceptable to have a registry of these which is compiled and then
-set up which funcs are available, with default rigging to do that via a TOML
-file.
+## Building Your Own
 
-### API
+### Easy Mode
 
-Next obviously hard thing is the API.  What exactly are we exposing? Consider:
+### Power Mode
 
-- Setup: have func `color_for_day(d) -> color`
-- User: What is today's color?
-- LLM:
-    1. "Calling the function."
-    2. call func(today)
-- System: func(today) result = "blue"
-- LLM: "Today's color is blue."
+## Using the Packages
 
-In that example we do or do not want to expose the LLM-to-system round trip to
-the user?  We need to be able to see it in some debug way, but we also want to
-be able to keep the agent's activities under wraps.
+## Contributing Tools
 
-OK so probably *do* need an API that includes everything, but build in a way
-to deal with the function calls.  Problem being that by the time you get the
-text in `1.` above, the func calls are already underway.  Streaming not good
-in this case.
 
-### Demo Funcs that actually do something.
 
-Tic Tac Toe seems like a good one!
-
-Can also play against a human.
-
-Functions:
-
-`ttt.start() -> game_id`
-
-`ttt.join(id)`
-
-`ttt.move(x,y) -> ack`
-
-`ttt.board() -> shows board`
-
-`ttt.whoami() -> X|O`
-
-Good example of how we need more than one single function for a plug-in.
-
-### Broker
-
-A broker could be really cool.
-
-Imagine you set up a chat in which you can answer different people, not only
-one chat partner.  Will this work?
-
-And you can direct the conversation.
-
-So you can say: `@bob what's today's color?`  And then Bob might ask Jim for
-the data, and Jim calls a function.
-
-We could have a broker sitting in the middle.  Broker knows which Agent is for
-which name.
-
-But what happens if multiple Agents are talking to one Agent at the same time?
-
-You'd have to make it turn-based somehow, maybe?
-
-Well anyway -- two is plenty to start.
+_Hello to Sam in เชียงใหม่ or wherever!_
 
