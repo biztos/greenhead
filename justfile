@@ -6,6 +6,7 @@ list:
 
 # Prepare assets etc.
 prep:
+	cp README.md assets/src/doc/readme.md
 	cd assets && binsanity src
 
 # Run locally from source, with args passed. Args must not contain spaces.
@@ -41,3 +42,7 @@ doc: prep
 clean:
 	/bin/rm -rf build cover.out
 
+# Generate the license for the doc command.
+license:
+	cp LICENSE assets/src/doc/license.md
+	build-tools/licenses.pl >> assets/src/doc/license.md

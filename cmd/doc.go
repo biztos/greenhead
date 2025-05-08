@@ -10,39 +10,44 @@ import (
 	"github.com/biztos/greenhead/assets"
 )
 
-var helpAsHtml bool
-var helpAsMarkdown bool
-var helpAsAscii bool
+var docAsHtml bool
+var docAsMarkdown bool
+var docAsAscii bool
 
-// HelpCmd represents the "help" command set.
+// DocCmd represents the "doc" command set.
 //
-// Help files are found under assets/src/help and should be Markdown files;
+// Doc files are found under assets/src/doc and should be Markdown files;
 // however care should be taken to not make them too Markdown-y as they will
 // usually be printed to the screen.
 //
-// TODO: run all the help stuff in CI to make sure it doesn't error on bad
+// TODO: run all the doc stuff in CI to make sure it doesn't error on bad
 // Markdown.
-var HelpCmd = &cobra.Command{
-	Use:   "help [topic]",
-	Short: "Show detailed help text.",
-	Long: `The help command prints detailed help text for provided topic.
+var DocCmd = &cobra.Command{
+	Use:   "doc [topic]",
+	Short: "Show detailed documentation.",
+	Long: `The doc command prints detailed documentation for the given topic.
 
-For example, "help config" prints information about configuration, including
+For example, "doc config" prints information about configuration, including
 sample config TOML.
 
-Run "help" with no topic for a list of topics.`,
+Note that documentation here is more comprehensive than the command help,
+with the latter focused on running the commands.
+
+Run "doc" with no topic for a list of topics.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 1 {
 			return fmt.Errorf("only one topic at a time please")
 		}
 		if len(args) == 0 {
-			fmt.Fprintln(Stdout, "Help topics:")
+			fmt.Fprintln(Stdout, "Documentation topics:")
 			fmt.Fprintln(Stdout, "")
-			for i, topic := range assets.PrefixNamesExt("help/", ".md", true) {
+			for i, topic := range assets.PrefixNamesExt("doc/", ".md", true) {
 				fmt.Fprintf(Stdout, "%d.  %s\n", i+1, topic)
 			}
+			fmt.Fprintln(Stdout, "")
+			fmt.Fprintln(Stdout, "Use `doc <topic>` for the doc page.")
 		} else {
-			name := "help/" + args[0] + ".md"
+			name := "doc/" + args[0] + ".md"
 			md, err := assets.AssetString(name)
 			if errors.Is(err, assets.ErrNotFound) {
 				return fmt.Errorf("topic not found: %s", args[0])
@@ -52,18 +57,18 @@ Run "help" with no topic for a list of topics.`,
 			}
 
 			// Source-dump trumps look bump.
-			if helpAsMarkdown {
+			if docAsMarkdown {
 				fmt.Fprintln(Stdout, md)
 				return nil
 			}
 
 			// HTML is TODO but presumably use goldmark
-			if helpAsHtml {
+			if docAsHtml {
 				return fmt.Errorf("HTML TODO")
 			}
 
 			// ASCII is just another Glamour style.
-			if helpAsAscii {
+			if docAsAscii {
 				out, err := glamour.Render(md, "ascii")
 				if err != nil {
 					return fmt.Errorf("error rendering topic: %w", err)
@@ -91,12 +96,12 @@ Run "help" with no topic for a list of topics.`,
 }
 
 func init() {
-	HelpCmd.Flags().BoolVar(&helpAsMarkdown, "md", false,
-		"Print help text as Markdown source.")
-	HelpCmd.Flags().BoolVar(&helpAsHtml, "html", false,
-		"Print help text as HTML.")
-	HelpCmd.Flags().BoolVar(&helpAsAscii, "ascii", false,
-		"Print help text as ASCII text without ANSI styling.")
+	DocCmd.Flags().BoolVar(&docAsMarkdown, "md", false,
+		"Print documentation as Markdown source.")
+	DocCmd.Flags().BoolVar(&docAsHtml, "html", false,
+		"Print documentation as HTML.")
+	DocCmd.Flags().BoolVar(&docAsAscii, "ascii", false,
+		"Print documentation as ASCII text without ANSI styling.")
 
-	RootCmd.AddCommand(HelpCmd)
+	RootCmd.AddCommand(DocCmd)
 }

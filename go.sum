@@ -1,3 +1,5 @@
+github.com/Bobgy/go-mod-licenses v0.0.0-20210717001941-431caf1489ad h1:6vWHwxP2pH4hlP9frt/HWe6KxpoQVDGztTokOPlIvfU=
+github.com/Bobgy/go-mod-licenses v0.0.0-20210717001941-431caf1489ad/go.mod h1:yvTr6FM3eAo1AGudvBTv5eDCfG0VWzaZbQWNVk3SjPA=
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/alecthomas/assert/v2 v2.7.0 h1:QtqSACNS3tF7oasA8CU6A6sXZSBDqnm7RfpLl9bZqbE=

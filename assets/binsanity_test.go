@@ -19,17 +19,23 @@ import (
 	"github.com/biztos/greenhead/assets"
 )
 
-const BinsanityAssetMissing = "help/config.md--NOPE"
-const BinsanityAssetPresent = "help/config.md"
-const BinsanityAssetPresentSum = "b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0"
+const BinsanityAssetMissing = "doc/readme.md--NOPE"
+const BinsanityAssetPresent = "doc/people.md"
+const BinsanityAssetPresentSum = "e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398"
 
 var BinsanityAssetNames = []string{
 
-	"help/config.md",
+	"doc/config.md",
+	"doc/license.md",
+	"doc/people.md",
+	"doc/readme.md",
 }
 
 var BinsanityAssetSums = []string{
 	"b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0",
+	"e8b7b0d128b47043903f31ebbd101eadbda3fae00b2117bbf5769fbea82663a4",
+	"e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398",
+	"6a70f69b58d883730f1141fcc00c73ce348e1c667e574864b8f2cac523d9b3c3",
 }
 
 func TestAssetNames(t *testing.T) {

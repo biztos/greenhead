@@ -66,6 +66,7 @@ Maybe just hook into pre/postrun funcs?`,
 }
 
 func init() {
+
 	RootCmd.AddCommand(WtfCmd)
 
 	// Set up an external tool with the toy command.

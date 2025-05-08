@@ -12,6 +12,7 @@ _You're soaking in it!_
 * Single-prompt runner (any number of agents)
 * Pair runner (two-agent conversation)
 * Simple chat
+* TODO: built-in agents
 
 ## v0.2
 
@@ -25,6 +26,7 @@ _You're soaking in it!_
 	* Graceful shutdown
 * Useful built-in tools
 	* pro-bing
+	* miekg/dns
 	* others TBD
 * Support for other LLMs besides OpenAI.
 	* LLAMA et al, will test via Groq
@@ -47,3 +49,6 @@ _You're soaking in it!_
 * HTTP API for running pairs, sets, etc.
 * "Broker" support for many agents.
 * Pass-through API? Maybe.
+* Model-switcher: let the LLM change the model.
+* Tool: more general KV store, maybe Badger?
+* Tool: SQLite3 database interface.
