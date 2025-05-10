@@ -42,7 +42,10 @@ doc: prep
 clean:
 	/bin/rm -rf build cover.out
 
-# Generate the license for the doc command.
+# Generate the licenses for the doc command, checking compatibility first.
 license:
-	cp LICENSE assets/src/doc/license.md
-	build-tools/licenses.pl >> assets/src/doc/license.md
+	go-licenses check ./...
+	mkdir -p build
+	rm -rf build/third_party_licenses
+	go-licenses save ./... --save_path=build/third_party_licenses
+	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md

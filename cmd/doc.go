@@ -2,17 +2,13 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 
-	"github.com/biztos/greenhead/assets"
+	"github.com/biztos/greenhead/runner"
 )
 
-var docAsHtml bool
-var docAsMarkdown bool
-var docAsAscii bool
+var docConfig = &runner.DocConfig{}
 
 // DocCmd represents the "doc" command set.
 //
@@ -33,74 +29,30 @@ sample config TOML.
 Note that documentation here is more comprehensive than the command help,
 with the latter focused on running the commands.
 
-Run "doc" with no topic for a list of topics.`,
+Run "doc topics" for a list of topics.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		// Be liberal with the args, otherwise it gets confusing.
 		if len(args) > 1 {
-			return fmt.Errorf("only one topic at a time please")
+			return errors.New("One topic at a time please.")
 		}
+		var topic string
 		if len(args) == 0 {
-			fmt.Fprintln(Stdout, "Documentation topics:")
-			fmt.Fprintln(Stdout, "")
-			for i, topic := range assets.PrefixNamesExt("doc/", ".md", true) {
-				fmt.Fprintf(Stdout, "%d.  %s\n", i+1, topic)
-			}
-			fmt.Fprintln(Stdout, "")
-			fmt.Fprintln(Stdout, "Use `doc <topic>` for the doc page.")
+			topic = "topics"
 		} else {
-			name := "doc/" + args[0] + ".md"
-			md, err := assets.AssetString(name)
-			if errors.Is(err, assets.ErrNotFound) {
-				return fmt.Errorf("topic not found: %s", args[0])
-			}
-			if err != nil {
-				return err
-			}
-
-			// Source-dump trumps look bump.
-			if docAsMarkdown {
-				fmt.Fprintln(Stdout, md)
-				return nil
-			}
-
-			// HTML is TODO but presumably use goldmark
-			if docAsHtml {
-				return fmt.Errorf("HTML TODO")
-			}
-
-			// ASCII is just another Glamour style.
-			if docAsAscii {
-				out, err := glamour.Render(md, "ascii")
-				if err != nil {
-					return fmt.Errorf("error rendering topic: %w", err)
-				}
-				fmt.Fprintln(Stdout, out)
-				return nil
-			}
-
-			// By default we want to auto-style.
-			r, err := glamour.NewTermRenderer(
-				glamour.WithAutoStyle(),
-			)
-			if err != nil {
-				return fmt.Errorf("error creating renderer: %w", err)
-			}
-			out, err := r.Render(md)
-			if err != nil {
-				return fmt.Errorf("error rendering topic: %w", err)
-			}
-			fmt.Fprintln(Stdout, out)
-
+			topic = args[0]
 		}
-		return nil
+
+		return runner.PrintDocs(Stdout, topic, docConfig)
 	},
 }
 
 func init() {
-	DocCmd.Flags().BoolVar(&docAsMarkdown, "md", false,
+	DocCmd.Flags().BoolVar(&docConfig.Markdown, "md", false,
 		"Print documentation as Markdown source.")
-	DocCmd.Flags().BoolVar(&docAsHtml, "html", false,
+	DocCmd.Flags().BoolVar(&docConfig.Html, "html", false,
 		"Print documentation as HTML.")
-	DocCmd.Flags().BoolVar(&docAsAscii, "ascii", false,
+	DocCmd.Flags().BoolVar(&docConfig.Ascii, "ascii", false,
 		"Print documentation as ASCII text without ANSI styling.")
 
 	RootCmd.AddCommand(DocCmd)

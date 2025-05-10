@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/titanous/json5"
+	"golang.org/x/term"
 )
 
 // MustToml marshals v to a byte array or panics trying.
@@ -190,4 +191,30 @@ func IsExecutable(path string) (bool, error) {
 
 	// Check if any execution bit is set
 	return mode&0111 != 0, nil
+}
+
+var DefaultTerminalWidth = 80
+
+// GetTerminalWidth attempts to obtain the current terminal width for
+// formatting output, trying Stdout first and falling back to /dev/tty,
+// finally defaulting to DefaultTerminalWidth.
+func GetTerminalWidth() int {
+	// Try stdout first
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+			return w
+		}
+	}
+
+	// Fall back to /dev/tty
+	tty, err := os.Open("/dev/tty")
+	if err == nil {
+		defer tty.Close()
+		if w, _, err := term.GetSize(int(tty.Fd())); err == nil {
+			return w
+		}
+	}
+
+	// Give up and use default
+	return 80
 }

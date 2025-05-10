@@ -11,6 +11,20 @@ import (
 
 var ErrNotFound = errors.New("asset not found") // TODO: put in binsanity!
 
+// Header returns up to length lines from the top of the named asset.
+func Header(name string, length int) (string, error) {
+	s, err := AssetString(name)
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= length {
+		return s, nil
+	}
+	return strings.Join(lines[:length], "\n"), nil
+
+}
+
 // AsssetString returns the asset as a string, or ErrNotFound.
 func AssetString(name string) (string, error) {
 	b, err := Asset(name)

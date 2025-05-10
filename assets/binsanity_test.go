@@ -20,20 +20,22 @@ import (
 )
 
 const BinsanityAssetMissing = "doc/readme.md--NOPE"
-const BinsanityAssetPresent = "doc/people.md"
-const BinsanityAssetPresentSum = "e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398"
+const BinsanityAssetPresent = "doc/licenses.md"
+const BinsanityAssetPresentSum = "7c4899a35d0d48162f54454cce04343fd402fa3da40a36c1ffc611a382969f68"
 
 var BinsanityAssetNames = []string{
 
 	"doc/config.md",
 	"doc/license.md",
+	"doc/licenses.md",
 	"doc/people.md",
 	"doc/readme.md",
 }
 
 var BinsanityAssetSums = []string{
 	"b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0",
-	"e8b7b0d128b47043903f31ebbd101eadbda3fae00b2117bbf5769fbea82663a4",
+	"7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061",
+	"7c4899a35d0d48162f54454cce04343fd402fa3da40a36c1ffc611a382969f68",
 	"e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398",
 	"6a70f69b58d883730f1141fcc00c73ce348e1c667e574864b8f2cac523d9b3c3",
 }
