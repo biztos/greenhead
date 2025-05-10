@@ -89,6 +89,10 @@ type Config struct {
 }
 
 // Copy returns a deep copy of c.
+//
+// TODO: prove this is actually a deep copy!  One smells a mistake...
+// ALT: don't deal in copyies of this, because why bother?  Changing config
+// after the thing is running should be understood as disallowed.
 func (c *Config) Copy() *Config {
 	n := *c
 	n.Tools = make([]*rgxp.OptionalRgxp, len(c.Tools))

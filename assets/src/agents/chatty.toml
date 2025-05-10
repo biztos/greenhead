@@ -5,7 +5,7 @@ description =  """\
   """
 type = "openai"
 model = "gpt-4o"
-tools = []
+tools = ["/.*/"]
 color = "lightblue"
 [[context]]
 role = "system"

@@ -25,14 +25,15 @@ var AgentsListCmd = &cobra.Command{
 
 Agents are instantiated to check for configuration errors.
 
-Note that each will have a unique identifier (a ULID) when running.`,
+Note that each will have a unique identifier (a ULID) when running.
+
+If no agents are configured, shows the available named agents, if any.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r, err := runner.NewRunner(Config)
 		if err != nil {
 			return err
 		}
-		r.ListAgents(Stdout)
-		return nil
+		return r.ListAgents(Stdout)
 	},
 }
 

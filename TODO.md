@@ -1,33 +1,8 @@
 # TODO (ordered! sorta!)
 
-## ExternalTools
+## Better API for clearing/adding named agents from top level.
 
-Support tools defined at load in config (or theoretically at runtime)
-
-Basic version is a tool that calls a binary with args using os.Exec with a
-timeout. (Or with no timeout?  Timeout might be nice.)
-
-Let that be set in runner config which gets tools, agent can then be configged
-to call it.
-
-Bigger/more-complex idea: run code in Javascript or maybe other interpreter.
-
-Goja for JS would be great.  What else?  If it's easy can just add...
-
-Any way to make that pluggable?  Should work actually.  Want a type that is
-"code interpreter" and then the concrete type is say JS interp built-in, can
-add others in the standard way.
-
-These two should both be supersets of Tooler!
-
-Another one, kinda scary but why TF not? An actual code interpreter the agent
-can call as a tool.  Prolog maybe: https://github.com/ichiban/prolog
-
-(Or just reuse the JS thing above.)
-
-__FOR NOW, PUNT ON SELF-DEFINING TOOLS BUT DO SUPPORT CONFIGURED TOOLS__
-
-Make it something you have to turn on, or something you can turn off?
+OK probably not urgently needed.
 
 ## Use Glamour for rendering incoming stuff, also for streaming!
 

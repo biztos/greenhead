@@ -37,10 +37,10 @@ func AssetString(name string) (string, error) {
 }
 
 // PrefixNamesExt calls PrefixNames and filters out assets without extension
-// ext.  If strip is true, the extension is removed.
+// ext.  If strip is true, the prefix and extension are removed.
 func PrefixNamesExt(prefix string, ext string, strip bool) []string {
 	matches := []string{}
-	for _, name := range PrefixNames(prefix) {
+	for _, name := range PrefixNames(prefix, strip) {
 		if filepath.Ext(name) == ext {
 			if strip {
 				name = strings.TrimSuffix(name, ext)
@@ -52,15 +52,18 @@ func PrefixNamesExt(prefix string, ext string, strip bool) []string {
 }
 
 // PrefixNames returns the names of assets with a given prefix, with the
-// prefix removed.
+// prefix removed.  If strip is true, the prefix is removed.
 //
 // NOTE: this may not work in windows-origin builds.
 // TODO: make sure binsanity is properly UNIX-ifying paths!
-func PrefixNames(prefix string) []string {
+func PrefixNames(prefix string, strip bool) []string {
 	matches := []string{}
 	for _, name := range AssetNames() {
 		if strings.HasPrefix(name, prefix) {
-			matches = append(matches, strings.TrimPrefix(name, prefix))
+			if strip {
+				name = strings.TrimPrefix(name, prefix)
+			}
+			matches = append(matches, name)
 		}
 	}
 	return matches

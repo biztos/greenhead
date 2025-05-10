@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,18 +15,39 @@ import (
 	"github.com/biztos/greenhead/utils"
 )
 
-// ListAgents prints summary information for the configured agents.
-func (r *Runner) ListAgents(w io.Writer) {
-	if len(r.Config.Agents) == 0 {
-		fmt.Fprintln(w, "<no agents>")
-		return
+// ListAgents prints summary information for the configured agents; or if
+// no agents are configured, the available named agents.
+func (r *Runner) ListAgents(w io.Writer) error {
+
+	var agents []*agent.Agent
+	if len(r.Agents) == 0 {
+		if len(NamedAgentConfigs) == 0 {
+			fmt.Fprintln(w, "<no agents>")
+			return nil
+		}
+		fmt.Fprintln(w, "No agents loaded; showing available named agents.")
+		names := []string{}
+		for name := range NamedAgentConfigs {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			agent, err := agent.NewAgent(NamedAgentConfigs[name])
+			if err != nil {
+				// TODO: trigger bad config to prove this works.
+				return fmt.Errorf("bad named config for %s: %w", name, err)
+			}
+			agents = append(agents, agent)
+		}
+	} else {
+		agents = r.Agents
 	}
 
 	// Get our type, model, name widths from the config.
 	tw := 4
 	mw := 5
 	nw := 4
-	for _, a := range r.Agents {
+	for _, a := range agents {
 		if len(a.Type) > tw {
 			tw = len(a.Type)
 		}
@@ -42,21 +64,19 @@ func (r *Runner) ListAgents(w io.Writer) {
 	linef := fmt.Sprintf("%%-4s %%-%ds %%-%ds %%-%ds %%s\n", tw, mw, nw)
 
 	fmt.Fprintf(w, linef, "No.", "Type", "Model", "Name", "Description")
-	for i, a := range r.Agents {
+	for i, a := range agents {
 		// Take only first line of desc.
 		// TODO (maybe): JSON option, which could include everything including
 		// potentially tools?
-		// TODO: trim to the terminal width!
-		// 	if fd := int(os.Stdout.Fd()); term.IsTerminal(fd) {
-		// if w, _, err := term.GetSize(fd); err == nil && w > 0 {
-		// 	width = w
-		// }
+		// TODO: trim to the terminal width!  (which we now have in utils)
 		desc := strings.TrimSpace(strings.SplitN(a.Description, "\n", 2)[0])
 		if desc != a.Description {
 			desc += "..."
 		}
 		fmt.Fprintf(w, linef, strconv.Itoa(i), a.Type, a.Model, a.Name, desc)
 	}
+
+	return nil
 }
 
 // CheckAgents runs the ApiClient Check command on configured agents, in
@@ -120,7 +140,7 @@ func (r *Runner) PrintColors(w io.Writer, args ...string) error {
 
 	for i, c := range r.Config.Agents {
 
-		prefix := fmt.Sprintf("Agent %d: ", i+1)
+		prefix := fmt.Sprintf("Agent %d: %s - ", i, c.Name)
 		agent.PrintColorPairSample(w, c.Color, c.BgColor, prefix)
 
 	}

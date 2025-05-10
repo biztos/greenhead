@@ -1,3 +1,41 @@
 # config-full.toml -- test example of a config defining everything it can.
-debug = true
-stream = true # OR you can say silent = true
+debug = false
+log_file = ""
+no_log = false
+silent = false
+stream = false
+show_calls = false
+dump_dir = ""
+log_tool_args = false
+max_completions = 100
+max_toolchain = 10
+no_tools = false
+
+[[agents]]
+  name = "AgentChatty"
+  description = "An agent that likes to talk."
+  type = "openai"
+  model = "gpt-4o"
+  endpoint = ""
+  tools = []
+  max_completion_tokens = 0
+  max_completions = 100
+  max_tokens = 0
+  max_toolchain = 10
+  abort_on_refusal = false
+  color = "lightblue"
+  bg_color = ""
+  stream = false
+  show_calls = false
+  silent = false
+  debug = false
+  log_file = ""
+  no_log = false
+  dump_dir = ""
+  log_tool_args = false
+
+  [[agents.context]]
+    Role = "system"
+    Content = "You are a helpful assistant. You love to chat."
+
+
