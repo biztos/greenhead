@@ -1,4 +1,4 @@
-// cmd/example/minimal/main.go -- smallest custom CLI.
+// examples/minimal/main.go -- smallest meaningfully custom CLI.
 package main
 
 import (
@@ -7,6 +7,6 @@ import (
 )
 
 func main() {
-	// greenhead.CustomApp("minimal", "1.0.0", "SuperCorp Tic Tac Toe Player", "")
+	greenhead.CustomApp("minimal", "1.0.0", "SuperCorp Tic Tac Toe", "")
 	greenhead.Run()
 }

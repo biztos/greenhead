@@ -31,8 +31,9 @@ explicitly enabled.`,
 
 // ToolsListCmd represents the "tools list" subcommand.
 var ToolsListCmd = &cobra.Command{
-	Use:   "list [--names]",
-	Short: "List all registered tools which can be enabled for agents.",
+	Use:     "list [--names]",
+	Aliases: []string{"ls"},
+	Short:   "List all registered tools which can be enabled for agents.",
 	Long: `Lists all the registered tools, optionally only listing names.
 
 For important caveats, see the parent command's help text.`,

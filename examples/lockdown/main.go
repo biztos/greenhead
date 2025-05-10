@@ -1,15 +1,20 @@
-// cmd/example/lockdown/main.go -- a maximally locked-down custom binary.
+// examples/lockdown/main.go -- a maximally locked-down custom binary.
 //
 // ** WORK IN PROGRESS **
 //
 // This CLI is as locked-down as possible, demonstrating the ability to make
 // a custom binary that explicitly disallows user customization.
 //
+// Note that we load all tools then prune the registered tools.  This is in
+// real life harder than just loading the tools you want, but IRL you also
+// might not want to bother loading them individually when a regexp is easier
+// to read.  Imagine for example wanting all of /^net/ recursively.
+//
 // TODO: Best practice for API Keys here is TBD!
 //
 // To check that it registered the tools, use:
 //
-//	go run ./cmd/example/lockdown -h
+//	go run ./examples/lockdown -h
 package main
 
 import (

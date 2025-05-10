@@ -1,14 +1,15 @@
-// cmd/example/main.go -- a simple example of a custom binary.
+// examples/custom/main.go -- example of a custom tool.
 //
 // This uses the default setup, with a custom function parse_url defined here,
-// and some modifications to the commands.
+// and some modifications to the commands.  It includes all the built-in tools
+// as well.
 //
 // This should serve as a demonstration of the "easy" path to deploying custom
-// runners
+// runners with tools programmed in Go.
 //
 // To check that it registered the tools, use:
 //
-//	go run ./cmd/example list-tools
+//	go run ./examples/custom tools show parse_url
 package main
 
 import (
@@ -25,7 +26,7 @@ import (
 
 func main() {
 	// Use a custom name but keep the default description.
-	greenhead.CustomApp("example", "1.0.0", "SuperCorp URL Parser", "")
+	greenhead.CustomApp("custom", "1.0.0", "SuperCorp URL Parser", "")
 
 	// Disallow chat, we don't trust you!
 	greenhead.RemoveCommand("chat")
