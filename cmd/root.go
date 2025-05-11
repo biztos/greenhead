@@ -95,7 +95,7 @@ func init() {
 		"Stream LLM output to the console.")
 	RootCmd.PersistentFlags().BoolVar(&Config.Silent, "silent", false,
 		"Suppress LLM output.")
-	RootCmd.PersistentFlags().StringVar(&Config.LogFile, "log-file", "",
+	RootCmd.PersistentFlags().StringVarP(&Config.LogFile, "log-file", "l", "",
 		"Log to this file instead of STDERR.")
 	RootCmd.PersistentFlags().BoolVar(&Config.NoLog, "no-log", false,
 		"Do not log at all.")
@@ -105,9 +105,10 @@ func init() {
 		"Show tool calls with output (experimental; can leak data!).")
 
 	// Limits:
-	RootCmd.PersistentFlags().IntVarP(&Config.MaxCompletions, "max-completions", "m", 100,
+	// (Note that defaults are quite conservative. You probably want more!)
+	RootCmd.PersistentFlags().IntVarP(&Config.MaxCompletions, "max-completions", "m", 10,
 		"Maximum number of completions to run (tool calls not included).")
-	RootCmd.PersistentFlags().IntVar(&Config.MaxToolChain, "max-toolchain", 10,
+	RootCmd.PersistentFlags().IntVar(&Config.MaxToolChain, "max-toolchain", 3,
 		"Maximum number of tool calls allowed in a completion.")
 
 	// Safety:

@@ -19,7 +19,7 @@ import (
 	"github.com/biztos/greenhead/assets"
 )
 
-const BinsanityAssetMissing = "doc/readme.md--NOPE"
+const BinsanityAssetMissing = "doc/tools/tictactoe.md--NOPE"
 const BinsanityAssetPresent = "doc/config.md"
 const BinsanityAssetPresentSum = "b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0"
 
@@ -29,11 +29,13 @@ var BinsanityAssetNames = []string{
 	"agents/marvin.toml",
 	"agents/pirate.toml",
 	"agents/tictactoe.toml",
+	"doc/api.md",
 	"doc/config.md",
 	"doc/license.md",
 	"doc/licenses.md",
 	"doc/people.md",
 	"doc/readme.md",
+	"doc/tools/tictactoe.md",
 }
 
 var BinsanityAssetSums = []string{
@@ -41,11 +43,13 @@ var BinsanityAssetSums = []string{
 	"e49aa1ea1710e0ad809e23a8429a683f017472cfb5ba8eec99ef56964acdf401",
 	"ec08f63a25b7edda382315885e0ff961accb48e44dca179a28605a1b88e88eab",
 	"9759c5116e99ea5db017462318129482e48d3697634d70a1d6ac8407e9a2ff68",
+	"fabad97bdd39493510c8e798476ab413aad84846eb32be3ef6727ea7aa41317d",
 	"b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0",
 	"7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061",
 	"7c4899a35d0d48162f54454cce04343fd402fa3da40a36c1ffc611a382969f68",
 	"e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398",
-	"6a70f69b58d883730f1141fcc00c73ce348e1c667e574864b8f2cac523d9b3c3",
+	"587b6ac1dd11b8942f798a944a25c431ceccc3a1e4dc3e88d7eb9c4d8cfd3d9c",
+	"9d9c4535cf0577291fc57b0a6daebda9a3d9490bef897604631a220e0ceac60b",
 }
 
 func TestAssetNames(t *testing.T) {

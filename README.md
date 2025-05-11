@@ -34,11 +34,34 @@ documentation is available via the `doc` subcommand:
 
     ghd --help
     ghd config --help
+    ghd doc
     ghd doc config
 
 ## Building Your Own
 
-You can build your own version of `ghd` with as few as N lines of Go:
+You can build your own version of `ghd` with very little code.  Here is the
+"minimal" example:
+
+```go
+package main
+
+import (
+    "github.com/biztos/greenhead"
+    _ "github.com/biztos/greenhead/tools/tictactoe"
+)
+
+func main() {
+    greenhead.CustomApp("minimal", "1.0.0", "SuperCorp Tic Tac Toe", "")
+    greenhead.Run()
+}
+```
+
+For example, this would be able to play a game of Tic Tac Toe between two
+OpenAI agents like this:
+
+```sh
+ghd pair run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
+```
 
 ### Easy Mode
 

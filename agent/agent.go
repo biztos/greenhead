@@ -202,6 +202,17 @@ type Agent struct {
 	dumpdir   string
 }
 
+// Clone returns a clone of the agent.
+func (a *Agent) Clone() (*Agent, error) {
+	// TODO: real deep copy, this is a dangerous cheat.
+	// (or is it? if we trust the config deep-copy then it should be fine...)
+	clone, err := NewAgent(a.config)
+	if err != nil {
+		return nil, fmt.Errorf("clone failed for config: %w", err)
+	}
+	return clone, err
+}
+
 // Id returns the Agent's ULID as a string.
 func (a *Agent) Id() string {
 	return a.ULID.String()
@@ -233,6 +244,15 @@ func (a *Agent) Logger() *slog.Logger {
 func (a *Agent) SetPrintFunc(f func(...any)) {
 	a.printFunc = f
 	a.client.SetPrintFunc(f)
+}
+
+// Print prints using the print function (i.e., prints in color if applicable).
+//
+// This is useful for custom terminal clients running multiple agents.
+//
+// NB: it is "Print" not "Println" nor "Sprint"!
+func (a *Agent) Print(args ...any) {
+	a.printFunc(args...)
 }
 
 // SetLogger overrides the logger in the Agent and its ApiClient.
