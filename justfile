@@ -6,8 +6,9 @@ list:
 
 # Prepare assets etc.
 prep:
-	cp README.md assets/src/doc/readme.md
+	cp README.md assets/src/doc/readme.md && cp API.md assets/src/doc/api.md
 	cd assets && binsanity src
+	mkdir -p build
 
 # Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version': prep
@@ -15,8 +16,54 @@ run *ARGS='--version': prep
 
 # Build for current environment.
 build: prep
-	mkdir -p build
 	go build -o build/ghd ./cmd/ghd
+
+# Build for Apple Silicon Mac.
+build-macos-arm: prep
+	mkdir -p build/darwin-arm64
+	GOOS=darwin GOARCH=arm64 go build -o build/darwin-arm64/ghd ./cmd/ghd
+
+# Build for Intel Mac.
+build-macos-intel: prep
+	mkdir -p build/darwin-amd64
+	GOOS=darwin GOARCH=amd64 go build -o build/darwin-amd64/ghd ./cmd/ghd
+
+# Build for Mac (all architectures).
+build-macos: build-macos-arm build-macos-intel
+
+# Build for Windows (all architectures).
+build-windows: build-windows-arm build-windows-intel
+
+# Build for Linux (all architectures).
+build-linux: build-linux-arm build-linux-intel
+
+# Build for all supported operating systems and architectures.
+build-all: build-macos build-windows build-linux
+
+# Build for ARM Windows.
+build-windows-arm: prep
+	mkdir -p build/windows-arm64
+	GOOS=windows GOARCH=arm64 go build -o build/windows-arm64/ghd.exe
+
+# Build for Intel Windows.
+build-windows-intel: prep
+	mkdir -p build/windows-amd64
+	GOOS=windows GOARCH=amd64 go build -o build/windows-amd64/ghd.exe
+
+# Build for ARM Linux.
+build-linux-arm: prep
+	mkdir -p build/linux-arm64
+	GOOS=linux GOARCH=arm64 go build -o build/linux-arm64/ghd.exe
+
+# Build for Intel Linux.
+build-linux-intel: prep
+	mkdir -p build/linux-amd64
+	GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/ghd.exe
+
+# Make a full build with testing etc for all targets, CI-style.
+build-full: clean vet license tooldoc test build-all
+	@echo TODO: publish the builds somewhere
+	@echo TODO: run coverage and upload it somewhere
 
 # Check for programmer errors.
 vet: prep
@@ -49,3 +96,13 @@ license:
 	rm -rf build/third_party_licenses
 	go-licenses save ./... --save_path=build/third_party_licenses
 	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md
+
+# Copy README.md files from tools into documenation source.
+tooldoc:
+	find tools -name README.md -exec sh -c \
+	'for f; do dir=$(dirname "$f"); base=$(basename "$dir"); \
+	out="assets/src/doc/$dir.md"; mkdir -p "$(dirname "$out")"; \
+	cp "$f" "$out"; done' \
+	sh {} +
+
+
