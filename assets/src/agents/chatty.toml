@@ -1,8 +1,6 @@
 # agent-chatty.toml -- an agent that likes to talk.
-name = "AgentChatty"
-description =  """\
-  An agent that likes to talk.
-  """
+name = "chatty"
+description =  "An agent that likes to talk."
 type = "openai"
 model = "gpt-4o"
 tools = ["/.*/"]

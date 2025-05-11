@@ -1,5 +1,4 @@
-# agent.toml -- Tic-Tac-Toe agent config.
-name = "TicTacToe"
+name = "tictactoe"
 description =  """\
   An agent that tries to play Tic Tac Toe.
 

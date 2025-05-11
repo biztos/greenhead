@@ -1,4 +1,4 @@
-name = "AgentMarvin"
+name = "marvin"
 description = "An agent modeled on a famous Paranoid Android."
 type = "openai"
 model = "gpt-4o"

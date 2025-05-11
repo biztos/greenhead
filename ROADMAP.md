@@ -12,7 +12,7 @@ _You're soaking in it!_
 * Single-prompt runner (any number of agents)
 * Pair runner (two-agent conversation)
 * Simple chat
-* TODO: built-in agents
+* Built-in agents (simple demonstration agents)
 
 ## v0.2
 

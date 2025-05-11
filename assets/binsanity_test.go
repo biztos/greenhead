@@ -20,14 +20,15 @@ import (
 )
 
 const BinsanityAssetMissing = "doc/readme.md--NOPE"
-const BinsanityAssetPresent = "doc/license.md"
-const BinsanityAssetPresentSum = "7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061"
+const BinsanityAssetPresent = "doc/config.md"
+const BinsanityAssetPresentSum = "b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0"
 
 var BinsanityAssetNames = []string{
 
 	"agents/chatty.toml",
 	"agents/marvin.toml",
 	"agents/pirate.toml",
+	"agents/tictactoe.toml",
 	"doc/config.md",
 	"doc/license.md",
 	"doc/licenses.md",
@@ -36,9 +37,10 @@ var BinsanityAssetNames = []string{
 }
 
 var BinsanityAssetSums = []string{
-	"c44c30baab936de58465e6b7957f2c70a03993acf36a05270e5b1a3cae318155",
-	"9fb237bb90bf495ae50fd9fd97cb908d43be730f02e427f79f85ea9e6b01e051",
-	"d0c5b0e08bca8ed84686693dbf5b6d2e2487f7df2866926fcf5701e86c233ff5",
+	"c266499f9d5d56104f5060483ba3df466f49e7ee3f18992fdad4e018c1bf57a6",
+	"e49aa1ea1710e0ad809e23a8429a683f017472cfb5ba8eec99ef56964acdf401",
+	"ec08f63a25b7edda382315885e0ff961accb48e44dca179a28605a1b88e88eab",
+	"9759c5116e99ea5db017462318129482e48d3697634d70a1d6ac8407e9a2ff68",
 	"b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0",
 	"7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061",
 	"7c4899a35d0d48162f54454cce04343fd402fa3da40a36c1ffc611a382969f68",

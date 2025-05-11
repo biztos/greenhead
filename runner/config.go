@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -212,12 +211,11 @@ var NamedAgentConfigs = map[string]*agent.Config{}
 
 func init() {
 
+	// We assume well-named agents in our assets.
 	for _, name := range assets.PrefixNames("agents", false) {
 		a := &agent.Config{}
 		utils.MustUnToml(assets.MustAsset(name), a)
-		name = strings.TrimPrefix(name, "agents/")
-		name = strings.TrimSuffix(name, ".toml")
-		NamedAgentConfigs[name] = a
+		NamedAgentConfigs[a.Name] = a
 	}
 
 }
