@@ -56,11 +56,11 @@ func main() {
 }
 ```
 
-For example, this would be able to play a game of Tic Tac Toe between two
-OpenAI agents like this:
+The `pair run` command could then be used to play a game of Tic Tac Toe
+between two OpenAI agents:
 
 ```sh
-ghd pair run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
+minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
 ```
 
 ### Easy Mode

@@ -49,6 +49,8 @@ type Config struct {
 	// Agent configs:
 	Agents []*agent.Config `toml:"agents"` // Multiple Agents.
 
+	// API config:
+	ApiListenAddress string `toml:"api_listen_address"` // Listen address, usually as ":3000".
 }
 
 var ErrNamedAgentNotAvailable = errors.New("named agent not available")

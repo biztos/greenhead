@@ -83,7 +83,7 @@ bench: prep
 
 # Run pkgsite because godoc is deprecated. :-(
 doc: prep
-	pkgsite
+	pkgsite -open
 
 # Remove the build and cover artifacts.
 clean:

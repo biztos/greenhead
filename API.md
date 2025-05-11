@@ -39,9 +39,21 @@ if err := api.Serve(); err != nil {
 }
 ```
 
+## PROBLEMS
+
+- Want to require auth keys, but also want to get them from somewhere!
+	- Read from a file maybe? If file configged then yes, to add you just append.
+
 ## Endpoints
 
-### POST /v1/new
+### GET /v1/agents/list
+
+List the named agents available for use.
+
+	Auth: <key>
+	Returns <agent-list> struct.
+
+### POST /v1/agents/new
 
 Create an agent (clone from the runner's agents by name).
 
@@ -51,7 +63,7 @@ Create an agent (clone from the runner's agents by name).
 	}
 	Returns <ulid> string.
 
-### POST /v1/agent/<ulid>/chat
+### POST /v1/agents/<ulid>/chat
 
 Send a chat completion prompt to an agent.
 Context is maintained on the server.
@@ -62,7 +74,7 @@ Context is maintained on the server.
 	}
 	Returns <response> struct.
 
-### POST /v1/agent/<ulid>/end
+### POST /v1/agents/<ulid>/end
 
 End a conversation with an agent, making the agent unavailable for chat.
 If no data store is in use, this frees the agent's memory.
@@ -75,7 +87,7 @@ Inactive agents may be reaped, subject to runner configs.
 	}
 	Returns success.
 
-### POST /v1/agent/create *LOW-PRIORITY, SPECULATIVE*
+### POST /v1/agents/create *LOW-PRIORITY, SPECULATIVE*
 
 Create an agent from a config. Permission-based.
 
@@ -85,7 +97,7 @@ Create an agent from a config. Permission-based.
 	}
 	Returns <ulid> string.
 
-### POST /v1/agent/publish *LOW-PRIORITY, SPECULATIVE*
+### POST /v1/agents/publish *LOW-PRIORITY, SPECULATIVE*
 
 Publish an agent from a config so others may use it. Permission-based.
 
