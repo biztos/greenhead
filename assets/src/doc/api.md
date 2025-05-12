@@ -39,6 +39,10 @@ if err := api.Serve(); err != nil {
 }
 ```
 
+hm
+
+api genkeys --> generate a set of sample keys for regular user, admin, et al.
+
 ## PROBLEMS
 
 - Want to require auth keys, but also want to get them from somewhere!

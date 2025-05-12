@@ -33,7 +33,13 @@ var ApiServeCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Run the API server.",
 	Long: `Sets up an API instance and listens to requests at the configured
-address.`,
+address.
+
+Note that the normal output controls for streaming and logging do not apply
+and are ignored if set.
+
+It is STRONGLY recommended that the --no-keys option, and its configuration
+equivalent, be used for testing only.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		r, err := runner.NewRunner(Config)
 		if err != nil {
@@ -47,8 +53,10 @@ address.`,
 
 func init() {
 	// Flags:
-	ApiCmd.PersistentFlags().StringVar(&Config.ApiListenAddress, "address", ":3000",
+	ApiCmd.PersistentFlags().StringVar(&Config.API.ListenAddress, "address", ":3030",
 		"Address at which to listen for requests.")
+	ApiCmd.PersistentFlags().BoolVar(&Config.API.NoKeys, "no-keys", false,
+		"Do NOT require API keys.")
 
 	// Registration:
 	ApiCmd.AddCommand(ApiCheckCmd)

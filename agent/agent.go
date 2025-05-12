@@ -202,15 +202,18 @@ type Agent struct {
 	dumpdir   string
 }
 
-// Clone returns a clone of the agent.
-func (a *Agent) Clone() (*Agent, error) {
-	// TODO: real deep copy, this is a dangerous cheat.
-	// (or is it? if we trust the config deep-copy then it should be fine...)
-	clone, err := NewAgent(a.config)
+var ErrSpawnFailed = fmt.Errorf("spawn failed for agent")
+
+// Spawn returns a new Agent created from the config that created a.
+func (a *Agent) Spawn() (*Agent, error) {
+	// NOTE: because we do not control the underlying ApiClient, it is
+	// possible to get an error here even though it should be ~~ impossible
+	// at the agent level.
+	spawn, err := NewAgent(a.config)
 	if err != nil {
-		return nil, fmt.Errorf("clone failed for config: %w", err)
+		return nil, fmt.Errorf("%w: %s: %w", ErrSpawnFailed, a.Name, ErrSpawnFailed)
 	}
-	return clone, err
+	return spawn, err
 }
 
 // Id returns the Agent's ULID as a string.

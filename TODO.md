@@ -1,5 +1,13 @@
 # TODO (ordered! sorta!)
 
+## HTTP API
+
+1. Logger setup in Runner not just in Agents.
+2. Get Logger working for API (fiber) and Agents, same one.
+3. Make sure agents not streaming!
+4. Make sure agents not printing, just want res!
+5. Add middleware for API keys: also to check agents not just endpoints
+
 ## Better API for clearing/adding named agents from top level.
 
 OK probably not urgently needed.

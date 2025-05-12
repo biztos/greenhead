@@ -10,11 +10,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/biztos/greenhead/api"
 	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/runner"
+	"github.com/biztos/greenhead/version"
 )
 
-var Version = "0.1.0"
+var Version = version.Version
 var Name = "ghd"
 var Title = "Greenhead Agent Runner"
 var Description = `Runs AI (LLM) agents.
@@ -31,7 +33,7 @@ optRgxpArray: as rgxpArray, but plain strings (not in the above format) can
               be used for exact matches.
 `
 
-var Config = &runner.Config{}
+var Config = &runner.Config{API: &api.Config{}}
 
 var Exit = os.Exit // for testability
 var Stdout io.Writer = os.Stdout

@@ -9,6 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/biztos/greenhead/agent"
+	"github.com/biztos/greenhead/api"
 	"github.com/biztos/greenhead/assets"
 	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/utils"
@@ -50,7 +51,7 @@ type Config struct {
 	Agents []*agent.Config `toml:"agents"` // Multiple Agents.
 
 	// API config:
-	ApiListenAddress string `toml:"api_listen_address"` // Listen address, usually as ":3000".
+	API *api.Config `toml:"api"` // HTTP API configuration (optional).
 }
 
 var ErrNamedAgentNotAvailable = errors.New("named agent not available")
