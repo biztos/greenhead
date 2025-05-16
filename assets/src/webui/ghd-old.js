@@ -91,25 +91,7 @@ let resetKey = function (event) {
   }
 };
 
-let watchPrompt = function (event) {
-  if (event.defaultPrevented) {
-    return;
-  }
-  if (event.key === "Enter") {
-    if (!event.shiftKey) {
-      event.preventDefault();
-      // Grab the text and make sure it's got something in it.
-      let p = event.target;
-      let s = p.innerText;
-      if (!s.match(/\S/)) {
-        flashElem(p);
-        return;
-      }
-      // Off you go!
-      sendPrompt();
-    }
-  }
-};
+
 
 let sendPrompt = function () {
   if (IN_FLIGHT) {
@@ -173,45 +155,5 @@ let hideProgress = function () {
   // Keep the current rotation position
   if (currentTransform !== "none") {
     svg.style.transform = currentTransform;
-  }
-};
-
-let flashElem = function (elem) {
-  elem.classList.add("attn");
-
-  setTimeout(() => {
-    elem.classList.remove("attn");
-  }, 100);
-};
-
-let deselectAll = function () {
-  // https://stackoverflow.com/a/6562764
-  if (window.getSelection) {
-    window.getSelection().removeAllRanges();
-  } else if (document.selection) {
-    document.selection.empty();
-  }
-};
-
-// can't believe we're still doing this shit in 2025...
-let hide = function (elem) {
-  element(elem).classList.add("hidden");
-};
-
-// and this!
-let unhide = function (elem) {
-  element(elem).classList.remove("hidden");
-};
-
-// and this! not even using $ because the debugger aliases that!
-let element = function (elem) {
-  if (typeof elem === "string") {
-    let selected = document.querySelector(elem);
-    if (selected == null) {
-      throw "element not found by selector: " + elem;
-    }
-    return selected;
-  } else {
-    return elem;
   }
 };

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Greenhead Simple Chat</title>
+    <script type="module" crossorigin>(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))r(i);new MutationObserver(i=>{for(const o of i)if(o.type==="childList")for(const l of o.addedNodes)l.tagName==="LINK"&&l.rel==="modulepreload"&&r(l)}).observe(document,{childList:!0,subtree:!0});function n(i){const o={};return i.integrity&&(o.integrity=i.integrity),i.referrerPolicy&&(o.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?o.credentials="include":i.crossOrigin==="anonymous"?o.credentials="omit":o.credentials="same-origin",o}function r(i){if(i.ep)return;i.ep=!0;const o=n(i);fetch(i.href,o)}})();function g(e){const t=s(e);t.classList.add("flash"),setTimeout(()=>{t.classList.remove("flash")},100)}function u(e){s(e).classList.add("hidden")}function d(e){s(e).classList.remove("hidden")}function s(e){if(typeof e=="string"){const t=document.querySelector(e);if(t===null)throw new Error(`Element not found by selector: ${e}`);return t}else return e}function p(e){const t=s(e);t.disabled=!0}function h(e){const t=s(e);t.disabled=!1}class f{id;name;description;constructor(t,n,r){this.id=t,this.name=n,this.description=r}static fromJSON(t){const n=JSON.parse(t);if(!n.id)throw new Error("Missing required property: id");if(!n.name)throw new Error("Missing required property: name");if(!n.description)throw new Error("Missing required property: description");return new f(n.id,n.name,n.description)}}class c{static _instance;api_key;name;agent_names;static initFromDOM(){const t=document.querySelector("#user-api-key"),n=s("#user-name"),r=s("#user-agent-name");let i=[];for(const o of Array.from(r.children)){const l=o;i.push(l.value)}return new c(t.value,n.value,i)}constructor(t,n,r){if(c._instance)throw new Error("Error: User singleton already initialized.");this.api_key=t,this.name=n,this.agent_names=r,c._instance=this}static getInstance(){if(!c._instance)throw new Error("Error: User singleton not initialized.");return c._instance}}class a{static _instance;user;agent;xhr;static initFromDOM(){const t=c.initFromDOM();return new a(t)}constructor(t){if(a._instance)throw new Error("Error: API singleton already initialized.");this.user=t,a._instance=this}static getInstance(){if(!a._instance)throw new Error("Error: API singleton not initialized.");return a._instance}}function y(){if(document.querySelector("#user-session")==null){m("Session not initiated.","Did you load from dist?"),u("#error-dismiss-button");return}const e=a.initFromDOM();let t=s("#newchat-agent-select");e.user.agent_names.forEach(n=>{let r=document.createElement("option");r.value=n,r.innerText=n,t.appendChild(r)}),s("#greeting").innerText=`Hello, ${e.user.name}!`,s("#prompt").addEventListener("focus",function(){this.select()}),s("#prompt").addEventListener("keydown",O),s("#error-dismiss-button").addEventListener("click",L),s("#newchat-button").addEventListener("click",w),s("#reset-key-button").addEventListener("click",v),d("#newchat")}function w(){const e=a.getInstance();e.xhr?.abort(),u("#chat"),p("#newchat-agent-select"),p("#newchat-button");const n=s("#newchat-agent-select").value,r=new XMLHttpRequest;r.open("POST","/v1/agents/new",!0),r.setRequestHeader("Content-Type","application/json"),r.setRequestHeader("Authoriation","Bearer "+e.user.api_key),r.onreadystatechange=function(){if(r.readyState===XMLHttpRequest.DONE)if(h("#newchat-agent-select"),h("#newchat-button"),b(),r.status===200){const i=f.fromJSON(r.responseText);e.agent=i,E(i)}else e.agent!=null&&d("#chat"),m(`${r.status} ${r.statusText}`,r.responseText)},r.send(JSON.stringify({agent:n})),e.xhr=r,S()}function E(e){s("#history").innerHTML="";const t=document.createElement("div");t.classList.add("system"),e.description==""?t.innerText=`You are chatting with ${e.name}.`:t.innerText=`You are chatting with ${e.name}: ${e.description}.`,s("#history").appendChild(t),d("#chat")}function v(e){e.preventDefault(),confirm("Clear chat history and reset API Key?")==!0&&(window.location.href="/v1/ui")}function m(e,t){s("#error-message").innerText=e,s("#error-detail").innerText=t,d("#error")}function L(){s("#error-message").innerText="Error.",s("#error-detail").innerText="An error occurred.",u("#error")}function T(e){e.style.height="auto";const t=window.getComputedStyle(e),n=parseFloat(t.paddingTop),r=parseFloat(t.paddingBottom),i=n+r;e.style.height=e.scrollHeight-i+"px",e.style.height=e.scrollHeight+10+"px"}function O(e){if(e.defaultPrevented)return;let t=e.target;if(T(t),e.key==="Enter"&&!e.shiftKey){e.preventDefault();let n=t.value;if(!n.match(/\S/)){g(t);return}x(n)}}function x(e){console.log("SEND PROMPT"),console.log(e)}function S(){d("#progress");let e=s("#spinner"),t=3;e.style.transformOrigin="center",e.style.animation=`spin ${t}s linear infinite`}function b(){u("#progress");let e=s("#spinner");const n=window.getComputedStyle(e).getPropertyValue("transform");e.style.animation="none",n!=="none"&&(e.style.transform=n)}document.addEventListener("DOMContentLoaded",y);</script>
+    <style rel="stylesheet" crossorigin>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;display:flex;min-height:100vh;padding-top:10px;text-align:center}#main-content{min-width:60%;margin:0 auto}#prompt-entry{margin-top:20px}#prompt-entry label{font-weight:700;font-size:1.2em;margin-top:11px;margin-right:5px;display:inline-block;vertical-align:top}#prompt{resize:none;overflow:hidden;width:70%;height:auto;min-height:40px;font:sans-serif;font-size:1.2em;text-align:left;padding:10px;display:inline-block;vertical-align:top;background:#eee;border:1px solid black;margin-bottom:10px}#prompt.flash{border:1px solid red;background:#ffc}#prompt[contenteditable=false]{background:#ccc;color:#666}#progress{margin:20px auto}#history{width:60%;margin:20px auto}#history div{text-align:left;font-size:1.2em}#history div.system{color:red;font-style:italic}#history div.prompt{color:#00f}#history div.prompt{color:rust}#newchat{margin:20px auto;font-size:1.2em;border-top:2px solid black;padding-top:20px}select,::picker(select){appearance:base-select}select{font-size:1em;padding-left:5px;padding-right:5px}button{font-size:inherit;padding-left:5px;padding-right:5px;margin-left:10px}.hidden{display:none}#error{background:#ffc;color:red;border:4px solid black;width:50%;text-align:left;margin:0 auto;padding:10px}#error-controls{text-align:right}#error-detail{color:#000;margin-top:10px;font-family:monospace;font-size:1.2em;white-space:pre}#error-dismiss-button{font-size:inherit;padding-left:5px;padding-right:5px;margin-left:10px}#reset-key{margin:20px auto}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+  </head>
+  <body>
+    <!-- Main Content -->
+    <div id="main-content">
+      <h1>Greenhead Simple Chat</h1>
+      <h2 id="greeting"></h2>
+      <div id="error" class="hidden">
+        <h2 id="error-message">Error</h2>
+        <div id="error-detail">An error occurred.</div>
+        <div id="error-controls">
+          <button id="error-dismiss-button">Dismiss</button>
+        </div>
+      </div>
+      <div id="chat" class="hidden">
+        <div id="history"></div>
+        <div id="prompt-entry">
+          <label for="prompt">Prompt:</label>
+          <textarea id="prompt">You're in a desert, walking along in the sand when all of the sudden you look down and you see a tortoise.</textarea>
+          <p>
+            Press <strong>Return</strong> to send;
+            <strong>Shift-Return</strong> for newline.
+          </p>
+        </div>
+      </div>
+      <div id="newchat" class="hidden">
+        Choose agent:
+        <select id="newchat-agent-select"></select>
+        <button id="newchat-button">New Chat</button>
+      </div>
+      <div id="reset-key">
+        <button id="reset-key-button">Reset API Key</button>
+      </div>
+      <div id="progress" class="hidden">
+        <svg
+          id="spinner"
+          width="50"
+          height="50"
+          viewBox="0 0 100 100"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <!-- Outer circle -->
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="white"
+            stroke="black"
+            stroke-width="2"
+          />
+
+          <!-- Main halves -->
+          <path
+            d="M50,5 A45,45 0 0,0 50,95 A22.5,22.5 0 0,1 50,50 A22.5,22.5 0 0,0 50,5"
+            fill="black"
+          />
+
+          <!-- Small circles -->
+          <circle cx="50" cy="27.5" r="5" fill="white" />
+          <circle cx="50" cy="72.5" r="5" fill="black" />
+        </svg>
+      </div>
+    </div>
+  </body>
+</html>

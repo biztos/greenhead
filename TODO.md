@@ -23,6 +23,16 @@ built-in agents.
 
 Maybe just call the type "flex"?
 
+## Demo mode for API, load all (or some of) the built-in agents and tools.
+
+Since I want them adaptable anyway, should be pretty useful.
+
+    ghd api demo
+
+## Display name for Agents.
+
+chatty -> "Agent Chatty" or whatever.
+
 ## Better API for clearing/adding named agents from top level.
 
 OK probably not urgently needed.

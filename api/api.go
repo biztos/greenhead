@@ -164,16 +164,10 @@ func (api *API) setRoutes() {
 		return api.HandleUI(c)
 	})
 
-	// TEMP - just until combining the files!
-	api.app.Get("/v1/ui/ghd.js", func(c *fiber.Ctx) error {
-		c.Type("js", "utf-8")
-		return c.Send(assets.MustAsset("api-ui/ghd.js"))
-	})
-
 	// Serve a favicon because the requests are annoying.
 	api.app.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		c.Type("svg", "utf-8")
-		return c.Send(assets.MustAsset("api-ui/favicon.svg"))
+		return c.Send(assets.MustAsset("webui/favicon.svg"))
 	})
 }
 
@@ -297,38 +291,45 @@ func (api *API) HandleUI(c *fiber.Ctx) error {
 	c.Type("html", "utf-8")
 
 	if c.Method() == fiber.MethodGet {
-		return c.Send(assets.MustAsset("api-ui/root.html"))
+		return c.Send(assets.MustAsset("webui/root.html"))
 	}
 
 	// Validate the key, and get the agents for that key.
 	api_key := strings.TrimSpace(c.FormValue("api_key"))
+	user_name := "Anonymous User"
 	if api.config.NoKeys {
 		api_key = "" // don't take a chance on weird keys breaking JS.
 	} else {
 		// TODO: look up, error with 404 err-badkey if not found.
+		// assign name if we have it, or default to anon above.
 	}
 	agent_names := api.KeyAgentNames(api_key)
 
 	// No agents for the key?  Nothing to do then.
 	if len(agent_names) == 0 {
 		return c.Status(fiber.StatusServiceUnavailable).Send(
-			assets.MustAsset("api-ui/err-noagents.html"))
+			assets.MustAsset("webui/err-noagents.html"))
 	}
 
-	// Serve our SPA with "add-on JS" special sauce.
+	// Serve our SPA with the values we need in the DOM.
 	// (Because templates are not worth it for something this simple).
-	qnames := make([]string, len(agent_names))
+	agent_opts := make([]string, len(agent_names))
 	for i, n := range agent_names {
-		qnames[i] = fmt.Sprintf("'%s'", html.EscapeString(n))
+		agent_opts[i] = fmt.Sprintf(`<option value="%s">`, html.EscapeString(n))
 	}
-	page := assets.MustAssetString("api-ui/app.html")
-	f := `<script>
-API_KEY = '%s';
-AGENT_NAMES = [%s];
-</script>`
+	page := assets.MustAssetString("webui/app.html")
+	f := `<!-- user definition -->
+<form id="user-session" class="hidden">
+<input type="hidden" id="user-api-key" value="%s">
+<input type="hidden" id="user-name" value="%s">
+<select class="hidden" id="user-agent-name">
+%s
+</select>
+</form>`
 	page += fmt.Sprintf(f,
 		html.EscapeString(api_key),
-		strings.Join(qnames, ", "))
+		html.EscapeString(user_name),
+		strings.Join(agent_opts, "\n"))
 
 	return c.SendString(page)
 }

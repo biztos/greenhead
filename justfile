@@ -14,8 +14,12 @@ prep:
 run *ARGS='--version': prep
 	go run ./cmd/ghd {{ARGS}}
 
-# Serve the API locally, with UI code refreshed. Uses agent chatty by default.
-serve *ARGS='--agent=chatty': ui prep
+# Serve the API locally. Uses agent chatty by default.
+serve *ARGS='--agent=chatty': prep
+	go run ./cmd/ghd api serve {{ARGS}}
+
+# As serve, but calls webui to rebuild the SPA first.
+serve-webui *ARGS='--agent=chatty': webui prep
 	go run ./cmd/ghd api serve {{ARGS}}
 
 # Build for current environment.
@@ -101,9 +105,10 @@ license:
 	go-licenses save ./... --save_path=build/third_party_licenses
 	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md
 
-# Generate the UI files from their respective sources.
-ui:
-	build-tools/ui-prep.sh
+# Compile and bundle the webui files, putting them under assets.
+webui:
+	cd webui && npm run build
+	cp -f webui/dist/index.html assets/src/webui/app.html
 
 # Copy README.md files from tools into documenation source.
 tooldoc:

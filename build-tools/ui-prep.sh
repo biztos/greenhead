@@ -7,5 +7,5 @@
 # Note that we are not minifying or any such thing.
 #
 # To install html-inline: npm install -g html-inline
-cd assets/src/api-ui && html-inline main.html > app.html && \
+cd assets/src/api-ui && tsc ghd.ts && html-inline main.html > app.html && \
 prettier -w app.html
