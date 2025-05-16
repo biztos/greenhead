@@ -8,6 +8,21 @@
 4. Make sure agents not printing, just want res!
 5. Add middleware for API keys: also to check agents not just endpoints
 
+fuck fuck fuck, I really want to see the tool calls!
+
+## Serialize agents, duh.
+
+Lots of good reasons to pause/restart an agent, and for that we need to be
+able to serialize.  WTF was I thinking?
+
+## Make a "multi-api" type of API Client, e.g. can run OpenAI or Llama.
+
+This would just branch at creation based on what env vars it finds, and use
+the other constructors.  *Ideally* this would be the default type for all the
+built-in agents.
+
+Maybe just call the type "flex"?
+
 ## Better API for clearing/adding named agents from top level.
 
 OK probably not urgently needed.

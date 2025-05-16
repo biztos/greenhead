@@ -14,6 +14,10 @@ prep:
 run *ARGS='--version': prep
 	go run ./cmd/ghd {{ARGS}}
 
+# Serve the API locally, with UI code refreshed. Uses agent chatty by default.
+serve *ARGS='--agent=chatty': ui prep
+	go run ./cmd/ghd api serve {{ARGS}}
+
 # Build for current environment.
 build: prep
 	go build -o build/ghd ./cmd/ghd
@@ -97,6 +101,10 @@ license:
 	go-licenses save ./... --save_path=build/third_party_licenses
 	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md
 
+# Generate the UI files from their respective sources.
+ui:
+	build-tools/ui-prep.sh
+
 # Copy README.md files from tools into documenation source.
 tooldoc:
 	find tools -name README.md -exec sh -c \
@@ -104,5 +112,3 @@ tooldoc:
 	out="assets/src/doc/$dir.md"; mkdir -p "$(dirname "$out")"; \
 	cp "$f" "$out"; done' \
 	sh {} +
-
-

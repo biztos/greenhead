@@ -20,8 +20,8 @@ import (
 )
 
 const BinsanityAssetMissing = "doc/tools/tictactoe.md--NOPE"
-const BinsanityAssetPresent = "doc/config.md"
-const BinsanityAssetPresentSum = "b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0"
+const BinsanityAssetPresent = "api-ui/ghd.js"
+const BinsanityAssetPresentSum = "5c86e3a3ffba9e48990f71547b25befcfa27d56efa9bb48144d803580fc79749"
 
 var BinsanityAssetNames = []string{
 
@@ -29,6 +29,15 @@ var BinsanityAssetNames = []string{
 	"agents/marvin.toml",
 	"agents/pirate.toml",
 	"agents/tictactoe.toml",
+	"api-ui/README.md",
+	"api-ui/app.html",
+	"api-ui/err-badkey.html",
+	"api-ui/err-noagents.html",
+	"api-ui/favicon.svg",
+	"api-ui/ghd.css",
+	"api-ui/ghd.js",
+	"api-ui/main.html",
+	"api-ui/root.html",
 	"doc/api.md",
 	"doc/config.md",
 	"doc/license.md",
@@ -43,6 +52,15 @@ var BinsanityAssetSums = []string{
 	"e49aa1ea1710e0ad809e23a8429a683f017472cfb5ba8eec99ef56964acdf401",
 	"ec08f63a25b7edda382315885e0ff961accb48e44dca179a28605a1b88e88eab",
 	"9759c5116e99ea5db017462318129482e48d3697634d70a1d6ac8407e9a2ff68",
+	"f8827a87cdbc60a1063758380210cb293ce57c5539050365c9200635b8262fdf",
+	"450bd7339761efa07f7b4792be9bfaf9a81487e3fdc5e8965917f1bae26618f6",
+	"a184d7b13e8dd11c9a7f1ac4073a9268a0dd053a7e45771fcbf84728d5b311fe",
+	"a184d7b13e8dd11c9a7f1ac4073a9268a0dd053a7e45771fcbf84728d5b311fe",
+	"42bc5e56e7412df8c21953de78c9e204dd7da8152e43854e8ed0e832bfac153e",
+	"726d3cece1d97b0a26b297ccffe28e62b1c46095419a99692333404cb9b7f1d2",
+	"5c86e3a3ffba9e48990f71547b25befcfa27d56efa9bb48144d803580fc79749",
+	"5b0a97f5d0491f0d7aac962d5093fb11b883b110d4f5465fa9c00e2788e5caf1",
+	"0e687d30134afbcaa994307be7cad78419847916db71b54f21f30014bf9dbc7d",
 	"6376dd2474462ba10c9aa26a77de0654c2fc748aaaa6fac2680d0122e1419cbf",
 	"b13e3e9c5a85a8ebaf29f01877d6cdf16b23cfe556b00bf85ecb726971b276a0",
 	"7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061",

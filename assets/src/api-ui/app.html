@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Greenhead Simple Chat</title>
+    <script>
+      /*
+
+ghd.js
+
+NOTES:
+
+1. this is experimental, simple, and a little dumb -- by design!
+2. (it might turn into IZK playground later)
+3. no complex sessions/histories YET, just one chat in a window
+
+*/
+
+      let LAST_XHR = null; // examine in dev tools.
+      let CURRENT_XHR = null; // in-flight XHR, move to above when done.
+      let AGENT = null; // string defining the agent.
+      let API_KEY = null; // defined in the HTML by the server.
+      let AGENT_NAMES = []; // same.
+
+      document.addEventListener("DOMContentLoaded", function () {
+        let agent_select = document.getElementById("agent-select");
+        AGENT_NAMES.forEach((name) => {
+          let opt = document.createElement("option");
+          opt.value = name;
+          opt.innerText = name;
+          agent_select.appendChild(opt);
+        });
+
+        document
+          .getElementById("prompt")
+          .addEventListener("focus", function (e) {
+            // "deprecated" but: https://stackoverflow.com/a/70831583
+            document.execCommand("selectAll", false, null);
+          });
+        document
+          .getElementById("prompt")
+          .addEventListener("keydown", watchPrompt);
+        document
+          .getElementById("newchat-button")
+          .addEventListener("click", newChat);
+        document
+          .getElementById("reset-key-button")
+          .addEventListener("click", resetKey);
+      });
+
+      let newChat = function (event) {
+        // Deal with in-flight chat, should be OK to just nuke it.
+        if (CURRENT_XHR != null) {
+          CURRENT_XHR.abort();
+        }
+
+        // Hide current chat; we don't nuke it until we successfully created a new
+        // chat, because in the failure case you might still want the old one.
+        hide("#history");
+
+        // Freeze new-chat form and show progress.
+        element("#newchat-button").disabled = true;
+        element("#agent-select").disabled = true;
+        showProgress();
+
+        // Set up the XHR.
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/v1/agents/new", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authoriation", "Bearer " + API_KEY);
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+              console.log("Response:", xhr.responseText);
+            } else {
+              console.error("Request failed with status:", xhr.status);
+            }
+          }
+        };
+
+        xhr.send(JSON.stringify({ agent: element("#agent-select").value }));
+        CURRENT_XHR = xhr;
+      };
+
+      let resetKey = function (event) {
+        event.preventDefault();
+        let do_reset = confirm("Clear chat history and reset API Key?");
+        if (do_reset == true) {
+          window.location = "/v1/ui"; // quite the stupid hack but OK for now.
+        }
+      };
+
+      let watchPrompt = function (event) {
+        if (event.defaultPrevented) {
+          return;
+        }
+        if (event.key === "Enter") {
+          if (!event.shiftKey) {
+            event.preventDefault();
+            // Grab the text and make sure it's got something in it.
+            let p = event.target;
+            let s = p.innerText;
+            if (!s.match(/\S/)) {
+              flashElem(p);
+              return;
+            }
+            // Off you go!
+            sendPrompt();
+          }
+        }
+      };
+
+      let sendPrompt = function () {
+        if (IN_FLIGHT) {
+          console.log("already in flight");
+          return;
+        }
+
+        IN_FLIGHT = true;
+        console.log("sending prompt");
+
+        let p = document.getElementById("prompt");
+        let s = p.innerText.trim();
+        let h = document.getElementById("history");
+
+        // Freeze and clear the prompt input.
+        p.contentEditable = false;
+        deselectAll(); // or it looks wonky.
+        p.innerText = "";
+
+        // Add the prompt text to the history.
+        let div = document.createElement("div");
+        div.classList.add("prompt");
+        div.innerText = s;
+        h.appendChild(div);
+
+        // Show the progress indicator.
+        showProgress();
+      };
+
+      let addPromptText = function (s) {};
+
+      // NB: total hack from one of the AIs here, at least at the beginning.
+      let showProgress = function () {
+        unhide("#progress");
+        let svg = element("#spinner");
+        let duration = 3; // TBD, what looks nice?
+
+        // Add CSS for the rotation animation
+        svg.style.transformOrigin = "center";
+        svg.style.animation = `spin ${duration}s linear infinite`;
+
+        // Add the keyframes animation to the document
+        const style = document.createElement("style");
+        style.textContent =
+          "@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }";
+        document.head.appendChild(style);
+      };
+
+      let hideProgress = function () {
+        // Might be cool to freeze the spinner first but this'll do.
+        document.getElementById("progress").classList.add("hidden");
+
+        let svg = document.getElementById("spinner");
+
+        const computedStyle = window.getComputedStyle(svg);
+        const currentTransform = computedStyle.getPropertyValue("transform");
+
+        // Remove the animation
+        svg.style.animation = "none";
+
+        // Keep the current rotation position
+        if (currentTransform !== "none") {
+          svg.style.transform = currentTransform;
+        }
+      };
+
+      let flashElem = function (elem) {
+        elem.classList.add("attn");
+
+        setTimeout(() => {
+          elem.classList.remove("attn");
+        }, 100);
+      };
+
+      let deselectAll = function () {
+        // https://stackoverflow.com/a/6562764
+        if (window.getSelection) {
+          window.getSelection().removeAllRanges();
+        } else if (document.selection) {
+          document.selection.empty();
+        }
+      };
+
+      // can't believe we're still doing this shit in 2025...
+      let hide = function (elem) {
+        element(elem).classList.add("hidden");
+      };
+
+      // and this!
+      let unhide = function (elem) {
+        element(elem).classList.remove("hidden");
+      };
+
+      // and this! not even using $ because the debugger aliases that!
+      let element = function (elem) {
+        if (typeof elem === "string") {
+          let selected = document.querySelector(elem);
+          if (selected == null) {
+            throw "element not found by selector: " + elem;
+          }
+          return selected;
+        } else {
+          return elem;
+        }
+      };
+    </script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: sans-serif;
+        display: flex;
+        min-height: 100vh;
+        padding-top: 10px;
+        text-align: center;
+      }
+
+      #main-content {
+        min-width: 60%;
+        margin: 0px auto;
+      }
+      #prompt-entry {
+        margin-top: 20px;
+      }
+      #prompt-entry label {
+        font-weight: bold;
+        font-size: 1.2em;
+        margin-top: 11px;
+        margin-right: 5px;
+        display: inline-block;
+        vertical-align: top;
+      }
+      #prompt {
+        width: 70%;
+        height: auto;
+        min-height: 40px;
+        font: sans-serif;
+        font-size: 1.2em;
+        text-align: left;
+        padding: 10px;
+        display: inline-block;
+        vertical-align: top;
+        background: #eee;
+        border: 1px solid black;
+        margin-bottom: 10px;
+      }
+      #prompt.attn {
+        border: 1px solid red;
+        background: white;
+      }
+      #prompt[contenteditable="false"] {
+        background: #ccc;
+        color: #666;
+      }
+      #progress {
+        margin: 20px auto;
+      }
+      #history {
+        width: 60%;
+        margin: 20px auto;
+      }
+      #history div {
+        text-align: left;
+        font-size: 1.2em;
+      }
+      #history div.prompt {
+        color: blue;
+      }
+      #history div.prompt {
+        color: rust;
+      }
+      #newchat {
+        margin: 20px auto;
+        font-size: 1.2em;
+        border-top: 2px solid black;
+        padding-top: 20px;
+      }
+      select,
+      ::picker(select) {
+        appearance: base-select;
+      }
+      select {
+        font-size: 1em;
+        padding-left: 5px;
+        padding-right: 5px;
+      }
+      button {
+        font-size: inherit;
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-left: 10px;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Main Content -->
+    <div id="main-content">
+      <h1>Greenhead Simple Chat</h1>
+      <div id="chat">
+        <div id="history" class="hidden"></div>
+        <div id="prompt-entry" class="hidden">
+          <label for="prompt">Prompt:</label>
+          <div id="prompt" contenteditable="true">
+            You're in a desert, walking along in the sand when all of the sudden
+            you look down and you see a tortoise.
+          </div>
+          <p>
+            Press <strong>Return</strong> to send;
+            <strong>Shift-Return</strong> for newline.
+          </p>
+        </div>
+      </div>
+      <div id="newchat">
+        Choose agent:
+        <select id="agent-select"></select>
+        <button id="newchat-button">New Chat</button>
+      </div>
+      <div id="reset-key">
+        <button id="reset-key-button">Reset API Key</button>
+      </div>
+      <div id="progress" class="hidden">
+        <svg
+          id="spinner"
+          width="50"
+          height="50"
+          viewBox="0 0 100 100"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <!-- Outer circle -->
+          <circle
+            cx="50"
+            cy="50"
+            r="45"
+            fill="white"
+            stroke="black"
+            stroke-width="2"
+          />
+
+          <!-- Main halves -->
+          <path
+            d="M50,5 A45,45 0 0,0 50,95 A22.5,22.5 0 0,1 50,50 A22.5,22.5 0 0,0 50,5"
+            fill="black"
+          />
+
+          <!-- Small circles -->
+          <circle cx="50" cy="27.5" r="5" fill="white" />
+          <circle cx="50" cy="72.5" r="5" fill="black" />
+        </svg>
+      </div>
+    </div>
+  </body>
+</html>

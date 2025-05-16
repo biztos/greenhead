@@ -3,6 +3,7 @@ package api
 
 import (
 	"fmt"
+	"html"
 	"sort"
 	"strings"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/biztos/greenhead/agent"
+	"github.com/biztos/greenhead/assets"
 	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/version"
 )
@@ -153,6 +155,26 @@ func (api *API) setRoutes() {
 		return api.HandleAgentsChat(c)
 	})
 
+	api.app.Get("/v1/ui", func(c *fiber.Ctx) error {
+		return api.HandleUI(c)
+	})
+
+	// ok -- want to do the UI as / if accept is set to HTML.
+	api.app.Post("/v1/ui", func(c *fiber.Ctx) error {
+		return api.HandleUI(c)
+	})
+
+	// TEMP - just until combining the files!
+	api.app.Get("/v1/ui/ghd.js", func(c *fiber.Ctx) error {
+		c.Type("js", "utf-8")
+		return c.Send(assets.MustAsset("api-ui/ghd.js"))
+	})
+
+	// Serve a favicon because the requests are annoying.
+	api.app.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		c.Type("svg", "utf-8")
+		return c.Send(assets.MustAsset("api-ui/favicon.svg"))
+	})
 }
 
 var DefaultListenAddress = ":3030"
@@ -168,7 +190,17 @@ func (api *API) Listen() error {
 }
 
 // HandleRoot is a handler for the root ("/") response.
+//
+// It serves the UI root page for (apparent) browsers, or a simple text
+// message.
 func (api *API) HandleRoot(c *fiber.Ctx) error {
+
+	accept := c.Get("Accept")
+
+	if strings.Contains(accept, "text/html") {
+		return api.HandleUI(c)
+	}
+
 	return c.SendString(api.ident)
 }
 
@@ -251,9 +283,66 @@ func (api *API) HandleAgentsChat(c *fiber.Ctx) error {
 			"error": "invalid JSON payload",
 		})
 	}
+	// TODO: want tool calls so we can see them!
 	res := fiber.Map{
 		"completion": completion,
 	}
 	return c.JSON(res)
+
+}
+
+// HandleUI is the handler for the simple chat UI.
+func (api *API) HandleUI(c *fiber.Ctx) error {
+
+	c.Type("html", "utf-8")
+
+	if c.Method() == fiber.MethodGet {
+		return c.Send(assets.MustAsset("api-ui/root.html"))
+	}
+
+	// Validate the key, and get the agents for that key.
+	api_key := strings.TrimSpace(c.FormValue("api_key"))
+	if api.config.NoKeys {
+		api_key = "" // don't take a chance on weird keys breaking JS.
+	} else {
+		// TODO: look up, error with 404 err-badkey if not found.
+	}
+	agent_names := api.KeyAgentNames(api_key)
+
+	// No agents for the key?  Nothing to do then.
+	if len(agent_names) == 0 {
+		return c.Status(fiber.StatusServiceUnavailable).Send(
+			assets.MustAsset("api-ui/err-noagents.html"))
+	}
+
+	// Serve our SPA with "add-on JS" special sauce.
+	// (Because templates are not worth it for something this simple).
+	qnames := make([]string, len(agent_names))
+	for i, n := range agent_names {
+		qnames[i] = fmt.Sprintf("'%s'", html.EscapeString(n))
+	}
+	page := assets.MustAssetString("api-ui/app.html")
+	f := `<script>
+API_KEY = '%s';
+AGENT_NAMES = [%s];
+</script>`
+	page += fmt.Sprintf(f,
+		html.EscapeString(api_key),
+		strings.Join(qnames, ", "))
+
+	return c.SendString(page)
+}
+
+// KeyAgentNames returns the names of the API's agents available to the given
+// api_key base on configured access.
+//
+// If NoKeys is configured, returns the names of all agents.
+func (api *API) KeyAgentNames(api_key string) []string {
+	names := []string{}
+	// TODO: for real
+	for _, a := range api.sourceAgents {
+		names = append(names, a.Name)
+	}
+	return names
 
 }
