@@ -111,7 +111,6 @@ button {
 #error-detail {
   color: black;
   margin-top: 10px;
-  font-family: monospace;
   font-size: 1.2em;
   white-space: pre;
 }

@@ -46,10 +46,11 @@ function setupAll(): void {
   show("#newchat");
 }
 
-function newChat(): void {
+async function newChat(): Promise<void> {
   // Bail on any currently in-flight activity, don't care for now.
   const api = API.getInstance();
   api.xhr?.abort();
+  api.xhr = undefined;
 
   // Hide current chat and freeze our own controls.
   hide("#chat");
@@ -60,34 +61,45 @@ function newChat(): void {
   const sel = elem("#newchat-agent-select") as HTMLSelectElement;
   const agent_name = sel.value;
 
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", "/v1/agents/new", true);
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.setRequestHeader("Authoriation", "Bearer " + api.user.api_key);
+  try {
+    showProgress();
+    const response = await fetch("/v1/agents/new", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + api.user.api_key,
+      },
+      body: JSON.stringify({ agent: agent_name }),
+    });
 
-  // meh, want promise syntax...
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-      enable("#newchat-agent-select");
-      enable("#newchat-button");
-      hideProgress();
-      if (xhr.status === 200) {
-        // TODO: catch error here.
-        const agent = Agent.fromJSON(xhr.responseText);
-        api.agent = agent;
-        startChat(agent);
-      } else {
-        if (api.agent != null) {
-          show("#chat");
-        }
-        showError(`${xhr.status} ${xhr.statusText}`, xhr.responseText);
+    enable("#newchat-agent-select");
+    enable("#newchat-button");
+    hideProgress();
+
+    if (!response.ok) {
+      if (api.agent != null) {
+        show("#chat");
       }
+      const errorText = await response.text();
+      showError(`${response.status} ${response.statusText}`, errorText);
+      return;
     }
-  };
-  xhr.send(JSON.stringify({ agent: agent_name }));
-  api.xhr = xhr;
-  showProgress();
+
+    const val = await response.json();
+    console.log(typeof(val));
+    console.log(val);
+    const agent = new Agent(val.id,val.name,val.description);
+    api.agent = agent;
+    startChat(agent);
+  } catch (err) {
+    enable("#newchat-agent-select");
+    enable("#newchat-button");
+    hideProgress();
+    showError("Request failed", err instanceof Error ? err.message : String(err));
+  }
+
 }
+
 
 function startChat(agent: Agent): void {
 
