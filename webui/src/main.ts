@@ -14,6 +14,8 @@ import { elem, hide, show, flash, disable, enable } from "./utils";
 import { User } from "./user";
 import { Agent, ToolCall } from "./agent";
 import { API } from "./api";
+import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 function setupAll(): void {
   // Init objects and elements.
@@ -63,7 +65,7 @@ async function runCompletion(prompt: string): Promise<void> {
   // Prep UI.
   disable("#prompt-textarea");
   enable("#chat-cancel-button");
-  addUserPrompt(prompt);
+  await addUserPrompt(prompt);
   showProgress();
 
   // Send off the request!
@@ -103,7 +105,7 @@ async function runCompletion(prompt: string): Promise<void> {
         calls.push(new ToolCall(call.id, call.name, call.args));
       }
     }
-    addCompletion(data.content, data.tool_calls);
+    await addCompletion(data.content, data.tool_calls);
     const ta = elem("#prompt-textarea") as HTMLTextAreaElement;
     ta.value = "";
     sizeTextArea(ta);
@@ -129,12 +131,14 @@ function addSystemMessage(message: string): void {
   addHistoryText(message, "system");
 }
 
-function addUserPrompt(message: string): void {
-  // TODO: treat user input as Markdown by default.
-  addHistoryText(message, "user");
+async function addUserPrompt(message: string): Promise<void> {
+  addHistoryMarkdown(message, "user");
 }
 
-function addCompletion(message: string, tool_calls: ToolCall[]): void {
+async function addCompletion(
+  message: string,
+  tool_calls: ToolCall[],
+): Promise<void> {
   // Put in the tool calls first.  BYO Node for now.
   if (tool_calls.length > 0) {
     const tc = document.createElement("div");
@@ -149,15 +153,32 @@ function addCompletion(message: string, tool_calls: ToolCall[]): void {
     elem("#history").appendChild(tc);
   }
   // TODO: treat agent completion as markdown *but safe*
-  addHistoryText(message, "agent");
+  await addHistoryMarkdown(message, "agent");
+}
+
+async function addHistoryMarkdown(
+  markdown: string,
+  messageClass: string,
+): Promise<void> {
+  // NOTE: we actually do get code lang in the fenced block in the markdown
+  // usually, but marked throws it away.  Look into fixing that and/or doing
+  // a server render... but yucko, dislike including the html in the
+  // response if we're KISS...
+  const html = await marked.parse(markdown);
+  const safe = sanitizeHtml(html);
+  const div = document.createElement("div");
+  div.classList.add(messageClass);
+  div.innerHTML = safe;
+  elem("#history").appendChild(div);
+  scrollToBottom();
 }
 
 // TODO: addHistoryHTML
 function addHistoryText(messageText: string, messageClass: string): void {
-  const msg = document.createElement("div");
-  msg.classList.add(messageClass);
-  msg.innerText = messageText;
-  elem("#history").appendChild(msg);
+  const div = document.createElement("div");
+  div.classList.add(messageClass);
+  div.innerText = messageText;
+  elem("#history").appendChild(div);
   scrollToBottom();
 }
 
