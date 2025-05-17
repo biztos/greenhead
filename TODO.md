@@ -1,5 +1,20 @@
 # TODO (ordered! sorta!)
 
+Priorities:
+
+- API agent reports tool calls.
+- Mutex per agent and log if locked.
+- Log all requests.
+    - Logger at runner level
+    - Option for not structured
+    - Fine fuck it go to a logfile if you want.
+- Support keys and access.
+- Fake client for testing UI et al.
+- Multi-api agents.
+- Demo mode with fake agents.
+
+How hard is this?!
+
 ## HTTP API
 
 1. Logger setup in Runner not just in Agents.
