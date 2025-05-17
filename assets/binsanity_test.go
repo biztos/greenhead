@@ -25,7 +25,6 @@ const BinsanityAssetPresentSum = "e66573e846581a3110de4f575a9be8937a52bb47979c5c
 
 var BinsanityAssetNames = []string{
 
-	".DS_Store",
 	"agents/chatty.toml",
 	"agents/marvin.toml",
 	"agents/pirate.toml",
@@ -37,7 +36,6 @@ var BinsanityAssetNames = []string{
 	"doc/people.md",
 	"doc/readme.md",
 	"doc/tools/tictactoe.md",
-	"webui/.DS_Store",
 	"webui/app.html",
 	"webui/err-badkey.html",
 	"webui/err-noagents.html",
@@ -46,7 +44,6 @@ var BinsanityAssetNames = []string{
 }
 
 var BinsanityAssetSums = []string{
-	"5c940c4197f6797e2ef0b66f22c55016308984732f7c6214a3d1f200ca6b121a",
 	"c266499f9d5d56104f5060483ba3df466f49e7ee3f18992fdad4e018c1bf57a6",
 	"e49aa1ea1710e0ad809e23a8429a683f017472cfb5ba8eec99ef56964acdf401",
 	"ec08f63a25b7edda382315885e0ff961accb48e44dca179a28605a1b88e88eab",
@@ -58,7 +55,6 @@ var BinsanityAssetSums = []string{
 	"e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398",
 	"d3864eb192507738a60b34b04c6665819975a612eecfcb208a602c70115cc03d",
 	"9d9c4535cf0577291fc57b0a6daebda9a3d9490bef897604631a220e0ceac60b",
-	"d65165279105ca6773180500688df4bdc69a2c7b771752f0a46ef120b7fd8ec3",
 	"76f065babd79c305324c37491bf45652ee781554e7279b5da4301f474980334b",
 	"a184d7b13e8dd11c9a7f1ac4073a9268a0dd053a7e45771fcbf84728d5b311fe",
 	"a184d7b13e8dd11c9a7f1ac4073a9268a0dd053a7e45771fcbf84728d5b311fe",
