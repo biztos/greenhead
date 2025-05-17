@@ -97,3 +97,13 @@ export function enable(sel: elemSel): void {
   const d = elem(sel) as HTMLAbleElement;
   d.disabled = false;
 }
+
+/**
+ * Removes an element from the DOM.
+ *
+ * @param sel A CSS selector string or an HTMLElement
+ */
+export function remove(sel: elemSel): void {
+  const child = elem(sel);
+  child.parentNode?.removeChild(child);
+}

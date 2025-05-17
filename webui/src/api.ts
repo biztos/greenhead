@@ -6,7 +6,7 @@ export class API {
 
   readonly user: User;
   agent: Agent | undefined;
-  xhr: XMLHttpRequest | undefined;
+  abortController: AbortController | undefined;
 
   static initFromDOM(): API {
     const user = User.initFromDOM();
@@ -26,5 +26,10 @@ export class API {
       throw new Error("Error: API singleton not initialized.");
     }
     return API._instance;
+  }
+
+  abort(): void {
+    this.abortController?.abort();
+    this.abortController = undefined;
   }
 }

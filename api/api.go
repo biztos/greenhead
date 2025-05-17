@@ -231,7 +231,7 @@ func (api *API) HandleAgentsNew(c *fiber.Ctx) error {
 		})
 	}
 
-	spawn, err := src_agent.Spawn()
+	spawn, err := src_agent.SpawnSilent()
 	if err != nil {
 		// TODO: log error here!
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

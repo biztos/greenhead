@@ -23,6 +23,18 @@ built-in agents.
 
 Maybe just call the type "flex"?
 
+## Make a fake-agent as part of the multi thing.
+
+So you can practice stuff w/o an actual LLM.
+
+It just replies predictably to every prompt.  With some Markdown, optionally?
+
+Something like:
+
+    Hello -> howdy
+    /^echo /i --> echo everything after that
+    /^call foo {}/i --> try to call foo with whatever follows
+
 ## Demo mode for API, load all (or some of) the built-in agents and tools.
 
 Since I want them adaptable anyway, should be pretty useful.
@@ -32,6 +44,10 @@ Since I want them adaptable anyway, should be pretty useful.
 ## Display name for Agents.
 
 chatty -> "Agent Chatty" or whatever.
+
+## Agent should use an io.Writer instead of a PrintFunc.
+
+Make the color-printer work that way.  This will improve testing!
 
 ## Better API for clearing/adding named agents from top level.
 

@@ -14,15 +14,21 @@
       <div id="error" class="hidden">
         <h2 id="error-message">Error</h2>
         <div id="error-detail">An error occurred.</div>
-        <div id="error-controls">
+        <div id="error-controls" class="controls">
           <button id="error-dismiss-button">Dismiss</button>
         </div>
       </div>
       <div id="chat" class="hidden">
         <div id="history"></div>
+        <div id="chat-controls" class="controls">
+          <button id="chat-clear-button">Clear</button>
+          <button id="chat-cancel-button">Cancel</button>
+        </div>
         <div id="prompt-entry">
-          <label for="prompt">Prompt:</label>
-          <textarea id="prompt">You're in a desert, walking along in the sand when all of the sudden you look down and you see a tortoise.</textarea>
+          <label for="prompt-textarea">Prompt:</label>
+          <textarea id="prompt-textarea">
+You're in a desert, walking along in the sand when all of the sudden you look down and you see a tortoise.</textarea
+          >
           <p>
             Press <strong>Return</strong> to send;
             <strong>Shift-Return</strong> for newline.

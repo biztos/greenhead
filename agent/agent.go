@@ -20,6 +20,8 @@ import (
 
 var DefaultPrintFunc = func(a ...any) { fmt.Print(a...) }
 
+var NullPrintFunc = func(a ...any) {}
+
 var ErrStopped = fmt.Errorf("stopped")
 
 var ErrMaxCompletions = fmt.Errorf("%w: max completions reached", ErrStopped)
@@ -77,7 +79,7 @@ type Config struct {
 	BgColor   string `toml:"bg_color"`   // Background color for console output.
 	Stream    bool   `toml:"stream"`     // Stream responses; if streaming not possible, print them.
 	ShowCalls bool   `toml:"show_calls"` // Show tool calls in output (experimental; can leak data).
-	Silent    bool   `toml:"silent"`     // Suppress responses unless streamed.
+	Silent    bool   `toml:"silent"`     // Suppress responses.
 
 	// Logging and debugging:
 	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
@@ -209,11 +211,24 @@ func (a *Agent) Spawn() (*Agent, error) {
 	// NOTE: because we do not control the underlying ApiClient, it is
 	// possible to get an error here even though it should be ~~ impossible
 	// at the agent level.
+	//
+	// TODO: make sure this takes the same logger with it as the original,
+	// after logging is at runner level.
 	spawn, err := NewAgent(a.config)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s: %w", ErrSpawnFailed, a.Name, ErrSpawnFailed)
 	}
 	return spawn, err
+}
+
+// SpawnSilent calls Spawn and sets the new Agent to print nothing.
+func (a *Agent) SpawnSilent() (*Agent, error) {
+	spawn, err := a.Spawn()
+	if err != nil {
+		return nil, err
+	}
+	spawn.SetPrintFunc(NullPrintFunc)
+	return spawn, nil
 }
 
 // Id returns the Agent's ULID as a string.
@@ -324,11 +339,15 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	}
 
 	// Set up the streaming and color printing:
-	pfunc, err := ColorPrintFunc(cfg.Color, cfg.BgColor)
-	if err != nil {
-		return nil, fmt.Errorf("error with print colors: %w", err)
+	if cfg.Silent {
+		a.SetPrintFunc(NullPrintFunc) // Print nothing nowhere if silent.
+	} else {
+		pfunc, err := ColorPrintFunc(cfg.Color, cfg.BgColor)
+		if err != nil {
+			return nil, fmt.Errorf("error with print colors: %w", err)
+		}
+		a.SetPrintFunc(pfunc)
 	}
-	a.SetPrintFunc(pfunc)
 
 	// Set up the logger.
 	if cfg.NoLog {
@@ -471,7 +490,8 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 
 			// Print tools as they arrive, if requested.
 			// (Printing at the end will be confusing if tools take longer to run.)
-			if !a.config.Stream && !a.config.Silent && a.config.ShowCalls {
+			// (If streaming, the client should have printed them already.)
+			if !a.config.Stream && a.config.ShowCalls {
 				line := fmt.Sprintf("* tool_call: %s %s\n", call.Name, call.Args)
 				a.printFunc(line)
 			}
