@@ -107,6 +107,7 @@ license:
 
 # Compile and bundle the webui files, putting them under assets.
 webui:
+	cd webui && prettier -w index.html src/*.*
 	cd webui && npm run build
 	cp -f webui/dist/index.html assets/src/webui/app.html
 

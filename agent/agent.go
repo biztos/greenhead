@@ -450,6 +450,20 @@ func (a *Agent) RunCompletionPrompt(prompt string) (string, error) {
 	return res.Content, nil
 }
 
+// RunCompletionPromptCtx is RunCompletionPrompt but passing a context.
+//
+// Use this if the caller may cancel the request, but you still want the
+// simple return value.
+func (a *Agent) RunCompletionPromptCtx(ctx context.Context, prompt string) (string, error) {
+
+	req := &CompletionRequest{Content: prompt}
+	res, err := a.RunCompletion(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	return res.Content, nil
+}
+
 // RunCompletion runs a completion request for the given prompt, returning its
 // CompletionResult after handling any tool calls in the responses and sending
 // them back for new completions.  The *final* completion in such a chain is
@@ -461,6 +475,7 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 	}
 
 	raws := []*RawCompletion{}
+	all_calls := []*ToolCall{}
 	res, err := a.client.RunCompletion(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("error running completion: %w", err)
@@ -487,6 +502,9 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 		// TODO: concurrency if the tools allow it.
 		results := make([]*ToolResult, len(res.ToolCalls))
 		for idx, call := range res.ToolCalls {
+
+			// Keep the calls for the response.
+			all_calls = append(all_calls, call)
 
 			// Print tools as they arrive, if requested.
 			// (Printing at the end will be confusing if tools take longer to run.)
@@ -530,6 +548,7 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 			return nil, fmt.Errorf("error running tool-result completion: %w", err)
 		}
 		raws = append(raws, res.RawCompletions...)
+
 		// TODO: limit loops on tools!
 	}
 
@@ -542,6 +561,7 @@ func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*Com
 
 	final_res := &CompletionResponse{
 		Content:        res.Content,
+		ToolCalls:      all_calls,
 		RawCompletions: raws,
 	}
 

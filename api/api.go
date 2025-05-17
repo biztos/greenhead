@@ -117,18 +117,6 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 
 }
 
-type RequestPayloadAgent struct {
-	Agent string `json:"agent"`
-}
-
-type RequestPayloadChat struct {
-	Prompt string `json:"prompt"`
-}
-
-type RequestPayloadRemove struct {
-	Reason string `json:"reason"`
-}
-
 // Set up the routing for the Fiber app, with access to the agents et al.
 // Middleware will handle the auth and logging.
 func (api *API) setRoutes() {
@@ -149,11 +137,18 @@ func (api *API) setRoutes() {
 		return api.HandleAgentsChat(c)
 	})
 
+	api.app.Post("/v1/agents/:id/completion", func(c *fiber.Ctx) error {
+		return api.HandleAgentsCompletion(c)
+	})
+
+	api.app.Post("/v1/agents/:id/end", func(c *fiber.Ctx) error {
+		return api.HandleAgentsEnd(c)
+	})
+
 	api.app.Get("/v1/ui", func(c *fiber.Ctx) error {
 		return api.HandleUI(c)
 	})
 
-	// ok -- want to do the UI as / if accept is set to HTML.
 	api.app.Post("/v1/ui", func(c *fiber.Ctx) error {
 		return api.HandleUI(c)
 	})

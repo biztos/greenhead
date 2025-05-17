@@ -1,3 +1,15 @@
+export class ToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly args: string;
+
+  constructor(id: string, name: string, args: string) {
+    this.id = id;
+    this.name = name;
+    this.args = args;
+  }
+}
+
 /**
  * Represents an Agent entity within the system.
  *

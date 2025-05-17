@@ -4,8 +4,6 @@ description =  """\
   An agent that tries to play Tic Tac Toe.
 
   It should be able to play against another agent made from the same config.
-  TODO: Since this seems like it might happen a lot, it would be good to have
-  a good way to tell them apart.  App can declare colors maybe?
   """
 type = "openai"
 model = "gpt-4o"

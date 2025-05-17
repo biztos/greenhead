@@ -50,33 +50,70 @@ api genkeys --> generate a set of sample keys for regular user, admin, et al.
 
 ## Endpoints
 
+Unless the server is configured with the `NoKeys` option, most endpoints
+require a bearer auth header.
+
 ### GET /v1/agents/list
 
 List the named agents available for use.
 
-	Auth: <key>
+	Authorization: Bearer <key>
 	Returns <agent-list> struct.
 
 ### POST /v1/agents/new
 
 Create an agent (clone from the runner's agents by name).
 
-	Auth: <key>
+	Authorization: Bearer <key>
+	Payload:
 	{
 		"agent": "<name>"
 	}
-	Returns <ulid> string.
+	Returns:
+	{
+		"id": "<agent_id>",
+		"name": "<agent_name",
+		"description": "<agent_description>"
+	}
 
-### POST /v1/agents/<ulid>/chat
+### POST /v1/agents/<id>/chat
 
 Send a chat completion prompt to an agent.
 Context is maintained on the server.
 
-	Auth: <key>
+	Authorization: Bearer <key>
+	Payload:
 	{
 		"prompt": "<user_prompt>"
 	}
-	Returns <response> struct.
+	Returns:
+	{
+		"content": "<completion_text>",
+		"tool_calls": [<tool_calls>]
+	}
+
+TODO: make `tool_calls` subject to permission or config.
+
+### POST /v1/agents/<id>/completion
+
+Send a chat completion prompt to an agent, returning the full response.
+
+The response can get quite long; unless the client plans to dig in for
+debugging, it is better to use the chat endpoint.
+
+	Authorization: Bearer <key>
+	Payload:
+	{
+		"prompt": "<user_prompt>"
+	}
+	Returns:
+	{
+		"finish_reason": "<string>",
+		"content": "<completion_text">,
+		"tool_calls": [<tool_calls>],
+		"usage": [<usage>],
+		"raw_completions": [<raw_completions>]
+	}
 
 ### POST /v1/agents/<ulid>/end
 
@@ -85,28 +122,35 @@ If no data store is in use, this frees the agent's memory.
 
 Inactive agents may be reaped, subject to runner configs.
 
-	Auth: <key>
-	{
-		"reason": "<any_string>"
-	}
+	Authorization: Bearer <key>
 	Returns success.
 
 ### POST /v1/agents/create *LOW-PRIORITY, SPECULATIVE*
 
 Create an agent from a config. Permission-based.
 
-	Auth: <key>
+	Authorization: Bearer <key>
+	Payload:
 	{
 		...valid agent config...
 	}
-	Returns <ulid> string.
+	Returns:
+	{
+		"name": "<new_agent_name>"
+	}
 
 ### POST /v1/agents/publish *LOW-PRIORITY, SPECULATIVE*
 
 Publish an agent from a config so others may use it. Permission-based.
+(Argument against this: have to manage permissions, who gets to use this
+agent?  Complicated.)
 
-	Auth: <key>
+	Authorization: Bearer <key>
+	Payload:
 	{
 		...valid agent config...
 	}
-	Returns <ulid> string.
+	Returns:
+	{
+		"name": "<new_agent_name>"
+	}

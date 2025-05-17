@@ -61,16 +61,24 @@ body {
   margin-bottom: 10px;
 }
 #history div.system {
-  color: red;
+  color: crimson;
   font-style: italic;
   padding-bottom: 5px;
   border-bottom: 1px dashed #ccc;
 }
 #history div.user {
-  color: blue;
+  color: dodgerblue;
 }
 #history div.agent {
-  color: orange;
+  color: seagreen;
+}
+#history div.tool {
+  color: peru;
+  font-size: smaller;
+  font-family: monospace;
+}
+#history div.tool ol {
+  margin-left: 20px;
 }
 #chat-controls {
   padding-bottom: 10px;

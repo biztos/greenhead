@@ -12,7 +12,7 @@ import "./style.css"; // weird-ass TS trick, required for vite packaging.
 
 import { elem, hide, show, flash, disable, enable } from "./utils";
 import { User } from "./user";
-import { Agent } from "./agent";
+import { Agent, ToolCall } from "./agent";
 import { API } from "./api";
 
 function setupAll(): void {
@@ -97,7 +97,13 @@ async function runCompletion(prompt: string): Promise<void> {
     // OK, right now we just have the response text, but this is crap.
     // TODO: get the tool calls in here so we can show you what happened!
     const data = await response.json();
-    addCompletion(data.completion);
+    let calls: ToolCall[] = [];
+    if (data.tool_calls != null) {
+      for (const call of data.tool_calls) {
+        calls.push(new ToolCall(call.id, call.name, call.args));
+      }
+    }
+    addCompletion(data.content, data.tool_calls);
     const ta = elem("#prompt-textarea") as HTMLTextAreaElement;
     ta.value = "";
     sizeTextArea(ta);
@@ -128,8 +134,21 @@ function addUserPrompt(message: string): void {
   addHistoryText(message, "user");
 }
 
-function addCompletion(message: string): void {
-  // TODO: treat agent completion as markdown
+function addCompletion(message: string, tool_calls: ToolCall[]): void {
+  // Put in the tool calls first.  BYO Node for now.
+  if (tool_calls.length > 0) {
+    const tc = document.createElement("div");
+    tc.classList.add("tool");
+    const ol = document.createElement("ol");
+    for (const call of tool_calls) {
+      const li = document.createElement("li");
+      li.innerText = call.name + " " + call.args; // args is string IRL
+      ol.appendChild(li);
+    }
+    tc.appendChild(ol);
+    elem("#history").appendChild(tc);
+  }
+  // TODO: treat agent completion as markdown *but safe*
   addHistoryText(message, "agent");
 }
 
