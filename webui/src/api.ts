@@ -8,11 +8,6 @@ export class API {
   agent: Agent | undefined;
   abortController: AbortController | undefined;
 
-  static initFromDOM(): API {
-    const user = User.initFromDOM();
-    return new API(user);
-  }
-
   constructor(user: User) {
     if (API._instance) {
       throw new Error("Error: API singleton already initialized.");

@@ -3,13 +3,13 @@ package api
 
 import (
 	"fmt"
-	"html"
 	"sort"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/biztos/greenhead/assets"
+	"github.com/biztos/greenhead/utils"
 )
 
 // HandleRoot is a handler for the root ("/") response.
@@ -114,6 +114,15 @@ func (api *API) HandleAgentsChat(c *fiber.Ctx) error {
 
 }
 
+type UiPageUser struct {
+	ApiKey     string   `json:"api_key"`
+	Name       string   `json:"name"`
+	AgentNames []string `json:"agent_names"`
+}
+type UiPageConfig struct {
+	User UiPageUser `json:"user"`
+}
+
 // HandleUI is the handler for the simple chat UI.
 func (api *API) HandleUI(c *fiber.Ctx) error {
 
@@ -140,26 +149,20 @@ func (api *API) HandleUI(c *fiber.Ctx) error {
 			assets.MustAsset("webui/err-noagents.html"))
 	}
 
-	// Serve our SPA with the values we need in the DOM.
+	// Serve our SPA with the values we need stuck on the end.
 	// (Because templates are not worth it for something this simple).
-	// TODO: come up iwtha
-	agent_opts := make([]string, len(agent_names))
-	for i, n := range agent_names {
-		agent_opts[i] = fmt.Sprintf(`<option value="%s">`, html.EscapeString(n))
-	}
 	page := assets.MustAssetString("webui/app.html")
-	f := `<!-- user definition -->
-<form id="user-session" class="hidden">
-<input type="hidden" id="user-api-key" value="%s">
-<input type="hidden" id="user-name" value="%s">
-<select class="hidden" id="user-agent-name">
-%s
-</select>
-</form>`
-	page += fmt.Sprintf(f,
-		html.EscapeString(api_key),
-		html.EscapeString(user_name),
-		strings.Join(agent_opts, "\n"))
+	page_config := UiPageConfig{
+		User: UiPageUser{
+			ApiKey:     api_key,
+			Name:       user_name,
+			AgentNames: agent_names,
+		},
+	}
+	// GPT can't decide if this is an XSS risk or not, seems to me NOT.
+	injection := fmt.Sprintf("<script>window.__CONFIG__ = %s</script>",
+		utils.MustJsonString(page_config))
+	html := strings.Replace(page, "</html>", injection+"</html>", 1)
 
-	return c.SendString(page)
+	return c.SendString(html)
 }

@@ -11,20 +11,24 @@ Ideas:
 import "./style.css"; // weird-ass TS trick, required for vite packaging.
 
 import { elem, hide, show, flash, disable, enable } from "./utils";
-// import { User } from "./user";
+import { User } from "./user";
 import { Agent } from "./agent";
 import { API } from "./api";
 
 function setupAll(): void {
-  // Bail out if we're not in the normal session context.
-  if (document.querySelector("#user-session") == null) {
-    showError("Session not initiated.", "Did you load from dist?");
-    hide("#error-dismiss-button");
+  // Init objects and elements.
+  const config = (window as any).__CONFIG__;
+  if (config === null) {
+    showError("Session not configured.", "Did you load from dist?");
     return;
   }
+  const user = new User(
+    config.user.api_key,
+    config.user.name,
+    config.user.agent_names,
+  );
+  const api = new API(user);
 
-  // Init objects and elements.
-  const api = API.initFromDOM();
   let agent_select = elem("#newchat-agent-select") as HTMLSelectElement;
   api.user.agent_names.forEach((name) => {
     let opt = document.createElement("option");
@@ -98,7 +102,6 @@ async function runCompletion(prompt: string): Promise<void> {
     ta.value = "";
     sizeTextArea(ta);
     ta.focus();
-
   } catch (err) {
     api.abortController = undefined;
     enable("#prompt-textarea");
