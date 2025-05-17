@@ -2,8 +2,8 @@
 
 Priorities:
 
-- API agent reports tool calls.
-- Mutex per agent and log if locked.
+- OK - API agent reports tool calls.
+- OK - Mutex per agent and log if locked.
 - Log all requests.
     - Logger at runner level
     - Option for not structured
@@ -20,10 +20,8 @@ How hard is this?!
 1. Logger setup in Runner not just in Agents.
 2. Get Logger working for API (fiber) and Agents, same one.
 3. Make sure agents not streaming!
-4. Make sure agents not printing, just want res!
+4. OK - Make sure agents not printing, just want res!
 5. Add middleware for API keys: also to check agents not just endpoints
-
-fuck fuck fuck, I really want to see the tool calls!
 
 ## Serialize agents, duh.
 

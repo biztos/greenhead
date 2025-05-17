@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 
 	"github.com/oklog/ulid/v2"
 
@@ -196,6 +197,7 @@ type Agent struct {
 
 	client    ApiClient
 	toolnames []string
+	mutex     *sync.Mutex
 
 	completed int
 	config    *Config
@@ -308,6 +310,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 		Type:        cfg.Type,
 		Model:       cfg.Model,
 		config:      cfg.Copy(),
+		mutex:       &sync.Mutex{},
 	}
 
 	// Get an ApiClient to set up:
@@ -468,11 +471,21 @@ func (a *Agent) RunCompletionPromptCtx(ctx context.Context, prompt string) (stri
 // CompletionResult after handling any tool calls in the responses and sending
 // them back for new completions.  The *final* completion in such a chain is
 // returned, but its RawCompletions field includes all round-trips.
+//
+// Runs are mutex-locked, and log if they are found locked (this should not
+// normally happen, as the caller should not try to confuse the context).
 func (a *Agent) RunCompletion(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error) {
 
 	if a.config.MaxCompletions > 0 && a.completed >= a.config.MaxCompletions {
 		return nil, fmt.Errorf("%w: %d", ErrMaxCompletions, a.completed)
 	}
+
+	// Only reason for this to fail is bad client logic, or hacking.
+	if !a.mutex.TryLock() {
+		a.logger.Warn("awaiting mutex lock")
+		a.mutex.Lock() // <-- blocks
+	}
+	defer a.mutex.Unlock()
 
 	raws := []*RawCompletion{}
 	all_calls := []*ToolCall{}
