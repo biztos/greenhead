@@ -94,6 +94,11 @@ async function runCompletion(prompt: string): Promise<void> {
     // TODO: get the tool calls in here so we can show you what happened!
     const data = await response.json();
     addCompletion(data.completion);
+    const ta = elem("#prompt-textarea") as HTMLTextAreaElement;
+    ta.value = "";
+    sizeTextArea(ta);
+    ta.focus();
+
   } catch (err) {
     api.abortController = undefined;
     enable("#prompt-textarea");

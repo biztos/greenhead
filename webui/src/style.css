@@ -68,17 +68,9 @@ body {
 }
 #history div.user {
   color: blue;
-  font-style: italic;
 }
 #history div.agent {
   color: orange;
-  font-style: italic;
-}
-#history div.prompt {
-  color: blue;
-}
-#history div.prompt {
-  color: rust;
 }
 #chat-controls {
   padding-bottom: 10px;
