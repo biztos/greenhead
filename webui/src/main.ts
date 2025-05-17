@@ -120,8 +120,7 @@ async function runCompletion(prompt: string): Promise<void> {
       addSystemMessage("User canceled completion.");
       return;
     }
-    const detail = err instanceof Error ? err.message : String(err);
-    showError("Request failed", detail);
+    showError("Request failed.", err);
     addSystemMessage("Error running completion.");
   }
 }
@@ -191,6 +190,27 @@ function cancelCompletion(): void {
   API.getInstance().abort();
 }
 
+// end the existing agent, throwing error on any non-OK non-404
+async function endAgent(): Promise<void> {
+  const api = API.getInstance();
+  if (api.agent == undefined) {
+    return;
+  }
+  const response = await fetch(`/v1/agents/${api.agent.id}/end`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + api.user.api_key,
+    },
+    body: JSON.stringify({}), // no payload at this time!
+  });
+  if (response.ok || response.status == 404) {
+    api.agent = undefined;
+    return;
+  }
+  throw new Error(`${response.status} ${response.statusText}`);
+}
+
 async function newChat(): Promise<void> {
   // Bit awkward here, but don't let them easily just nuke the history.
   const user_hist = document.querySelectorAll("#history .user");
@@ -215,6 +235,7 @@ async function newChat(): Promise<void> {
 
   try {
     showProgress();
+    await endAgent();
     const response = await fetch("/v1/agents/new", {
       method: "POST",
       headers: {
@@ -248,10 +269,7 @@ async function newChat(): Promise<void> {
       show("#chat");
     }
     hideProgress();
-    showError(
-      "Request failed",
-      err instanceof Error ? err.message : String(err),
-    );
+    showError("Request failed.", err);
   }
 }
 
@@ -277,15 +295,28 @@ function startChat(agent: Agent): void {
   show("#chat");
 }
 
-function resetKey(event: Event): void {
+async function resetKey(event: Event): Promise<void> {
   event.preventDefault();
+  disable("#prompt-textarea");
+  disable("#newchat-button");
   let do_reset = confirm("Clear chat history and reset API Key?");
-  if (do_reset == true) {
+  if (do_reset == false) {
+    enable("#prompt-textarea");
+    enable("#newchat-button");
+    return;
+  }
+  try {
+    await endAgent(); // let's not dangle!
     window.location.href = "/v1/ui"; // quite the stupid hack but OK for now.
+  } catch (err) {
+    enable("#prompt-textarea");
+    enable("#newchat-button");
+    showError("Failed to end current agent.", err);
   }
 }
 
-function showError(message: string, detail: string): void {
+function showError(message: string, err: any): void {
+  const detail = err instanceof Error ? err.message : String(err);
   elem("#error-message").innerText = message;
   elem("#error-detail").innerText = detail;
   show("#error");

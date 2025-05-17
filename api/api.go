@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/assets"
@@ -97,6 +98,8 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		// EnablePrintRoutes ?
 	}
 	app := fiber.New(fiber_cfg)
+	app.Use(logger.New()) // TODO: get from runner.
+
 	sourceAgents := map[string]*agent.Agent{}
 	for _, a := range agents {
 		if sourceAgents[a.Name] != nil {
