@@ -4,10 +4,10 @@ Priorities:
 
 - OK - API agent reports tool calls.
 - OK - Mutex per agent and log if locked.
-- Log all requests.
-    - Logger at runner level
-    - Option for not structured
-    - Fine fuck it go to a logfile if you want.
+- OK - Log all requests.
+    - OK - Logger at runner level
+    - OK - Option for not structured
+    - OK - Fine fuck it go to a logfile if you want.
 - Support keys and access.
 - Fake client for testing UI et al.
 - Multi-api agents.
@@ -310,4 +310,10 @@ __PROBLEM: how to deal with multi-line output?  Just JSON-ify?__
 Shit packaging but very useful maybe -- however also do NOT want it on by
 default, will just confuse normal users.
 
+## Consider external logging
 
+Some cool stuff listed here.
+
+https://github.com/samber/slog-fiber
+
+Or is it better to just let the ops guys integrate regular logs?

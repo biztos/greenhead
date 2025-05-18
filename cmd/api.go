@@ -16,7 +16,7 @@ var ApiCmd = &cobra.Command{
 var ApiCheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Instantiate and validate the API without serving..",
-	Long: `Sets up an API instance and writes a line to its logger.
+	Long: `Sets up an API instance.
 
 Does NOT begin listening for requests.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -53,10 +53,12 @@ equivalent, be used for testing only.`,
 
 func init() {
 	// Flags:
-	ApiCmd.PersistentFlags().StringVar(&Config.API.ListenAddress, "address", ":3030",
+	ApiCmd.PersistentFlags().StringVar(&Config.API.ListenAddress, "listen", ":3030",
 		"Address at which to listen for requests.")
 	ApiCmd.PersistentFlags().BoolVar(&Config.API.NoKeys, "no-keys", false,
 		"Do NOT require API keys.")
+	ApiCmd.PersistentFlags().BoolVar(&Config.API.LogFiber, "log-fiber", false,
+		"Use Fiber logging for API requests.")
 
 	// Registration:
 	ApiCmd.AddCommand(ApiCheckCmd)

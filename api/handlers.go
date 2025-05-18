@@ -1,4 +1,5 @@
-// Package api defines the Greenhead HTTP API.
+// api/handlers.go
+
 package api
 
 import (

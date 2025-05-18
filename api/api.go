@@ -3,10 +3,13 @@ package api
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	slogfiber "github.com/samber/slog-fiber"
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/assets"
@@ -36,8 +39,8 @@ type Key struct {
 type Config struct {
 
 	// General configuration:
-	ListenAddress    string `toml:"listen_address"` // Address for serving, e.g. ":3000"
-	UnstructuredLogs bool   `toml:"default_logger"` // Use default Fiber logger instead of structured.
+	ListenAddress string `toml:"listen_address"` // Address for serving, e.g. ":3000"
+	LogFiber      bool   `toml:"log_fiber"`      // Use default Fiber logger for requests.
 
 	// Access control:
 	Roles      []*Role `toml:"roles"`       // Roles defining access.
@@ -64,6 +67,7 @@ type API struct {
 	config       *Config
 	ident        string
 	app          *fiber.App
+	logger       *slog.Logger
 	sourceAgents map[string]*agent.Agent
 	activeAgents map[string]*agent.Agent
 }
@@ -98,7 +102,6 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		// EnablePrintRoutes ?
 	}
 	app := fiber.New(fiber_cfg)
-	app.Use(logger.New()) // TODO: get from runner.
 
 	sourceAgents := map[string]*agent.Agent{}
 	for _, a := range agents {
@@ -107,15 +110,28 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		}
 		sourceAgents[a.Name] = a
 	}
-	// TODO: logging setup!
 	api := &API{
 		ident:        ident,
 		config:       cfg,
 		app:          app,
+		logger:       slog.Default(),
 		sourceAgents: sourceAgents,
 		activeAgents: map[string]*agent.Agent{},
 	}
+	// Set up app routes and middleware. NB: ORDER MATTERS.
+	if !cfg.NoKeys {
+		app.Use(api.KeyAccess())
+	}
+	if cfg.LogFiber {
+		app.Use(logger.New())
+	} else {
+		// TODO: useful filter to exclude the instrumentation, which is
+		// annoying AF when doing development and testing.
+		app.Use(slogfiber.New(slog.Default()))
+	}
+	app.Use(recover.New()) // TODO: why exactly?
 	api.setRoutes()
+
 	return api, nil
 
 }
