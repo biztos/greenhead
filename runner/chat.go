@@ -1,13 +1,16 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chzyer/readline"
 )
+
+// TODO: (long-term) - by default log internally to the chat and allow the
+// examination of logs from within the chat session.  (Really long term!)
+var ErrChatRequiresLogFile = errors.New("chat requires a log file")
 
 // RunChat runs an interactive chat session.
 //
@@ -21,16 +24,14 @@ func (r *Runner) RunChat() error {
 	}
 	agent := r.Agents[0]
 
-	// If log file is not specified, then log to temp file, because running
-	// chat and logging to the console at the same time is unusable.
-	log_file := r.Config.LogFile
-	if log_file == "" {
-		log_file = filepath.Join(os.TempDir(), fmt.Sprintf("%s.log", agent.ULID))
-		agent.InitLogger(log_file, r.Config.Debug)
+	// Require that we log to file, because logging to output makes the chat
+	// unusable.
+	if !r.Config.NoLog && r.Config.LogFile == "" {
+		return ErrChatRequiresLogFile
 	}
 
 	fmt.Println("Chatting with:", agent.String())
-	fmt.Println("Logs:", log_file)
+	fmt.Println("Logs:", r.Config.LogFile)
 	fmt.Println("Return twice to send prompt; empty prompt or Ctrl-D to quit.")
 	fmt.Println("Note that context is NOT cleared!")
 

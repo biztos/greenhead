@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/chzyer/readline v1.5.1
+	github.com/fabien-marty/slog-helpers v0.0.0-20240624063600-773d61849b89
 	github.com/fatih/color v1.18.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/oklog/ulid/v2 v2.1.0

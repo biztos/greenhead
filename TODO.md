@@ -295,3 +295,19 @@ speculative though, for POSIX we should not have to worry about it.
 
 __DO NOT DO THIS WITHOUT A REAL-WORLD USE-CASE__
 
+## MAYBE log tool output, optionally
+
+Logic is pretty simple: if you have something like `launch_nukes` you might
+want to know, in the logs, whether they launched!
+
+Make it optional though because by default, this could leak e.g. customer data
+into the logs, which is a nightmare for GDPR etc.
+
+__PROBLEM: how to deal with multi-line output?  Just JSON-ify?__
+
+## Consider stacktrace from slog-helpers
+
+Shit packaging but very useful maybe -- however also do NOT want it on by
+default, will just confuse normal users.
+
+

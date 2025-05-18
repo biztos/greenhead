@@ -3,6 +3,11 @@ package runner
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
+	"os"
+
+	"github.com/fabien-marty/slog-helpers/pkg/human"
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/registry"
@@ -12,16 +17,24 @@ import (
 type Runner struct {
 	Config *Config
 	Agents []*agent.Agent
+	Logger *slog.Logger
 }
 
 // NewRunner returns a new runner with the configuration processed.
 //
-// It is a thin wrapper around SetupTools and CreateAgents.
+// It is a thin wrapper around SetupTools, CreateLogger and CreateAgents.
+//
+// Logger is set as the slog default.
 func NewRunner(cfg *Config) (*Runner, error) {
 
 	if err := SetupTools(cfg); err != nil {
 		return nil, err
 	}
+	logger, err := CreateLogger(cfg)
+	if err != nil {
+		return nil, err
+	}
+	slog.SetDefault(logger)
 	agents, err := CreateAgents(cfg)
 	if err != nil {
 		return nil, err
@@ -29,6 +42,7 @@ func NewRunner(cfg *Config) (*Runner, error) {
 	return &Runner{
 		Config: cfg,
 		Agents: agents,
+		Logger: logger,
 	}, nil
 
 }
@@ -107,4 +121,56 @@ func CreateAgents(cfg *Config) ([]*agent.Agent, error) {
 		agents = append(agents, a)
 	}
 	return agents, nil
+}
+
+// CreateLogger creates a master logger according to cfg.
+//
+// This should be expanded downstream by using With.
+func CreateLogger(cfg *Config) (*slog.Logger, error) {
+
+	if cfg.NoLog {
+		return slog.New(slog.NewTextHandler(io.Discard, nil)), nil
+	}
+
+	var handler slog.Handler
+	level := slog.LevelInfo
+	if cfg.Debug {
+		level = slog.LevelDebug
+	}
+	out := os.Stderr
+	if cfg.LogFile != "" {
+		// Log to a file.
+		f, err := os.OpenFile(cfg.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+		out = f
+	}
+	if cfg.LogHuman {
+		// Human format is very nice for watching logs in the console, but
+		// it should not do color to a file, that makes the file very hard to
+		// read (though arguably fun to cat).
+		// NOTE: ReplaceAttr doesn't work here, presumably it's overriding
+		// with internal stuff.  But fine, don't care for now.
+		// NOTE: kinda surprising there aren't more interesting sloggers!
+		handler = human.New(out, &human.Options{
+			HandlerOptions: slog.HandlerOptions{
+				Level: level,
+			},
+			UseColors: cfg.LogFile == "",
+		})
+	} else if cfg.LogText {
+		handler = slog.NewTextHandler(out, &slog.HandlerOptions{
+			Level: level,
+		})
+	} else {
+		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{
+			Level: level,
+		})
+	}
+
+	// TODO: maybe give the runner an ULID of its own so we could always track
+	// runs of the app.  Nice for observability.  Overkill?
+	return slog.New(handler), nil
+
 }

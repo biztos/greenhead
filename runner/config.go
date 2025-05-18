@@ -23,8 +23,10 @@ type Config struct {
 	// Output control:
 	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
 	LogFile     string `toml:"log_file"`      // Write logs to this file instead of os.StdErr.
+	LogText     bool   `toml:"log_text"`      // Log in text format instead of JSON.
+	LogHuman    bool   `toml:"log_human"`     // Use "human" log format with colors (overrides LogText).
 	NoLog       bool   `toml:"no_log"`        // Do not log at all.
-	Silent      bool   `toml:"silent"`        // Suppress LLM output if not already streamed.
+	Silent      bool   `toml:"silent"`        // Suppress LLM output.
 	Stream      bool   `toml:"stream"`        // Stream LLM output if supported.
 	ShowCalls   bool   `toml:"show_calls"`    // Stream (or print) tool calls (potentially leaking data).
 	DumpDir     string `toml:"dump_dir"`      // Dump all completions to JSON files in this dir.
@@ -166,11 +168,8 @@ func (c *Config) ConformAgents() {
 	for _, a := range c.Agents {
 		a.Stream = c.Stream
 		a.Silent = c.Silent
-		a.Debug = c.Debug
 		a.ShowCalls = c.ShowCalls
 		a.LogToolArgs = c.LogToolArgs
-		a.LogFile = c.LogFile
-		a.NoLog = c.NoLog
 		a.DumpDir = c.DumpDir
 		if c.MaxCompletions != 0 {
 			a.MaxCompletions = c.MaxCompletions

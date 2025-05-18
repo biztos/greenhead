@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -24,6 +25,28 @@ TODO: equivalent of this, but in an external package.  Hard? Easy?
 
 Maybe just hook into pre/postrun funcs?`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
+		}
+		r.Logger.Info("WTF info")
+		r.Logger.Debug("bugggggin'")
+		r.Logger.Warn("Open your eyes!", "vision", 1.245)
+		r.Logger.Error("you done it now", "bomb", "BOOM")
+
+		// Default and with?
+		d := slog.Default()
+		d.Info("i am default", "this", "that")
+		sub := d.With("with-some", "ting")
+		sub.Info("my message", "this", "that")
+
+		if len(r.Agents) > 0 {
+
+			a := r.Agents[0]
+			a.Logger().Info("I am agentic!", "this", "that",
+				"pretty-girl", "mantra")
+		}
 
 		fmt.Println("EHLO WTF")
 

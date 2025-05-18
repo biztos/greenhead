@@ -99,12 +99,18 @@ func init() {
 		"Suppress LLM output.")
 	RootCmd.PersistentFlags().StringVarP(&Config.LogFile, "log-file", "l", "",
 		"Log to this file instead of STDERR.")
+	RootCmd.PersistentFlags().BoolVar(&Config.LogText, "log-text", false,
+		"Log in text format instead of JSON.")
+	RootCmd.PersistentFlags().BoolVar(&Config.LogHuman, "log-human", false,
+		"Log in human format instead of text or JSON.")
 	RootCmd.PersistentFlags().BoolVar(&Config.NoLog, "no-log", false,
 		"Do not log at all.")
 	RootCmd.PersistentFlags().StringVar(&Config.DumpDir, "dump-dir", "",
 		"Dump all LLM interactions into this dir.")
 	RootCmd.PersistentFlags().BoolVar(&Config.ShowCalls, "show-calls", false,
 		"Show tool calls with output (experimental; can leak data!).")
+	RootCmd.PersistentFlags().BoolVar(&Config.LogToolArgs, "log-tool-args", false,
+		"Log tool arguments (WARNING: can leak data into logs).")
 
 	// Limits:
 	// (Note that defaults are quite conservative. You probably want more!)

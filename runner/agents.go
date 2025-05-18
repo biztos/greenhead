@@ -114,7 +114,7 @@ func (r *Runner) RunAgents(w io.Writer, prompt string, json bool) error {
 
 	for _, a := range r.Agents {
 		if !json {
-			fmt.Fprintln(w, a.Ident())
+			a.Print(a.Ident() + "\n")
 		}
 		res_content, err := a.RunCompletionPrompt(prompt)
 		if err != nil {

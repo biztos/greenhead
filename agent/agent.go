@@ -5,7 +5,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -28,29 +27,6 @@ var ErrStopped = fmt.Errorf("stopped")
 var ErrMaxCompletions = fmt.Errorf("%w: max completions reached", ErrStopped)
 
 var ErrMatchStopped = fmt.Errorf("%w: content match", ErrStopped)
-
-var fileWriters = map[string]io.Writer{}
-
-// FileWriter returns a writer to the file at path, opening it if none has
-// been opened yet.  It is not concurrency-safe, and does not care if the
-// writer has been closed.
-//
-// Note: this is not particularly robust, because logging directly to a file
-// should only be done in testing and simple one-off deployments.
-func FileWriter(path string) (io.Writer, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-	if fileWriters[abs] == nil {
-		f, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return nil, err
-		}
-		fileWriters[abs] = f
-	}
-	return fileWriters[abs], nil
-}
 
 // Config describes the configuration of an Agent, and is usually supplied in
 // a file.
@@ -83,9 +59,6 @@ type Config struct {
 	Silent    bool   `toml:"silent"`     // Suppress responses.
 
 	// Logging and debugging:
-	Debug       bool   `toml:"debug"`         // Log at DEBUG level instead of INFO.
-	LogFile     string `toml:"log_file"`      // Log to a file.
-	NoLog       bool   `toml:"no_log"`        // Do not log at all.
 	DumpDir     string `toml:"dump_dir"`      // Dump completions to this dir (can leak data).
 	LogToolArgs bool   `toml:"log_tool_args"` // Log tool args (can leak data).
 
@@ -252,14 +225,6 @@ func (a *Agent) String() string {
 	return fmt.Sprintf("<Agent %s>", a.Ident())
 }
 
-// Logger returns the logger set with SetLogger.
-//
-// This is useful for logging things "as" the agent, i.e. with its ident
-// component.
-func (a *Agent) Logger() *slog.Logger {
-	return a.logger
-}
-
 // SetPrintFunc overrides the print function in the Agent and its ApiClient.
 func (a *Agent) SetPrintFunc(f func(...any)) {
 	a.printFunc = f
@@ -275,7 +240,8 @@ func (a *Agent) Print(args ...any) {
 	a.printFunc(args...)
 }
 
-// SetLogger overrides the logger in the Agent and its ApiClient.
+// SetLogger overrides the Logger in the Agent and calls SetLogger on the
+// ApiClient.
 //
 // Note that this does *not* add the agent=<ident> attribute that is used by
 // default.  The caller should add that or its equivalent if desired, as does
@@ -283,6 +249,11 @@ func (a *Agent) Print(args ...any) {
 func (a *Agent) SetLogger(logger *slog.Logger) {
 	a.logger = logger
 	a.client.SetLogger(logger)
+}
+
+// Logger returns the logger that was set with SetLogger.
+func (a *Agent) Logger() *slog.Logger {
+	return a.logger
 }
 
 // Check calls the ApiClient's Check function with ctx.
@@ -353,14 +324,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 	}
 
 	// Set up the logger.
-	if cfg.NoLog {
-		nologger := slog.New(slog.NewTextHandler(io.Discard, nil))
-		a.SetLogger(nologger)
-	} else {
-		if err := a.InitLogger(cfg.LogFile, cfg.Debug); err != nil {
-			return nil, fmt.Errorf("error initializing logger: %w", err)
-		}
-	}
+	a.SetLogger(slog.Default().With("agent", a.Ident()))
 
 	// Make sure the DumpDir exists if set, and is writable -- writing the
 	// config there should do the trick!  Note that to keep things sane we
@@ -406,39 +370,6 @@ func (a *Agent) SetTools(want []*rgxp.OptionalRgxp) error {
 // Tools returns the list of tools available to the agent.
 func (a *Agent) Tools() []string {
 	return slices.Clone(a.toolnames)
-}
-
-// InitLogger sets up a slog.Logger to log to the file (or Stderr) at Info or
-// Debug level, then calls SetLogger with it.
-func (a *Agent) InitLogger(file string, debug bool) error {
-
-	var handler *slog.JSONHandler
-	level := slog.LevelInfo
-	if debug {
-		level = slog.LevelDebug
-	}
-	if file == "" {
-		// Log to standard error.
-		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			Level: level,
-		})
-	} else {
-		// Log to file.
-		fh, err := FileWriter(file)
-		if err != nil {
-			return fmt.Errorf("failed to open log file: %w", err)
-		}
-
-		handler = slog.NewJSONHandler(fh, &slog.HandlerOptions{
-			Level: level,
-		})
-	}
-
-	a.SetLogger(slog.New(handler).With(
-		"agent",
-		a.Ident(),
-	))
-	return nil
 }
 
 // RunCompletionPrompt calls RunCompletion with background context and the

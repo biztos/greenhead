@@ -15,9 +15,12 @@ provided config file(s).
 
 Exactly one agent must be configured.
 
-Logs will be written to a temp file if no log file is specified.`,
+Logs will be written to "chat.log" by default.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		if !Config.NoLog && Config.LogFile == "" {
+			Config.LogFile = "chat.log"
+		}
 		r, err := runner.NewRunner(Config)
 		if err != nil {
 			return err
