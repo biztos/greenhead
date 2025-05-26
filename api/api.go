@@ -47,6 +47,7 @@ type Config struct {
 	Keys       []*Key  `toml:"keys"`        // Keys mapping to roles by name.
 	AccessFile string  `toml:"access_file"` // TOML file for (more) Roles and Keys.
 	NoKeys     bool    `toml:"no_keys"`     // DO NOT require API keys.
+	NoUI       bool    `toml:"no_ui"`       // DO NOT expose the web UI.
 
 	// Fiber app config; see Fiber docs for specifics:
 	AppPrefork                 bool          `toml:"app_prefork"`
@@ -164,19 +165,22 @@ func (api *API) setRoutes() {
 		return api.HandleAgentsEnd(c)
 	})
 
-	api.app.Get("/v1/ui", func(c *fiber.Ctx) error {
-		return api.HandleUI(c)
-	})
+	if !api.config.NoUI {
+		api.app.Get("/v1/ui", func(c *fiber.Ctx) error {
+			return api.HandleUI(c)
+		})
 
-	api.app.Post("/v1/ui", func(c *fiber.Ctx) error {
-		return api.HandleUI(c)
-	})
+		api.app.Post("/v1/ui", func(c *fiber.Ctx) error {
+			return api.HandleUI(c)
+		})
 
-	// Serve a favicon because the requests are annoying.
-	api.app.Get("/favicon.ico", func(c *fiber.Ctx) error {
-		c.Type("svg", "utf-8")
-		return c.Send(assets.MustAsset("webui/favicon.svg"))
-	})
+		// Serve a favicon because the requests are annoying.
+		api.app.Get("/favicon.png", func(c *fiber.Ctx) error {
+			c.Type("png")
+			return c.Send(assets.MustAsset("webui/favicon.png"))
+		})
+	}
+
 }
 
 var DefaultListenAddress = ":3030"

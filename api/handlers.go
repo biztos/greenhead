@@ -31,7 +31,7 @@ func (api *API) HandleRoot(c *fiber.Ctx) error {
 
 	accept := c.Get("Accept")
 
-	if strings.Contains(accept, "text/html") {
+	if !api.config.NoUI && strings.Contains(accept, "text/html") {
 		return api.HandleUI(c)
 	}
 

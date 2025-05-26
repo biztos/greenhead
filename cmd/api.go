@@ -38,6 +38,9 @@ address.
 Note that the normal output controls for streaming and logging do not apply
 and are ignored if set.
 
+The --log-fiber option is recommended for local testing, as the default
+request logs are meant to be machine-readable.
+
 It is STRONGLY recommended that the --no-keys option, and its configuration
 equivalent, be used for testing only.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,6 +60,8 @@ func init() {
 		"Address at which to listen for requests.")
 	ApiCmd.PersistentFlags().BoolVar(&Config.API.NoKeys, "no-keys", false,
 		"Do NOT require API keys.")
+	ApiCmd.PersistentFlags().BoolVar(&Config.API.NoUI, "no-ui", false,
+		"Do NOT expose the web UI.")
 	ApiCmd.PersistentFlags().BoolVar(&Config.API.LogFiber, "log-fiber", false,
 		"Use Fiber logging for API requests.")
 

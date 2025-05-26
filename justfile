@@ -6,7 +6,8 @@ list:
 
 # Prepare assets etc.
 prep:
-	cp README.md assets/src/doc/readme.md && cp API.md assets/src/doc/api.md
+	fgrep -v '![' README.md > assets/src/doc/readme.md
+	cp API.md assets/src/doc/api.md
 	cd assets && binsanity src
 	mkdir -p build
 

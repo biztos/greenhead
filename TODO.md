@@ -2,22 +2,18 @@
 
 Priorities:
 
-- OK - API agent reports tool calls.
-- OK - Mutex per agent and log if locked.
-- OK - Log all requests.
-    - OK - Logger at runner level
-    - OK - Option for not structured
-    - OK - Fine fuck it go to a logfile if you want.
-- Support keys and access.
+- List built-in agents, right now no discovery WTF?
+- EXTERNAL TOOLS FROM CONFIG wtf?!
+- API: Support keys and access.
 - Fake client for testing UI et al.
-- Multi-api agents.
+- Multi-api agents ("flex").
 - Demo mode with fake agents.
 
 How hard is this?!
 
 ## HTTP API
 
-1. Logger setup in Runner not just in Agents.
+1. OK - Logger setup in Runner not just in Agents.
 2. Get Logger working for API (fiber) and Agents, same one.
 3. Make sure agents not streaming!
 4. OK - Make sure agents not printing, just want res!
@@ -35,6 +31,23 @@ the other constructors.  *Ideally* this would be the default type for all the
 built-in agents.
 
 Maybe just call the type "flex"?
+
+Simple example would be Agent Chatty which should be able to run in any LLM
+that supports tools.  Could have chatty-openai that does that specifically,
+then chatty-flex which should be identical if you have an openai key.  The
+built-ins should be flex by default, otherwise it's confusing.
+
+__How do we do precedence order for flex agents?__
+
+That's a config presumably?  Then the api interface has something like
+CanRun() and we go through everything in the config list and take the first
+one that CanRun().  Default is everything in whatever order it was put in,
+that should work and be VERY customizable.
+
+__How does this relate to flex-tools?__
+
+Say a tool works with Claude or OpenAI but nothing else.  Need a way to say
+that it's not available on e.g. Llama.
 
 ## Make a fake-agent as part of the multi thing.
 
@@ -286,6 +299,13 @@ Also problem: no idea where to look for that file, i.e. we are not saying
 One solution is to have a settable default but not use it out of the box.
 Custom binaries only.  But then can't easily have it in the flag settings b/c
 that's in init and the var is used then.
+
+## Easy way to override doc command with your own .md data list.
+
+Say you've made your own binary, you still want `doc` with its bells and
+whistles, but with your own markdown files.
+
+__EASY BUT LOW PRIORITY__
 
 ## MAYBE tools.ExternalToolArg.Connector
 
