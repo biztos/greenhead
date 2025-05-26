@@ -2,7 +2,7 @@
 
 Priorities:
 
-- EXTERNAL TOOLS FROM CONFIG wtf?!
+- Prove external tool config works, at least with example for that
 - API: Support keys and access.
 - Fake client for testing UI et al.
 - Multi-api agents ("flex").

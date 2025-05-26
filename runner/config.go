@@ -12,6 +12,7 @@ import (
 	"github.com/biztos/greenhead/api"
 	"github.com/biztos/greenhead/assets"
 	"github.com/biztos/greenhead/rgxp"
+	"github.com/biztos/greenhead/tools"
 	"github.com/biztos/greenhead/utils"
 )
 
@@ -36,8 +37,8 @@ type Config struct {
 	MaxCompletions int `toml:"max_completions"` // Max number of completions to run.
 	MaxToolChain   int `toml:"max_toolchain"`   // Max number of tool calls in a row.
 
-	// Custom tool definitions:
-	CustomTools []any `toml:"custom_tools"` // TBD, will be custom type
+	// External tool definitions:
+	ExternalTools []*tools.ExternalToolConfig `toml:"external_tools"` // External tools to expose.
 
 	// Tool access control:
 	// (Can use /regexp/ syntax.)
@@ -117,7 +118,8 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 			c.StopMatches = r.StopMatches
 		}
 
-		// We keep all agents!
+		// We keep all arrays!
+		c.ExternalTools = append(c.ExternalTools, r.ExternalTools...)
 		c.Agents = append(c.Agents, r.Agents...)
 
 	}
@@ -140,6 +142,9 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 	return c.Validate()
 
 }
+
+var ErrExternalToolDupeName = fmt.Errorf("duplicate name for external tool")
+var ErrExternalToolBlankName = fmt.Errorf("blank name for external tool")
 
 // Validate checks the config for internal consistency.
 func (c *Config) Validate() error {

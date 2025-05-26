@@ -29,7 +29,7 @@ func (r *Runner) ListTools(w io.Writer, names_only bool) error {
 
 // ShowTool prints tool help to w, or returns an error if no tool is
 // registered for name.
-func ShowTool(w io.Writer, name string) error {
+func (r *Runner) ShowTool(w io.Writer, name string) error {
 	t, err := registry.Get(name)
 	if err != nil {
 		return err

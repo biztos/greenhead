@@ -11,6 +11,7 @@ import (
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/registry"
+	"github.com/biztos/greenhead/tools"
 )
 
 // Runner is the runner of commands.
@@ -59,7 +60,10 @@ func SetupTools(cfg *Config) error {
 		return nil
 	}
 
-	// TODO: handle CustomTools before applying allow/remove logic.
+	// Register any external tools before dealing with other limits.
+	if err := RegisterExternalTools(cfg.ExternalTools); err != nil {
+		return err
+	}
 
 	// Save mutexes if nothing to see here.
 	if len(cfg.AllowTools) == 0 && len(cfg.RemoveTools) == 0 {
@@ -107,6 +111,42 @@ func SetupTools(cfg *Config) error {
 	// (need to define that better first)
 	registry.Lock()
 
+	return nil
+}
+
+// RegisterExternalTools registers all the external tools defined in configs,
+// and should be called before setting available tools for a runner or agent.
+//
+// Note that overriding same-named built-in tools is explicitly allowed
+// unless disabled with registry.LockForReplace() -- but duplicate names
+// within the same call to this function are not allowed.
+func RegisterExternalTools(configs []*tools.ExternalToolConfig) error {
+
+	if len(configs) == 0 {
+		return nil
+	}
+
+	// Check names before trying to register anything.
+	ext_tools := make([]*tools.ExternalTool, 0, len(configs))
+	have := map[string]bool{}
+	for _, cfg := range configs {
+		tool, err := tools.NewExternalTool(cfg)
+		if err != nil {
+			return err
+		}
+		if have[cfg.Name] {
+			return fmt.Errorf("%w: %q", ErrExternalToolDupeName, cfg.Name)
+		}
+		have[cfg.Name] = true
+		ext_tools = append(ext_tools, tool)
+	}
+
+	// Now register them.
+	for _, tool := range ext_tools {
+		if err := registry.Register(tool); err != nil {
+			return fmt.Errorf("failed to register %q: %s", tool.Name(), err)
+		}
+	}
 	return nil
 }
 

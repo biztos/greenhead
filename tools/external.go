@@ -18,7 +18,7 @@ import (
 //
 // An option has a flag; an argument has no flag.
 type ExternalToolArg struct {
-	Flag        string `toml:"spec"`        // Flag to use in option, e.g. "-foo"; empty for args.
+	Flag        string `toml:"flag"`        // Flag to use in option, e.g. "-foo"; empty for args.
 	Key         string `toml:"key"`         // Key for schema; defaults to trimmed Flag; required for args.
 	Type        string `toml:"type"`        // Type for schema; defaults to boolean.
 	Description string `toml:"description"` // Description, used in the schema, no default.

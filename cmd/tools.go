@@ -57,10 +57,12 @@ description and input schema.
 
 For important caveats, see the parent command's help text.`,
 	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := runner.ShowTool(Stdout, args[0]); err != nil {
-			BailErr(ExitCodeToolsError, err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		r, err := runner.NewRunner(Config)
+		if err != nil {
+			return err
 		}
+		return r.ShowTool(Stdout, args[0])
 	},
 }
 

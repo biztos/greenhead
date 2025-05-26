@@ -11,6 +11,44 @@ max_completions = 100
 max_toolchain = 10
 no_tools = false
 
+[[external_tools]]
+  name = "echo"
+  description = "Echo args back with formatting."
+  command = "testdata/external_command.pl"
+  preargs = []
+  send_input = false
+  combine_output = true
+
+  [[external_tools.args]]
+    flag = "--seed"
+    type = "number"
+    description = "Seed ID with this real number"
+
+  [[external_tools.args]]
+    flag =        "--header"
+    type =        "string"
+    description = "Header lines to print before echoing."
+    Repeat =      true
+
+  [[external_tools.args]]
+    flag =        "--indent"
+    type =        "integer"
+    description = "Number of spaces to input the lines."
+
+  [[external_tools.args]]
+    flag =        "--prefix"
+    type =        "string"
+    description = "Prefix to print after indent on each line."
+
+  [[external_tools.args]]
+    flag =        "--reverse"
+    description = "Reverse the text of each line, excluding headers."
+
+  [[external_tools.args]]
+    Key =         "line"
+    description = "Line of text to echo back."
+    Repeat =      true
+
 [[agents]]
   name = "AgentChatty"
   description = "An agent that likes to talk."
