@@ -11,7 +11,7 @@ config options; then any runner config provided with the `--config` option,
 which may itself contain agent configurations; and finally any agent
 configurations specified with the `--agent` option.  Agent configurations can
 be built-in agent names or agent config files.  For a list of built-in agents
-use the `agents builtin` command.
+use the `agents list` command with no specific agents loaded.
 
 Runner configs take precedence over agent configs of the same name.  Consider
 this simple example of a `config.toml`:

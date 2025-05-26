@@ -2,7 +2,6 @@
 
 Priorities:
 
-- List built-in agents, right now no discovery WTF?
 - EXTERNAL TOOLS FROM CONFIG wtf?!
 - API: Support keys and access.
 - Fake client for testing UI et al.
