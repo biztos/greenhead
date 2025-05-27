@@ -1,10 +1,13 @@
-// examples/external/main.go -- example of an external tool.
+// examples/external/main.go -- example of an external tool baked in.
 //
 // Also includes a custom "echo" command to run the tool directly, for quick
 // and easy demonstration.
 //
 // NOTE: this only works when run from the greenhead root directory; otherwise
 // the path to the executable will be wrong.
+//
+// For an example of an external tool defined in a TOML config, see
+// examples/external-config.
 package main
 
 import (
@@ -122,5 +125,6 @@ func init() {
 	}
 	TheTool = tool
 	greenhead.Register(tool)
+	fmt.Println(utils.MustTomlString(TheToolConfig))
 
 }

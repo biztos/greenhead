@@ -2,10 +2,10 @@
 
 Priorities:
 
-- Prove external tool config works, at least with example for that
 - API: Support keys and access.
 - Fake client for testing UI et al.
 - Multi-api agents ("flex").
+- API-aware tools (also "flex?").
 - Demo mode with fake agents.
 
 How hard is this?!
@@ -13,10 +13,10 @@ How hard is this?!
 ## HTTP API
 
 1. OK - Logger setup in Runner not just in Agents.
-2. Get Logger working for API (fiber) and Agents, same one.
-3. Make sure agents not streaming!
+2. OK - Get Logger working for API (fiber) and Agents, same one.
+3. OK - Make sure agents not streaming!
 4. OK - Make sure agents not printing, just want res!
-5. Add middleware for API keys: also to check agents not just endpoints
+5. Add middleware for API keys: remember to check agents not just endpoints
 
 ## Serialize agents, duh.
 
@@ -77,6 +77,26 @@ Make the color-printer work that way.  This will improve testing!
 ## Better API for clearing/adding named agents from top level.
 
 OK probably not urgently needed.
+
+## Some kind of protection against extra flags on external tools.
+
+So right now we can have a tool that says it's:
+
+    /foo/bar --times=3 FILE DIR
+
+And someone sets it as:
+
+    /foo/bar --times=3 --do-dangerous-thing --ignore-files
+
+Which is bad!  What should we do?
+
+1. Just strip any leading dashes, make that default but have config
+2. Have args at different positions so `foo -a --flag -b arg arg -c`
+
+## MAYBE Defaults for flags in external tools
+
+Useful for e.g. the "-t MX" arg in `host`.  But does this contradict the
+"optional" field?
 
 ## Use Glamour for rendering incoming stuff, also for streaming!
 

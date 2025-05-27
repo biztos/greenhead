@@ -1,28 +1,43 @@
-# config-full.toml -- test example of a config defining everything it can.
-#
-# WORK IN PROGRESS!  Please open an issue for anything missing or wrong.
-#
-# To run this from the source root:
-# go run ./cmd/ghd  --config=testdata/config-full.toml agents run --show-calls 'Hello Whorled'
-debug = false
-log_file = ""
-no_log = false
-silent = false
-stream = false
-show_calls = false
-dump_dir = ""
-log_tool_args = false
-max_completions = 100
-max_toolchain = 10
-no_tools = false
+// examples/external-config/main.go -- example of a configured external tool.
+//
+// See init() for the TOML config source.
+//
+// NOTE: this only works when run from the greenhead root directory; otherwise
+// the path to the executable will be wrong.
+//
+// For an example of the same thing baked into the Go proper, which provides
+// extra flexibility for calling the tool from the CLI itself, see:
+//
+//	examples/external/main.go
+//
+// To run from the project root:
+//
+//	go run ./examples/external-config/ agents run 'hello world' --show-calls
+package main
 
+import (
+	"github.com/biztos/greenhead"
+	"github.com/biztos/greenhead/cmd"
+	"github.com/biztos/greenhead/utils"
+
+	_ "github.com/biztos/greenhead/tools/all"
+)
+
+func main() {
+
+	// Boilerplate setup and run:
+	greenhead.CustomApp("external-config", "1.0.0", "SuperCorp External Tool",
+		"In real life, External means Internal -- to SuperCorp!")
+	greenhead.Run()
+}
+
+func init() {
+
+	var ConfigToml = `# Config including the echo_format tool.
 [[external_tools]]
   name = "echo_format"
   description = "Echo args back with formatting."
   command = "testdata/external_command.pl"
-  pre_args = []
-  send_input = false
-  combine_output = true
 
   [[external_tools.args]]
     flag = "--seed"
@@ -100,10 +115,10 @@ no_tools = false
     content =  """\
   You are a helpful assistant.  You have a set of tools which you use as \
   instructed.  By default, if there is no further instruction, you use the \
-  `echo_format` tool to echo back your input with an indent value of 4, \
+  echo_format tool to echo back your input with an indent value of 4, \
   a header of "goobers" and reverse set to true. \
-  Thus if you are told "foobar" you will call `echo_format` with that as \
-  the "line" argument, and output the result. If you are asked to run a \
-  different tool, or to provide different arguments to `echo_format`, \
-  you do so. \
   """
+`
+	utils.MustUnTomlString(ConfigToml, cmd.Config)
+
+}

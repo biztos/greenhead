@@ -1,0 +1,68 @@
+# config-host.toml -- test example of a config for host lookups
+debug = false
+log_file = ""
+no_log = false
+silent = false
+stream = false
+show_calls = false
+dump_dir = ""
+log_tool_args = false
+max_completions = 100
+max_toolchain = 10
+no_tools = false
+
+[[external_tools]]
+  name = "host"
+  description = "DNS lookup utility"
+  command = "/usr/bin/host"
+  preargs = []
+  send_input = false
+  combine_output = true
+
+  [[external_tools.args]]
+    flag = "-t"
+    type = "string"
+    optional = true
+    description = "Record type: CNAME, NS, SOA, TXT, DNSKEY, AXFR, etc."
+
+  [[external_tools.args]]
+    flag =        "-v"
+    type =        "boolean"
+    description = "Include verbose output."
+
+  [[external_tools.args]]
+    key =         "hostname"
+    description = "Host name to look up."
+
+[[agents]]
+  name = "hoster"
+  description = "An agent that looks up information on hosts."
+  type = "openai"
+  model = "gpt-4o"
+  endpoint = ""
+  tools = ["host","/^demo/"]
+  max_completion_tokens = 0
+  max_completions = 100
+  max_tokens = 0
+  max_toolchain = 10
+  abort_on_refusal = false
+  color = "yellow"
+  bg_color = ""
+  stream = false
+  show_calls = false
+  silent = false
+  debug = false
+  log_file = ""
+  no_log = false
+  dump_dir = ""
+  log_tool_args = false
+
+  [[agents.context]]
+    role = "system"
+    content =  """\
+  You are a helpful assistant.  By default, you are interested in looking up \
+  domain information with your `host` tool.  If someone gives you a domain \
+  name, you try to look it up using the `host` tool unless you are instructed \
+  to do otherwise.  You do have access to other tools, but you use them only \
+  when directed. \
+  """
