@@ -4,6 +4,8 @@
 
 ## *WARNING: this is pre-release software and may change at any time.*
 
+### *NB: examples may only work with OpenAI at this time. More APIs soon!*
+
 Greenhead is a framework for building and running AI Agents. It is a Go
 package, a command-line utility, a Web API, and a way of making custom
 command-line utilities and Web APIs.
@@ -54,19 +56,21 @@ ghd agents run Howdy --log-file=tmp.log --agent=chatty --agent=pirate
 ## Running the Web API
 
 The Web API exposes persistent chat conversations over an HTTP interface. The
-server maintains chat context.  Full of the API is available online at
-[ghd.biztos.com](https://ghd.biztos.com/) as well as from the `ghd doc api`
+server maintains chat context.  Full documentation of the API is available
+online at the project [website][ghd] as well as from the `ghd doc api`
 command.
 
-To run the HTTP API with these two agents available and no security:
+To run the HTTP API with two built-in agents available:
 
 ```sh
-ghd api serve --agent=chatty --agent=pirate --no-keys
+ghd api serve --agent=chatty --agent=pirate
 ```
 
-Then direct your browser to [http://localhost:3030/](http://localhost:3030/)
-and click `Submit Query` to play with the primitive Web UI.  Don't forget to
-kill the server when you're done, John Connor!
+Then direct your browser to [localhost:3030](http://localhost:3030/), enter
+the temporary API Key printed by the above command, and click `Submit Query`
+to play with the primitive Web UI.
+
+Don't forget to kill the server when you're done, John Connor!
 
 ## Building Your Own
 
@@ -94,22 +98,68 @@ between two OpenAI agents:
 minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
 ```
 
-For more advanced customization, see the `examples` subdirectory in the
-GitHub repo.
+The top-level `greenhead` package exposes functions for easy customization of
+your app.  In addition to the name, you will usually want to customize the
+tools, and sometimes also the command-line options.
+
+For more advanced customization, see the `examples` subdirectory of the source
+code.
 
 ## Configuring External Tools
 
 In order to expose your own programs as tools available to the LLM, you must
-configure them in the main (runner) config.  For the demo Perl program used
-in the example programs, the configuration looks like this:
+configure them in the main (runner) config.  Consider the UNIX `host` command,
+which should be readily available.  Let's assume we want to use it to look up
+a host, optionally specifying the type and verbosity.
+
+The usage string for this limited use of the command would be:
+
+```
+host [-v] [-t type] {name}
+```
+
+The config section would look like this:
 
 ```toml
+[[external_tools]]
+  name = "host"
+  description = "Look up an internet host.."
+  command = "/usr/bin/host" # or wherever it lives on your system!
 
+  [[external_tools.args]]
+    flag = "-t"
+    key = "type"
+    type = "string"
+    description = "Query type: CNAME, NS, SOA, TXT, DNSKEY, AXFR, etc."
+    optional = true
+
+  [[external_tools.args]]
+    flag = "-v"
+    key = "verbose"
+    type = "boolean"
+    description = "Output verbose query results.."
+    optional = true
+
+  [[external_tools.args]]
+    key = "hostname" # <-- Note: no flag specified here!
+    type = "string"
+    description = "Name of the host to look up, e.g. 'google.com'."
+    optional = false
+```
+
+For more details, see the config [documentation][ghd] or use:
+
+```sh
+ghd doc config
 ```
 
 ## Using the Packages
 
 ## Contributing Tools
+
+## Further Reading
+
+Additional documentation is available at the project [website][ghd].
 
 ## Acknowledgements
 
@@ -120,3 +170,6 @@ Greenhead is built with
 [Fiber](https://gofiber.io/),
 [go-openai](https://github.com/sashabaranov/go-openai),
 and other great open-source software packages.
+
+
+[ghd]: https://ghd.biztos.com/

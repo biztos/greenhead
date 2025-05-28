@@ -3,6 +3,7 @@
 Priorities:
 
 - API: Support keys and access.
+    - default is  have a key and print it out if not --no-keys
 - Fake client for testing UI et al.
 - Multi-api agents ("flex").
 - API-aware tools (also "flex?").
