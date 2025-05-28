@@ -235,7 +235,7 @@ name must be in English, and must include a language code:
 
 The main README must at last include a top-level heading in English:
 
-```
+```text
 # Zebra Painter - German-language painter of zebras
 
 Dieses Werkzeug ermöglicht das Fernmalen von Zebras, gestreifte Pferde aus
@@ -258,7 +258,7 @@ target users are.  Further documentation may be for specialists.
 
 Example:
 
-```
+```text
 # Time Machine
 
 ## This tool enables time travel and is for use by Licensed Physicists only.

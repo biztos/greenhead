@@ -81,7 +81,7 @@ a host, optionally specifying the type and verbosity.
 
 The usage string for this limited use of the command would be:
 
-```
+```sh
 host [-v] [-t type] {name}
 ```
 
@@ -236,7 +236,7 @@ name must be in English, and must include a language code:
 
 The main README must at last include a top-level heading in English:
 
-```
+```text
 # Zebra Painter - German-language painter of zebras
 
 Dieses Werkzeug ermöglicht das Fernmalen von Zebras, gestreifte Pferde aus
@@ -259,7 +259,7 @@ target users are.  Further documentation may be for specialists.
 
 Example:
 
-```
+```text
 # Time Machine
 
 ## This tool enables time travel and is for use by Licensed Physicists only.
