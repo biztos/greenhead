@@ -23,6 +23,14 @@ func testTool(name string) tools.Tooler {
 		})
 }
 
+func blankRunner() *runner.Runner {
+	r, err := runner.NewRunner(&runner.Config{})
+	if err != nil {
+		panic(err) // sort of the most basic thing you could do...
+	}
+	return r
+}
+
 func TestListToolsNoTools(t *testing.T) {
 
 	require := require.New(t)
@@ -91,7 +99,7 @@ func TestShowToolError(t *testing.T) {
 	defer registry.Clear()
 
 	buf := new(bytes.Buffer)
-	err := runner.ShowTool(buf, "foo")
+	err := blankRunner().ShowTool(buf, "foo")
 	require.EqualError(err, `tool is not registered: "foo"`)
 	require.Equal("", buf.String(), "no output")
 
@@ -107,7 +115,7 @@ func TestShowToolOK(t *testing.T) {
 	require.NoError(registry.Register(testTool("foo")), "reg foo")
 
 	buf := new(bytes.Buffer)
-	err := runner.ShowTool(buf, "foo")
+	err := blankRunner().ShowTool(buf, "foo")
 	require.NoError(err, "show tool")
 	exp := `foo
 
