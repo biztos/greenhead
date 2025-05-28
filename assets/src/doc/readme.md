@@ -71,39 +71,6 @@ to play with the primitive Web UI.
 
 Don't forget to kill the server when you're done, John Connor!
 
-## Building Your Own
-
-You can build your own version of `ghd` with very little code.  Here is the
-"minimal" example:
-
-```go
-package main
-
-import (
-    "github.com/biztos/greenhead"
-    _ "github.com/biztos/greenhead/tools/tictactoe"
-)
-
-func main() {
-    greenhead.CustomApp("minimal", "1.0.0", "SuperCorp Tic Tac Toe", "")
-    greenhead.Run()
-}
-```
-
-The `pair run` command could then be used to play a game of Tic Tac Toe
-between two OpenAI agents:
-
-```sh
-minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
-```
-
-The top-level `greenhead` package exposes functions for easy customization of
-your app.  In addition to the name, you will usually want to customize the
-tools, and sometimes also the command-line options.
-
-For more advanced customization, see the `examples` subdirectory of the source
-code.
-
 ## Configuring External Tools
 
 In order to expose your own programs as tools available to the LLM, you must
@@ -152,9 +119,178 @@ For more details, see the config [documentation][ghd] or use:
 ghd doc config
 ```
 
+## Building Your Own
+
+You can build your own version of `ghd` with very little code.  Here is the
+"minimal" example:
+
+```go
+package main
+
+import (
+    "github.com/biztos/greenhead"
+    _ "github.com/biztos/greenhead/tools/tictactoe"
+)
+
+func main() {
+    greenhead.CustomApp("minimal", "1.0.0", "SuperCorp Tic Tac Toe", "")
+    greenhead.Run()
+}
+```
+
+The `pair run` command could then be used to play a game of Tic Tac Toe
+between two OpenAI agents:
+
+```sh
+minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
+```
+
+The top-level `greenhead` package exposes functions for easy customization of
+your app.  In addition to the name, you will usually want to customize the
+tools, and sometimes also the command-line options.
+
+For more advanced customization, see the `examples` subdirectory of the source
+code.
+
 ## Using the Packages
 
+If your goal is to incorporate the agent-runner logic into your own project,
+you will eventually need to use more than the top-level `greenhead` package.
+
+To copy the full run cycle, especially regarding config management, you will
+want to examine the `runner` subpackage.  To manage agents and tools directly,
+the `agent`, `tools`, and `registry` packages should be consulted.
+
+Subpackages in a nutshell:
+
+* agent - agent logic and API clients.
+* api - the HTTP API.
+* assets - assets built from the `src` subdir with [binsanity][binsanity].
+* cmd - the [Cobra][cobra] setup for the CLI; uses `runner` for command logic.
+* registry - global registry of tools.
+* rgxp - optional-regexp format for some config values. _NB: may be factored out!_
+* runner - the command runner, including top-level config logic.
+* tools - tools types and logic; subdirs contain the built-in tools.
+* utils - misc utils; _may be factored out at some point_.
+* version - canonical version numbers.
+
 ## Contributing Tools
+
+Tool contributions are very welcome!  Pull requests will be evaluated first
+for safety and utility: it should be impossible for naïve users to cause
+damage, and the tool should be useful to a reasonable number of people.
+(Entertainment counts as "useful" -- games are encouraged!)
+
+Additional requirements:
+
+1. The tool name must follow the namespacing conventions.
+2. Descriptive text and documentation must be in English (see below).
+3. A working `agent.config` must be included.
+4. The `README.md` must be included and be easy for a layperson to understand.
+5. Test coverage must be 100% (see below).
+
+For a canonical example, see the `tictactoe` tool.
+
+If you have an idea for a useful tool but are not a Go programmer, feel free
+to open a ticket describing your idea in detail.  Someone else may find it
+compelling and code it for you.
+
+### Namespacing
+
+Tools may only have simple ASCII names like `mytool_zebra_renoberator`.
+The name should follow the subdirectory structure:
+
+```sh
+tools
+└── mytool
+    └── zebra
+        └── renoberator
+            ├── README.md
+            ├── agent.toml
+            ├── renoberator.go
+            └── renoberator_test.go
+```
+
+A single subpackage may add multiple tools.  For instance the `renoberator`
+package might define three tools:
+
+* `mytool_zebra_renoberator_obtain`
+* `mytool_zebra_renoberator_stripe`
+* `mytool_zebra_renoberator_destripe`
+
+These should be clearly described in the README file.
+
+Especially for higher-level packages, avoid names that might conflict with
+future implementations at a lower level.  The bias is for longer and more
+descriptive tool names.
+
+### Non-English Tools
+
+If a tool is not in English -- meaning its input and output are in another
+language, and that language may be used with the LLM -- then it's appropriate
+for its documentation to also be in the target language.  However, the tool
+name must be in English, and must include a language code:
+
+`mytool_zebra_painter_de`
+
+The main README must at last include a top-level heading in English:
+
+```
+# Zebra Painter - German-language painter of zebras
+
+Dieses Werkzeug ermöglicht das Fernmalen von Zebras, gestreifte Pferde aus
+Afrika bzw. dem Tiergarten.
+```
+
+Documentation in additional languages besides English is always welcome,
+even for English-specific tools, in the form of `README-<lang>.md` files:
+`README-de.md`, `README-th.md` and so on.
+
+In the unlikely event there are significant non-English contributions,
+advice on how best to handle this is welcome.
+
+### Expert Tools
+
+Expert tools, i.e. those that are not easily understood by a layperson, or
+have complex prerequisites, or perform specialized tasks, are welcome. These
+tools _must_ explain in plain language what they do in general, and who the
+target users are.  Further documentation may be for specialists.
+
+Example:
+
+```
+# Time Machine
+
+## This tool enables time travel and is for use by Licensed Physicists only.
+
+Requires TIME_TICKET set in env.  Requires flubberized tensor feet on all
+equipment in the physical locus of trigger activation.
+```
+
+### External Binaries
+
+Submitted tools may call external binaries, within reasonable safety bounds.
+
+Such tools _must_ check for the presence of the binaries before registering.
+
+For some cases the easiest method is to wrap a standard `ExternalTool` in the
+normal tool packaging.  This is legitimate, but the tool name must reflect any
+special usage or restrictions, to differentiate itself from other wrappings of
+the same binary.
+
+For example a `host` command wrapped to take a `-t` option but nothing else
+might be named `unix_host_lookup_by_type`.
+
+### Test Coverage
+
+Our goal is 100% test coverage across the entire project.  Tool submissions
+must meet this requirement.
+
+It may be impractical to test the _actual_ execution of a tool, e.g. if the
+tool makes a network call.  (Do not make network calls from the tests!) This
+is normal, and in Go we handle this by using interfaces and testing types.
+
+Design for testing!  If you have questions, feel free to ask.
 
 ## Further Reading
 
@@ -165,10 +301,13 @@ Additional documentation is available at the project [website][ghd].
 Thanks to Sam York for helping brainstorm this into liminal existance in Asia.
 
 Greenhead is built with
-[Cobra](https://cobra.dev/),
-[Fiber](https://gofiber.io/),
-[go-openai](https://github.com/sashabaranov/go-openai),
+[Cobra][cobra],
+[Fiber][fiber],
+[go-openai][go-openai],
 and other great open-source software packages.
 
-
 [ghd]: https://ghd.biztos.com/
+[binsanity]: https://pkg.go.dev/github.com/biztos/binsanity
+[cobra]: https://cobra.dev/
+[fiber]: https://gofiber.io/
+[go-openai]: https://github.com/sashabaranov/go-openai
