@@ -57,6 +57,7 @@ type API struct {
 	sourceAgents map[string]*agent.Agent
 	activeAgents map[string]*agent.Agent
 	access       *Access
+	defaultKey   string
 }
 
 // NewAPI creates an API instance.
@@ -66,6 +67,22 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 	// Seems like a bad idea to not have at least one available agent though.
 	if len(agents) == 0 {
 		return nil, fmt.Errorf("at least one agent must be defined")
+	}
+
+	// Set up access, unless we don't.
+	var access *Access
+	var err error
+	var default_key string
+	if !cfg.NoKeys {
+		// If there is nothing, use the default.
+		if len(cfg.Roles) == 0 && len(cfg.Keys) == 0 {
+			access, default_key = DefaultAccess()
+		} else {
+			access, err = NewAccess(cfg.Roles, cfg.Keys)
+			if err != nil {
+				return nil, fmt.Errorf("access setup error: %w", err)
+			}
+		}
 	}
 
 	// Some app configs can be set by the user, to tune the server for their
@@ -104,7 +121,8 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		logger:       slog.Default(),
 		sourceAgents: sourceAgents,
 		activeAgents: map[string]*agent.Agent{},
-		access:       &Access{cfg.Roles, cfg.Keys},
+		access:       access,
+		defaultKey:   default_key,
 	}
 	// Set up app routes and middleware. NB: ORDER MATTERS.
 	if !cfg.NoKeys {
@@ -177,6 +195,11 @@ func (api *API) Listen() error {
 	adrs := api.config.ListenAddress
 	if adrs == "" {
 		adrs = DefaultListenAddress
+	}
+	if api.defaultKey != "" {
+		fmt.Println("**")
+		fmt.Println("** ALL-ACCESS DEFAULT API KEY:", api.defaultKey)
+		fmt.Println("**")
 	}
 
 	return api.app.Listen(adrs)

@@ -2,6 +2,10 @@ package api
 
 import (
 	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/biztos/greenhead/rgxp"
 )
@@ -43,67 +47,105 @@ type Key struct {
 
 // Access manages the Roles and Keys used to access the system.
 type Access struct {
-	Roles []*Role `toml:"roles"`
-	Keys  []*Key  `toml:"keys"`
+	roles    []*Role
+	keys     []*Key
+	keyMap   map[string]*Key
+	keyRoles map[*Key][]*Role
+}
+
+var ErrBlankRole = errors.New("blank role name")
+var ErrBlankKey = errors.New("blank auth key")
+var ErrDupeRole = errors.New("duplicate role")
+var ErrDupeKey = errors.New("duplicate key")
+
+// DefaultAccess creates an Access with one key that has full access to
+// all endpoints and agents.
+//
+// The AuthKey is returned together with the Access.
+func DefaultAccess() (*Access, string) {
+
+	allow_all, _ := rgxp.ParseOptional("/.*/")
+	role := &Role{
+		Name:      "default-all-access-role",
+		Endpoints: []*rgxp.OptionalRgxp{allow_all},
+		Agents:    []*rgxp.OptionalRgxp{allow_all},
+	}
+	key := &Key{
+		AuthKey:   ulid.Make().String(),
+		Name:      "default-all-access-user",
+		RoleNames: []string{"default-all-access-role"},
+	}
+	acc, _ := NewAccess([]*Role{role}, []*Key{key})
+	return acc, key.AuthKey
+}
+
+// NewAccess creates an Access from roles and keys.
+//
+// Duplicates by Name or AuthKey are disallowed, as are blank strings for
+// both.
+func NewAccess(roles []*Role, keys []*Key) (*Access, error) {
+
+	role_map := map[string]*Role{}
+	for _, r := range roles {
+		if strings.TrimSpace(r.Name) == "" {
+			return nil, ErrBlankRole
+		}
+		if role_map[r.Name] != nil {
+			return nil, fmt.Errorf("%w: %q", ErrDupeRole, r.Name)
+		}
+		role_map[r.Name] = r
+	}
+	key_map := map[string]*Key{}
+	for _, k := range keys {
+		if strings.TrimSpace(k.AuthKey) == "" {
+			return nil, ErrBlankKey
+		}
+		if key_map[k.AuthKey] != nil {
+			// NB: don't put the key in the error message!
+			return nil, fmt.Errorf("%w for %s", ErrDupeKey, k.Name)
+		}
+		key_map[k.AuthKey] = k
+	}
+
+	// map roles to keys so we don't have to do it at every check.
+	key_roles := map[*Key][]*Role{}
+	for _, k := range keys {
+		roles := []*Role{}
+		for _, name := range k.RoleNames {
+			if role_map[name] != nil {
+				roles = append(roles, role_map[name])
+			}
+		}
+		key_roles[k] = roles
+	}
+	return &Access{roles, keys, key_map, key_roles}, nil
+
 }
 
 var ErrKeyNotFound = errors.New("key not found")
 
 // GetKey returns a Key for the provided AuthKey.
 func (acc *Access) GetKey(key string) (*Key, error) {
-	for _, k := range acc.Keys {
-		if k.AuthKey == key {
-			return k, nil
-		}
+	if acc.keyMap[key] != nil {
+		return acc.keyMap[key], nil
 	}
 	return nil, ErrKeyNotFound
 }
 
-var ErrNoKeyRoles = errors.New("no roles found for key")
-
-// KeyRoles returns all roles for the provided Key.
-//
-// If none of the key's named roles is present, ErrNoKeyRoles is returned.
-func (acc *Access) KeyRoles(key *Key) ([]*Role, error) {
-
-	// TODO: consider caching the names or a map; problem is then updates.
-	// We *expect* this is never enough items to care about the length.
-	roles := make([]*Role, 0, len(key.RoleNames))
-	for _, name := range key.RoleNames {
-		for _, role := range acc.Roles {
-			if role.Name == name {
-				roles = append(roles, role)
-			}
-		}
-	}
-	if len(roles) == 0 {
-		return nil, ErrNoKeyRoles
-	}
-	return roles, nil
-}
-
-// KeyCanAccessURL checks whether any Role for the Key can access url.
-func (acc *Access) KeyCanAccessURL(key *Key, url string) (bool, error) {
-	roles, err := acc.KeyRoles(key)
-	if err != nil {
-		return false, err
-	}
-	for _, role := range roles {
-		if role.CanAccessURL(url) {
+// EndpointAllowed checks whether any Role for the Key can access endpoint.
+func (acc *Access) EndpointAllowed(key *Key, endpoint string) (bool, error) {
+	for _, role := range acc.keyRoles[key] {
+		if role.CanAccessURL(endpoint) {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-// KeyCanUseAgent checks whether any Role for the Key can use an agent with
+// AgentAllowed checks whether any Role for the Key can use an agent with
 // the given name.
-func (acc *Access) KeyCanUseAgent(key *Key, name string) (bool, error) {
-	roles, err := acc.KeyRoles(key)
-	if err != nil {
-		return false, err
-	}
-	for _, role := range roles {
+func (acc *Access) AgentAllowed(key *Key, name string) (bool, error) {
+	for _, role := range acc.keyRoles[key] {
 		if role.CanUseAgent(name) {
 			return true, nil
 		}
