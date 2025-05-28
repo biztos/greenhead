@@ -137,3 +137,13 @@ func (r *OptionalRgxp) UnmarshalText(text []byte) error {
 	r.isRegexp = r2.isRegexp
 	return nil
 }
+
+// MatchOrEqualString matches using regexp or string comparison.
+func (r *OptionalRgxp) MatchOrEqualString(s string) bool {
+
+	if r.isRegexp {
+		return r.MatchString(s)
+	} else {
+		return r.src == s
+	}
+}

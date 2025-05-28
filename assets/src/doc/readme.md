@@ -80,7 +80,7 @@ a host, optionally specifying the type and verbosity.
 
 The usage string for this limited use of the command would be:
 
-```
+```sh
 host [-v] [-t type] {name}
 ```
 

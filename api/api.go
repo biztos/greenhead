@@ -13,23 +13,8 @@ import (
 
 	"github.com/biztos/greenhead/agent"
 	"github.com/biztos/greenhead/assets"
-	"github.com/biztos/greenhead/rgxp"
 	"github.com/biztos/greenhead/version"
 )
-
-// Role defines a set of permissions for API Keys.
-type Role struct {
-	Name      string               `toml:"name"`   // Name of role.
-	Endpoints []*rgxp.OptionalRgxp `toml:"paths"`  // Endpoint access.
-	Agents    []*rgxp.OptionalRgxp `toml:"agents"` // Agents access.
-}
-
-// Key defines an API Key that is attached to a role.
-type Key struct {
-	AuthKey string   `toml:"auth_key"` // Key string for client auth.
-	Name    string   `toml:"name"`     // Name of the key user for logs.
-	Roles   []string `toml:"roles"`    // Roles available.
-}
 
 // Config defines the configuration of the API.
 //
@@ -71,6 +56,7 @@ type API struct {
 	logger       *slog.Logger
 	sourceAgents map[string]*agent.Agent
 	activeAgents map[string]*agent.Agent
+	access       *Access
 }
 
 // NewAPI creates an API instance.
@@ -118,6 +104,7 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		logger:       slog.Default(),
 		sourceAgents: sourceAgents,
 		activeAgents: map[string]*agent.Agent{},
+		access:       &Access{cfg.Roles, cfg.Keys},
 	}
 	// Set up app routes and middleware. NB: ORDER MATTERS.
 	if !cfg.NoKeys {
