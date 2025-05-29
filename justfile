@@ -15,13 +15,13 @@ prep:
 run *ARGS='--version': prep
 	go run ./cmd/ghd {{ARGS}}
 
-# Serve the API locally. Uses agent chatty by default.
-serve *ARGS='--agent=chatty': prep
-	go run ./cmd/ghd api serve {{ARGS}}
+# Serve the API locally, using a working test config.
+serve *ARGS: prep
+	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # As serve, but calls webui to rebuild the SPA first.
-serve-webui *ARGS='--agent=chatty': webui prep
-	go run ./cmd/ghd api serve {{ARGS}}
+serve-webui *ARGS: webui prep
+	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # Build for current environment.
 build: prep
