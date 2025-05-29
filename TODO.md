@@ -2,22 +2,32 @@
 
 Priorities:
 
-- API: Support keys and access.
-    - default is  have a key and print it out if not --no-keys
-- Fake client for testing UI et al.
+- Fake client for testing UI et al w/o any actual LLM
 - Multi-api agents ("flex").
 - API-aware tools (also "flex?").
 - Demo mode with fake agents.
 
 How hard is this?!
 
-## HTTP API
+## Fix config merge prioritization, currently shitshow.
 
-1. OK - Logger setup in Runner not just in Agents.
-2. OK - Get Logger working for API (fiber) and Agents, same one.
-3. OK - Make sure agents not streaming!
-4. OK - Make sure agents not printing, just want res!
-5. Add middleware for API keys: remember to check agents not just endpoints
+Two problems:
+
+1. What is the general idea, maybe "non-Zero values win?"
+2. What do to about defaults e.g. api port?
+
+Second one is pretty hard b/c Cobra doesn't differentiate between a set flag
+and a default value.  So if you have a config that says 8080 and you have a
+default of 2020 but you *also* set 2020 on command line, what should win?
+
+Maybe move default logic into the config processor?
+
+## MAYBE move config to top level, it has a lot going on already.
+
+So then config is master config, and anything can have its own config.
+
+Would the runner have any specific configs? Seems like no.
+
 
 ## Serialize agents, duh.
 

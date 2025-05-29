@@ -62,23 +62,34 @@ func (api *API) HandleAgentsNew(c *fiber.Ctx) error {
 		})
 	}
 
+	if !api.config.NoKeys {
+		key := c.Locals("access_key").(*Key)
+		if !api.access.AgentAllowed(key, payload.Agent) {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "agent not allowed",
+			})
+		}
+	}
+
 	// TODO: map api keys to available agents by name.
 	// (make the api key thingy first of course)
 	src_agent := api.sourceAgents[payload.Agent]
 	if src_agent == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "requested agent not available",
+			"error": "agent not available",
 		})
 	}
 
 	spawn, err := src_agent.SpawnSilent()
 	if err != nil {
 		// TODO: log error here!
+		api.logger.Error("failed to spawn agent", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "failed to spawn agent",
 		})
 	}
 	api.activeAgents[spawn.ULID.String()] = spawn
+	api.logger.Info("spawned new agent", "agent", spawn.Ident())
 	res := fiber.Map{
 		"id":          spawn.ULID,
 		"name":        spawn.Name,
@@ -131,7 +142,7 @@ func (api *API) HandleAgentsCompletion(c *fiber.Ctx) error {
 // shared logic for chat handlers.
 func (api *API) runAgentCompletion(c *fiber.Ctx) (*agent.CompletionResponse, error) {
 
-	id := c.Params("id")
+	id := c.Params("agent_id")
 	active_agent := api.activeAgents[id]
 	if active_agent == nil {
 		return nil, fiber.ErrNotFound
@@ -190,21 +201,38 @@ func (api *API) HandleUI(c *fiber.Ctx) error {
 		return c.Send(assets.MustAsset("webui/root.html"))
 	}
 
-	// Validate the key, and get the agents for that key.
-	api_key := strings.TrimSpace(c.FormValue("api_key"))
-	user_name := "Anonymous User"
+	// For no-key validation, use fake values.
+	var auth_key string
+	var key_name string
+	var agent_names []string
 	if api.config.NoKeys {
-		api_key = "" // don't take a chance on weird keys breaking JS.
+		api.logger.Warn("serving UI in no-keys mode")
+		auth_key = "no-keys"
+		key_name = "Anonymous User"
+		agent_names = api.AgentNames(nil)
 	} else {
-		// TODO: look up, error with 404 err-badkey if not found.
-		// assign name if we have it, or default to anon above.
-	}
-	agent_names := api.KeyAgentNames(api_key)
+		// Validate the key; don't send a full UI if it's bogus.
+		auth_key = strings.TrimSpace(c.FormValue("auth_key"))
+		key := api.access.GetKey(auth_key)
+		if key == nil {
+			api.logger.Debug("auth_key not found")
+			// wtf then?!
+			return fiber.ErrUnauthorized
+		}
+		key_name = key.Name
 
-	// No agents for the key?  Nothing to do then.
-	if len(agent_names) == 0 {
-		return c.Status(fiber.StatusServiceUnavailable).Send(
-			assets.MustAsset("webui/err-noagents.html"))
+		// The key must be allowed to use the UI.
+		if !api.access.EndpointAllowed(key, "/v1/ui") {
+			api.logger.Debug("endpoint not allowed")
+			return fiber.ErrUnauthorized
+		}
+
+		// Get the agent names. If no agents, you are also disallowed here.
+		agent_names = api.AgentNames(key)
+		if len(agent_names) == 0 {
+			api.logger.Debug("no agents allowed")
+			return fiber.ErrUnauthorized
+		}
 	}
 
 	// Serve our SPA with the values we need stuck on the end.
@@ -212,8 +240,8 @@ func (api *API) HandleUI(c *fiber.Ctx) error {
 	page := assets.MustAssetString("webui/app.html")
 	page_config := UiPageConfig{
 		User: UiPageUser{
-			ApiKey:     api_key,
-			Name:       user_name,
+			ApiKey:     auth_key,
+			Name:       key_name,
 			AgentNames: agent_names,
 		},
 	}
@@ -236,7 +264,7 @@ func (api *API) HandleUI(c *fiber.Ctx) error {
 // TODO: prove that completion requests in flight are unaffected.
 func (api *API) HandleAgentsEnd(c *fiber.Ctx) error {
 
-	id := c.Params("id")
+	id := c.Params("agent_id")
 	active_agent := api.activeAgents[id]
 	if active_agent == nil {
 		return fiber.ErrNotFound

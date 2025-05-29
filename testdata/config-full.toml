@@ -6,6 +6,7 @@
 # go run ./cmd/ghd  --config=testdata/config-full.toml agents run --show-calls 'Hello Whorled'
 debug = false
 log_file = ""
+log_human = true # human logging is great when you're testing!
 no_log = false
 silent = false
 stream = false
@@ -73,6 +74,23 @@ no_tools = false
     repeat = true
 
 [[agents]]
+  name = "nopebot"
+  description = "An agent that says no to everything."
+  type = "openai"
+  model = "gpt-4o"
+  tools = ["/^demo/"]
+  color = "orange"
+  dump_dir = ""
+  log_tool_args = false
+
+  [[agents.context]]
+    role = "system"
+    content =  """\
+  You are an unhelpful assistant.  No matter what is asked of you, you \
+  refuse to comply.  You politely say "no" to every request. \
+  """
+
+[[agents]]
   name = "echobot"
   description = "An agent that likes to echo things with formatting."
   type = "openai"
@@ -90,8 +108,6 @@ no_tools = false
   show_calls = false
   silent = false
   debug = false
-  log_file = ""
-  no_log = false
   dump_dir = ""
   log_tool_args = false
 
@@ -107,3 +123,48 @@ no_tools = false
   different tool, or to provide different arguments to `echo_format`, \
   you do so. \
   """
+
+[api]
+  no_keys = false
+  log_fiber = false
+
+  [[api.roles]]
+    name = "admin"
+    endpoints = [ "/.*/" ]
+    agents =  [ "/.*/" ]
+
+  [[api.roles]]
+    name = "worker"
+    # The worker can not access the completion endpoint, for example.
+    endpoints = [
+      "/",
+      "/v1/ui",
+      "/^[/]v1[/]agents[/](new|list)$/",
+      "/^[/]v1[/]agents[/][A-Za-z0-9-]+[/](chat|end)$/",
+    ]
+    agents = [ "chatty", "pirate", "marvin", "/.*bot$/" ]
+
+  [[api.roles]]
+    name = "bot"
+    # The bot can not access the root or the UI, for example.
+    endpoints = [
+      "/^[/]v1[/]agents[/](new|list)$/",
+      "/^[/]v1[/]agents[/][A-Z0-9]+[/](chat|completion|end)$/",
+    ]
+    agents = [ "/.*bot$/" ]
+
+  [[api.keys]]
+    auth_key = "my-random-key" # ubW0TtsgXz_uMeayZkyKr7_inWj6uBQhl196Y7BMXMc
+    name = "bossman123"
+    roles = [ "admin", "worker" ]
+
+  [[api.keys]]
+    auth_key = "worker-key-here" # nG6D7THevZa4Vv2Qoe-KQYgFKa0mKKyES7WSVGE3Um0
+    name = "toiler321"
+    roles = [ "worker" ]
+
+  [[api.keys]]
+    auth_key = "bot-key" # Oh-2Yo42MrpZNfgxdXCxl8iz1XbdYZ8cb9kX78P6Y2Y
+    name = "mr_robot"
+    roles = [ "bot" ]
+

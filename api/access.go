@@ -1,6 +1,8 @@
 package api
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,6 +11,28 @@ import (
 
 	"github.com/biztos/greenhead/rgxp"
 )
+
+// EncodeAuthKey takes an AuthKey and returns a client-facing value.
+//
+// The client-facing value should be sent by the client in an Authorization
+// header, as:
+//
+//	Authorization: Bearer <encoded-key>
+//
+// This is used in the KeyAccess middleware.
+//
+// The standard implementation is an RFC 4648 "URL" Base64 encoding of the
+// SHA256 hash.
+var EncodeAuthKey = func(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return base64.RawURLEncoding.EncodeToString(h[:])
+
+}
+
+// NotEncodeAuthKey is the non-encoder, used when RawKeys is configured.
+var NotEncodeAuthKey = func(s string) string {
+	return s
+}
 
 // Role defines a set of permissions for API Keys.
 type Role struct {
@@ -47,22 +71,25 @@ type Key struct {
 
 // Access manages the Roles and Keys used to access the system.
 type Access struct {
-	roles    []*Role
-	keys     []*Key
-	keyMap   map[string]*Key
-	keyRoles map[*Key][]*Role
+	roles      []*Role
+	keys       []*Key
+	keyMap     map[string]*Key
+	keyRoles   map[*Key][]*Role
+	keyEncoder func(string) string
 }
 
-var ErrBlankRole = errors.New("blank role name")
-var ErrBlankKey = errors.New("blank auth key")
-var ErrDupeRole = errors.New("duplicate role")
-var ErrDupeKey = errors.New("duplicate key")
+var ErrBlankRoleName = errors.New("empty or blank role name")
+var ErrBlankAuthKey = errors.New("empty or blank auth key")
+var ErrBlankKeyName = errors.New("empty or blank key name")
+var ErrDupeRoleName = errors.New("duplicate role")
+var ErrDupeAuthKey = errors.New("duplicate auth key")
+var ErrDupeKeyName = errors.New("duplicate key name")
 
 // DefaultAccess creates an Access with one key that has full access to
 // all endpoints and agents.
 //
 // The AuthKey is returned together with the Access.
-func DefaultAccess() (*Access, string) {
+func DefaultAccess(encoder func(string) string) (*Access, string) {
 
 	allow_all, _ := rgxp.ParseOptional("/.*/")
 	role := &Role{
@@ -72,39 +99,52 @@ func DefaultAccess() (*Access, string) {
 	}
 	key := &Key{
 		AuthKey:   ulid.Make().String(),
-		Name:      "default-all-access-user",
+		Name:      "default-all-access-key",
 		RoleNames: []string{"default-all-access-role"},
 	}
-	acc, _ := NewAccess([]*Role{role}, []*Key{key})
+	acc, _ := NewAccess([]*Role{role}, []*Key{key}, encoder)
 	return acc, key.AuthKey
 }
 
 // NewAccess creates an Access from roles and keys.
 //
-// Duplicates by Name or AuthKey are disallowed, as are blank strings for
-// both.
-func NewAccess(roles []*Role, keys []*Key) (*Access, error) {
+// Duplicates by Name or AuthKey are disallowed, as are empty/all-whitespace
+// strings for both.  Name your roles and keys.
+func NewAccess(roles []*Role, keys []*Key, encoder func(string) string) (*Access, error) {
 
+	if encoder == nil {
+		encoder = EncodeAuthKey
+	}
 	role_map := map[string]*Role{}
 	for _, r := range roles {
 		if strings.TrimSpace(r.Name) == "" {
-			return nil, ErrBlankRole
+			return nil, ErrBlankRoleName
 		}
 		if role_map[r.Name] != nil {
-			return nil, fmt.Errorf("%w: %q", ErrDupeRole, r.Name)
+			return nil, fmt.Errorf("%w: %q", ErrDupeRoleName, r.Name)
 		}
 		role_map[r.Name] = r
 	}
+	have_key_name := map[string]bool{}
 	key_map := map[string]*Key{}
 	for _, k := range keys {
 		if strings.TrimSpace(k.AuthKey) == "" {
-			return nil, ErrBlankKey
+			return nil, ErrBlankAuthKey
 		}
-		if key_map[k.AuthKey] != nil {
+		if strings.TrimSpace(k.Name) == "" {
+			return nil, ErrBlankKeyName
+		}
+		if have_key_name[k.Name] {
+			return nil, ErrDupeKeyName
+		}
+		have_key_name[k.Name] = true
+		encoded := encoder(k.AuthKey)
+		if key_map[encoded] != nil {
 			// NB: don't put the key in the error message!
-			return nil, fmt.Errorf("%w for %s", ErrDupeKey, k.Name)
+			return nil, fmt.Errorf("%w for %s", ErrDupeAuthKey, k.Name)
 		}
-		key_map[k.AuthKey] = k
+		key_map[encoded] = k
+
 	}
 
 	// map roles to keys so we don't have to do it at every check.
@@ -118,37 +158,41 @@ func NewAccess(roles []*Role, keys []*Key) (*Access, error) {
 		}
 		key_roles[k] = roles
 	}
-	return &Access{roles, keys, key_map, key_roles}, nil
+	return &Access{
+		roles:      roles,
+		keys:       keys,
+		keyMap:     key_map,
+		keyRoles:   key_roles,
+		keyEncoder: encoder,
+	}, nil
 
 }
 
-var ErrKeyNotFound = errors.New("key not found")
-
-// GetKey returns a Key for the provided AuthKey.
-func (acc *Access) GetKey(key string) (*Key, error) {
-	if acc.keyMap[key] != nil {
-		return acc.keyMap[key], nil
-	}
-	return nil, ErrKeyNotFound
+// GetKey returns a Key for the provided AuthKey k, which is assumed to be
+// encoded with the equivalent of the encoder function passed to NewAccess.
+//
+// If no key is found, nil is returned.
+func (acc *Access) GetKey(k string) *Key {
+	return acc.keyMap[k]
 }
 
 // EndpointAllowed checks whether any Role for the Key can access endpoint.
-func (acc *Access) EndpointAllowed(key *Key, endpoint string) (bool, error) {
+func (acc *Access) EndpointAllowed(key *Key, endpoint string) bool {
 	for _, role := range acc.keyRoles[key] {
 		if role.CanAccessURL(endpoint) {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 // AgentAllowed checks whether any Role for the Key can use an agent with
 // the given name.
-func (acc *Access) AgentAllowed(key *Key, name string) (bool, error) {
+func (acc *Access) AgentAllowed(key *Key, name string) bool {
 	for _, role := range acc.keyRoles[key] {
 		if role.CanUseAgent(name) {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }

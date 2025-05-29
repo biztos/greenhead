@@ -41,30 +41,27 @@ func TestAccessFromTomlOK(t *testing.T) {
 	require.NoError(err, "unmarshal")
 
 	// We can now construct based on our roles and keys.
-	a, err := api.NewAccess(config.Roles, config.Keys)
+	a, err := api.NewAccess(config.Roles, config.Keys, nil)
 	require.NoError(err, "NewAccess")
 
 	// Access checks.
-	_, err = a.GetKey("nope")
-	require.ErrorIs(api.ErrKeyNotFound, err)
-	bosskey, err := a.GetKey("any-key-1")
-	require.NoError(err, "first key found")
-	can_url, err := a.EndpointAllowed(bosskey, "/any/url")
-	require.NoError(err, "boss EndpointAllowed")
+	nokey := a.GetKey("nope")
+	require.Nil(nokey)
+	bosskey := a.GetKey(api.EncodeAuthKey("any-key-1"))
+	require.NotNil(bosskey)
+	can_url := a.EndpointAllowed(bosskey, "/any/url")
 	require.True(can_url, "boss EndpointAllowed")
-	can_agent, err := a.AgentAllowed(bosskey, "any_agent")
-	require.NoError(err, "boss AgentAllowed")
+	can_agent := a.AgentAllowed(bosskey, "any_agent")
 	require.True(can_agent, "boss AgentAllowed")
-	workerkey, err := a.GetKey("any-key-2")
-	require.NoError(err, "second key found")
+	workerkey := a.GetKey(api.EncodeAuthKey("any-key-2"))
+	require.NotNil(workerkey)
 	worker_urls := map[string]bool{
 		"/foo":                    false,
 		"/support/anything/hello": true,
 		"/":                       true,
 	}
 	for url, can := range worker_urls {
-		can_url, err := a.EndpointAllowed(workerkey, url)
-		require.NoError(err, "worker "+url)
+		can_url := a.EndpointAllowed(workerkey, url)
 		require.Equal(can, can_url, "worker "+url)
 	}
 	worker_agents := map[string]bool{
@@ -74,8 +71,7 @@ func TestAccessFromTomlOK(t *testing.T) {
 		"therapist_thaibox": false,
 	}
 	for agent, can := range worker_agents {
-		can_agent, err := a.AgentAllowed(workerkey, agent)
-		require.NoError(err, "worker "+agent)
+		can_agent := a.AgentAllowed(workerkey, agent)
 		require.Equal(can, can_agent, "worker "+agent)
 	}
 

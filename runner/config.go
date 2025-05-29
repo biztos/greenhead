@@ -86,6 +86,7 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		c.ShowCalls = c.ShowCalls || r.ShowCalls
 		c.LogToolArgs = c.LogToolArgs || r.LogToolArgs
 		c.NoLog = c.NoLog || r.NoLog
+		c.LogHuman = c.LogHuman || r.LogHuman
 		c.NoTools = c.NoTools || r.NoTools
 		if c.LogFile == "" {
 			c.LogFile = r.LogFile
@@ -94,6 +95,8 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 			c.DumpDir = r.DumpDir
 		}
 		if c.MaxCompletions == 0 {
+			// TODO: test this!  Looks like we never override no matter what.
+			// Which makes it superflous in the config file which is Not Good.
 			c.MaxCompletions = r.MaxCompletions
 		}
 		if c.MaxToolChain == 0 {
@@ -117,6 +120,16 @@ func (c *Config) LoadConfigs(runnerFile string, agentFiles ...string) error {
 		if c.StopMatches == nil {
 			c.StopMatches = r.StopMatches
 		}
+
+		// API config is its own ball of fun-loving wax...
+		//
+		// TODO: ugh, deal with this shit better, right now if you have a
+		// default for the cmd, and the user sets to the same value, we have
+		// no way to make that value stick while the untouched does not!
+		//
+		// Maybe have a different config to get flags and merge from it?
+		// No, still have the default problem.  Shite.
+		c.API = r.API // TODO: FIX ALL THIS SOMEHOW
 
 		// We keep all arrays!
 		c.ExternalTools = append(c.ExternalTools, r.ExternalTools...)

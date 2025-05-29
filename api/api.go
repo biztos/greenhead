@@ -12,7 +12,6 @@ import (
 	slogfiber "github.com/samber/slog-fiber"
 
 	"github.com/biztos/greenhead/agent"
-	"github.com/biztos/greenhead/assets"
 	"github.com/biztos/greenhead/version"
 )
 
@@ -31,6 +30,7 @@ type Config struct {
 	Roles      []*Role `toml:"roles"`       // Roles defining access.
 	Keys       []*Key  `toml:"keys"`        // Keys mapping to roles by name.
 	AccessFile string  `toml:"access_file"` // TOML file for (more) Roles and Keys.
+	RawKeys    bool    `toml:"raw_keys"`    // Use raw, unencoded API keys.
 	NoKeys     bool    `toml:"no_keys"`     // DO NOT require API keys.
 	NoUI       bool    `toml:"no_ui"`       // DO NOT expose the web UI.
 
@@ -70,15 +70,21 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 	}
 
 	// Set up access, unless we don't.
+	var encoder func(string) string
+	if cfg.RawKeys {
+		encoder = NotEncodeAuthKey
+	} else {
+		encoder = EncodeAuthKey
+	}
 	var access *Access
 	var err error
 	var default_key string
 	if !cfg.NoKeys {
 		// If there is nothing, use the default.
 		if len(cfg.Roles) == 0 && len(cfg.Keys) == 0 {
-			access, default_key = DefaultAccess()
+			access, default_key = DefaultAccess(encoder)
 		} else {
-			access, err = NewAccess(cfg.Roles, cfg.Keys)
+			access, err = NewAccess(cfg.Roles, cfg.Keys, encoder)
 			if err != nil {
 				return nil, fmt.Errorf("access setup error: %w", err)
 			}
@@ -125,9 +131,7 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		defaultKey:   default_key,
 	}
 	// Set up app routes and middleware. NB: ORDER MATTERS.
-	if !cfg.NoKeys {
-		app.Use(api.KeyAccess())
-	}
+	app.Use(api.KeyAccess())
 	if cfg.LogFiber {
 		app.Use(logger.New())
 	} else {
@@ -142,52 +146,6 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 
 }
 
-// Set up the routing for the Fiber app, with access to the agents et al.
-// Middleware will handle the auth and logging.
-func (api *API) setRoutes() {
-
-	api.app.Get("/", func(c *fiber.Ctx) error {
-		return api.HandleRoot(c)
-	})
-
-	api.app.Get("/v1/agents/list", func(c *fiber.Ctx) error {
-		return api.HandleAgentsList(c)
-	})
-
-	api.app.Post("/v1/agents/new", func(c *fiber.Ctx) error {
-		return api.HandleAgentsNew(c)
-	})
-
-	api.app.Post("/v1/agents/:id/chat", func(c *fiber.Ctx) error {
-		return api.HandleAgentsChat(c)
-	})
-
-	api.app.Post("/v1/agents/:id/completion", func(c *fiber.Ctx) error {
-		return api.HandleAgentsCompletion(c)
-	})
-
-	api.app.Post("/v1/agents/:id/end", func(c *fiber.Ctx) error {
-		return api.HandleAgentsEnd(c)
-	})
-
-	if !api.config.NoUI {
-		api.app.Get("/v1/ui", func(c *fiber.Ctx) error {
-			return api.HandleUI(c)
-		})
-
-		api.app.Post("/v1/ui", func(c *fiber.Ctx) error {
-			return api.HandleUI(c)
-		})
-
-		// Serve a favicon because the requests are annoying.
-		api.app.Get("/favicon.png", func(c *fiber.Ctx) error {
-			c.Type("png")
-			return c.Send(assets.MustAsset("webui/favicon.png"))
-		})
-	}
-
-}
-
 var DefaultListenAddress = ":3030"
 
 // Serve runs the API server on the configured ApiListenAddress.
@@ -198,22 +156,28 @@ func (api *API) Listen() error {
 	}
 	if api.defaultKey != "" {
 		fmt.Println("**")
-		fmt.Println("** ALL-ACCESS DEFAULT API KEY:", api.defaultKey)
+		fmt.Println("** ALL-ACCESS DEFAULT API KEY:", api.access.keyEncoder(api.defaultKey))
 		fmt.Println("**")
 	}
 
 	return api.app.Listen(adrs)
 }
 
-// KeyAgentNames returns the names of the API's agents available to the given
-// api_key base on configured access.
+// GetKey calls GetKey on the underlying Access of the API.
+func (api *API) GetKey(auth_key string) *Key {
+	return api.access.GetKey(auth_key)
+}
+
+// AgentNames returns the names of the API's agents available to the given
+// key based on access.
 //
 // If NoKeys is configured, returns the names of all agents.
-func (api *API) KeyAgentNames(api_key string) []string {
+func (api *API) AgentNames(key *Key) []string {
 	names := []string{}
-	// TODO: for real
 	for _, a := range api.sourceAgents {
-		names = append(names, a.Name)
+		if api.config.NoKeys || api.access.AgentAllowed(key, a.Name) {
+			names = append(names, a.Name)
+		}
 	}
 	return names
 
