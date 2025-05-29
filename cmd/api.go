@@ -112,6 +112,8 @@ func init() {
 	// Flags:
 	ApiCmd.PersistentFlags().StringVar(&Config.API.ListenAddress, "listen", ":3030",
 		"Address at which to listen for requests.")
+	ApiCmd.PersistentFlags().StringVar(&Config.API.AccessFile, "access-file", "",
+		"TOML file defining roles and keys.")
 	ApiCmd.PersistentFlags().BoolVar(&Config.API.RawKeys, "raw-keys", false,
 		"Do NOT encode API keys: clients must use the original raw key.")
 	ApiCmd.PersistentFlags().BoolVar(&Config.API.NoKeys, "no-keys", false,

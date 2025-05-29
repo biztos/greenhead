@@ -1,0 +1,26 @@
+# Roles and Keys to load in api.NewAPI et al.
+[[roles]]
+	name = "lister"
+	endpoints = ["/","/v1/agents/list"]
+	agents =  [ "/.*/" ]
+
+[[roles]]
+	# haha, the intern can use the UI but can't do a real chat!
+	name = "intern"
+	endpoints = ["/","/v1/ui","/v1/agents/list","/v1/agents/new","/.*end$/"]
+	agents =  [ "/.*/" ]
+
+[[keys]]
+	auth_key = "cow-orker-key" # ibZ_HTnNmzwELkcKnMnDpLI6BGIbFjqkk5qfts2b0bI
+	name = "cow_orker"
+	roles = [ "worker" ]
+
+[[keys]]
+	auth_key = "listbot-key" # _AW4ssadenNx9pxtwz88zHJYEWwboE_KtxjaaIyHuoM
+	name = "listbot"
+	roles = [ "lister" ]
+
+[[keys]]
+	auth_key = "sad-intern-key" # vAIiZ3V08MsX2REuBAeqKRwXvJbBZO5bL1bWIxHvhE8
+	name = "unpaid_intern"
+	roles = [ "intern" ]

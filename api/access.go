@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/biztos/greenhead/rgxp"
@@ -84,34 +86,53 @@ var ErrBlankKeyName = errors.New("empty or blank key name")
 var ErrDupeRoleName = errors.New("duplicate role")
 var ErrDupeAuthKey = errors.New("duplicate auth key")
 var ErrDupeKeyName = errors.New("duplicate key name")
+var ErrBadAccessFile = errors.New("bad access file")
+var ErrNoAccess = errors.New("access requires roles and keys")
 
-// DefaultAccess creates an Access with one key that has full access to
-// all endpoints and agents.
-//
-// The AuthKey is returned together with the Access.
-func DefaultAccess(encoder func(string) string) (*Access, string) {
-
-	allow_all, _ := rgxp.ParseOptional("/.*/")
-	role := &Role{
+var AllowAllRgxp = rgxp.MustParseOptional("/.*/")
+var DefaultRoles = []*Role{
+	{
 		Name:      "default-all-access-role",
-		Endpoints: []*rgxp.OptionalRgxp{allow_all},
-		Agents:    []*rgxp.OptionalRgxp{allow_all},
-	}
-	key := &Key{
+		Endpoints: []*rgxp.OptionalRgxp{AllowAllRgxp},
+		Agents:    []*rgxp.OptionalRgxp{AllowAllRgxp},
+	},
+}
+var DefaultKeys = []*Key{
+	{
 		AuthKey:   ulid.Make().String(),
 		Name:      "default-all-access-key",
 		RoleNames: []string{"default-all-access-role"},
-	}
-	acc, _ := NewAccess([]*Role{role}, []*Key{key}, encoder)
-	return acc, key.AuthKey
+	},
+}
+
+// RolesAndKeys defined additional roles and keys to be loaded from a file.
+type RolesAndKeys struct {
+	Roles []*Role `toml:"roles"`
+	Keys  []*Key  `toml:"keys"`
 }
 
 // NewAccess creates an Access from roles and keys.
 //
+// Additional
 // Duplicates by Name or AuthKey are disallowed, as are empty/all-whitespace
 // strings for both.  Name your roles and keys.
-func NewAccess(roles []*Role, keys []*Key, encoder func(string) string) (*Access, error) {
+func NewAccess(roles []*Role, keys []*Key, file string, encoder func(string) string) (*Access, error) {
 
+	if file != "" {
+		rk := &RolesAndKeys{}
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrBadAccessFile, err)
+		}
+		if err := toml.Unmarshal(b, rk); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrBadAccessFile, err)
+		}
+		roles = append(roles, rk.Roles...)
+		keys = append(keys, rk.Keys...)
+	}
+	if len(roles) == 0 || len(keys) == 0 {
+		return nil, ErrNoAccess
+	}
 	if encoder == nil {
 		encoder = EncodeAuthKey
 	}

@@ -20,7 +20,7 @@ func (api *API) KeyAccess() fiber.Handler {
 		}
 
 		// Special case for annoying favicon.
-		if c.Path() == "/favicon.png" {
+		if c.Path() == "/favicon.png" || c.Path() == "/favicon.ico" {
 			return c.Next()
 		}
 

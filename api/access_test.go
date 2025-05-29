@@ -41,7 +41,7 @@ func TestAccessFromTomlOK(t *testing.T) {
 	require.NoError(err, "unmarshal")
 
 	// We can now construct based on our roles and keys.
-	a, err := api.NewAccess(config.Roles, config.Keys, nil)
+	a, err := api.NewAccess(config.Roles, config.Keys, "", nil)
 	require.NoError(err, "NewAccess")
 
 	// Access checks.

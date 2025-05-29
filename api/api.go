@@ -44,17 +44,22 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 	}
 	var access *Access
 	var err error
-	var default_key string
+	var default_auth_key string
 	if !cfg.NoKeys {
 		// If there is nothing, use the default.
-		if len(cfg.Roles) == 0 && len(cfg.Keys) == 0 {
-			access, default_key = DefaultAccess(encoder)
-		} else {
-			access, err = NewAccess(cfg.Roles, cfg.Keys, encoder)
-			if err != nil {
-				return nil, fmt.Errorf("access setup error: %w", err)
-			}
+		roles := cfg.Roles
+		keys := cfg.Keys
+		if len(roles) == 0 && len(keys) == 0 && cfg.AccessFile == "" {
+			roles = DefaultRoles
+			keys = DefaultKeys
+			default_auth_key = keys[0].AuthKey
 		}
+
+		access, err = NewAccess(roles, keys, cfg.AccessFile, encoder)
+		if err != nil {
+			return nil, fmt.Errorf("access setup error: %w", err)
+		}
+
 	}
 
 	ident := fmt.Sprintf("GREENHEAD %s HTTP API %s",
@@ -77,10 +82,9 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		sourceAgents: sourceAgents,
 		activeAgents: map[string]*agent.Agent{},
 		access:       access,
-		defaultKey:   default_key,
+		defaultKey:   default_auth_key,
 	}
 	// Set up app routes and middleware. NB: ORDER MATTERS.
-	app.Use(api.KeyAccess())
 	if cfg.LogFiber {
 		app.Use(logger.New())
 	} else {
@@ -88,6 +92,7 @@ func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 		// annoying AF when doing development and testing.
 		app.Use(slogfiber.New(slog.Default()))
 	}
+	app.Use(api.KeyAccess())
 	app.Use(recover.New()) // TODO: why exactly?
 	api.setRoutes()
 
@@ -99,11 +104,13 @@ var DefaultListenAddress = ":3030"
 
 // Serve runs the API server on the configured ApiListenAddress.
 func (api *API) Listen() error {
+
 	adrs := api.config.ListenAddress
 	if adrs == "" {
 		adrs = DefaultListenAddress
 	}
 	if api.defaultKey != "" {
+
 		fmt.Println("**")
 		fmt.Println("** ALL-ACCESS DEFAULT API KEY:", api.access.keyEncoder(api.defaultKey))
 		fmt.Println("**")

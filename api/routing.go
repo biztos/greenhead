@@ -48,6 +48,12 @@ func (api *API) setRoutes() {
 			c.Type("png")
 			return c.Send(assets.MustAsset("webui/favicon.png"))
 		})
+
+		// Also serve it for .ico requests because effing browsers.
+		api.app.Get("/favicon.ico", func(c *fiber.Ctx) error {
+			c.Type("png")
+			return c.Send(assets.MustAsset("webui/favicon.png"))
+		})
 	}
 
 }

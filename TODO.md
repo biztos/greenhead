@@ -2,14 +2,14 @@
 
 Priorities:
 
-- Role/key file for api.  __NOT RELOAD YET!__ That's lower priority!
 - Config override logic, as below.
 - Document configs!
-- Then make it public already, even if not ready for feedback.
-- Fake client for testing UI et al w/o any actual LLM
+- __Then make it public already, ask for feedback soon!__
 - Multi-api agents ("flex").
-- API-aware tools (also "flex?").
+- Fake client for testing UI et al w/o any actual LLM
 - Demo mode with fake agents.
+- API-aware tools (also "flex?").
+- Save state somewhere.
 
 How hard is this?!
 
@@ -26,20 +26,19 @@ default of 2020 but you *also* set 2020 on command line, what should win?
 
 Maybe move default logic into the config processor?
 
+*Probably do this:*
+
+* Make all flags default to zero-val
+* Describe defaults in the help text, really only for int and string
+* Set defaults *after* merging configs
+
 ## MAYBE move config to top level, it has a lot going on already.
 
 So then config is master config, and anything can have its own config.
 
 Would the runner have any specific configs? Seems like no.
 
-## How to reload keys? Configs?  Other key/role providers?
-
-OK, at minimum it would be useful to reload the full config, but there is a
-lot of config-merging logic and a config isn't guaranteed to work so we have
-edge cases to deal with.
-
-So the real minimum (for now) is probably reloading the access.  Which is
-maybe not that hard!
+## Reload access file on a ticker (or how?)
 
 1. We have the config in the api so we have the starting roles/keys.
 2. Reload would be of the configged file.
@@ -53,6 +52,29 @@ Also would be nice to configure an interval at which it is reloaded.
 
 Then you can just overwrite that file whenever you need to and it will load
 up again.
+
+__Endpoint is easiest so do that first.__ And for the "write with cron job"
+case it's plenty!
+
+```sh
+dump_stuff_from_db() > /path/to/access.toml
+curl -X POST "http://localhost:3030/v1/admin/reload_access"  \
+    -H "Authorization: Bearer $GREENHEAD_API_KEY_FOR_CRON"
+```
+
+## MAYBE reload the whole config on a signal or something.
+
+This would be a lot of work, because you'd effectively have to instantiate a
+whole new runner, in order to make sure everything from the config is valid;
+in which case, what about CLI overrides? -- and then you have to replace
+the API, because that's presumably what you care about, in-flight...
+
+__ONLY IF PEOPLE ASK FOR IT__ and with good use-cases.
+
+## MAYBE support other role/key providers, some day.
+
+Nice to plug in to something, right?  But low priority.  Reloading the
+`access_file` should be enough for most uses.
 
 ## Serialize agents, duh.
 

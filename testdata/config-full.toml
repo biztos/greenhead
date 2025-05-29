@@ -127,6 +127,10 @@ no_tools = false
 [api]
   no_keys = false
   log_fiber = false
+  # NOTE: the access_file config will only work if you are on a system that
+  # uses slashes and you're running from the root directory.  If you need to
+  # change it, you should see an error when starting the API server.
+  access_file = "testdata/roles-and-keys.toml"
 
   [[api.roles]]
     name = "admin"
