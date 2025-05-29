@@ -2,6 +2,10 @@
 
 Priorities:
 
+- Role/key file for api.  __NOT RELOAD YET!__ That's lower priority!
+- Config override logic, as below.
+- Document configs!
+- Then make it public already, even if not ready for feedback.
 - Fake client for testing UI et al w/o any actual LLM
 - Multi-api agents ("flex").
 - API-aware tools (also "flex?").
@@ -28,6 +32,27 @@ So then config is master config, and anything can have its own config.
 
 Would the runner have any specific configs? Seems like no.
 
+## How to reload keys? Configs?  Other key/role providers?
+
+OK, at minimum it would be useful to reload the full config, but there is a
+lot of config-merging logic and a config isn't guaranteed to work so we have
+edge cases to deal with.
+
+So the real minimum (for now) is probably reloading the access.  Which is
+maybe not that hard!
+
+1. We have the config in the api so we have the starting roles/keys.
+2. Reload would be of the configged file.
+3. Can create a new Access from what we have, that will tell if errors.
+4. Can mutex lock whenever Access is being, er, accessed.
+5. Can mutex lock the replacement.
+
+So we give that an endpoint, right?  Since endpoints are controlled.
+
+Also would be nice to configure an interval at which it is reloaded.
+
+Then you can just overwrite that file whenever you need to and it will load
+up again.
 
 ## Serialize agents, duh.
 
