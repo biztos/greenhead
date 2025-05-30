@@ -108,20 +108,23 @@ func (api *API) Listen() error {
 	if adrs == "" {
 		adrs = DefaultListenAddress
 	}
-	if api.defaultKey != "" {
-		// Warn that we're running with the default key, but wait a bit to
-		// get the log after the startup message.  My OCD impulses, cheeeze...
-		time.AfterFunc(time.Second, func() {
+
+	// Issue any warnings with a delay, so they log after the startup message,
+	// because my OCD tells me "rechte obere Ecke schwarz malen!"
+	time.AfterFunc(time.Second, func() {
+
+		if api.config.NoKeys {
+			api.logger.Warn("NO-KEY ACCESS ALLOWED")
+		}
+		if api.defaultKey != "" {
 			api.logger.Warn("ALL-ACCESS DEFAULT KEY IN USE",
 				"auth_key", api.access.keyEncoder(api.defaultKey))
-		})
-	}
-	if len(api.sourceAgents) == 0 {
-		// Likewise warn if the API isn't much usable due to lack of "agency."
-		time.AfterFunc(time.Second, func() {
+		}
+		if len(api.sourceAgents) == 0 {
 			api.logger.Warn("NO AGENTS DEFINED")
-		})
-	}
+		}
+
+	})
 
 	return api.app.Listen(adrs)
 }
