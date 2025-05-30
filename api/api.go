@@ -4,6 +4,7 @@ package api
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -29,11 +30,9 @@ type API struct {
 // NewAPI creates an API instance.
 func NewAPI(cfg *Config, agents []*agent.Agent) (*API, error) {
 
-	// TODO: consider having no agents, only what you define on the API.
-	// Seems like a bad idea to not have at least one available agent though.
-	if len(agents) == 0 {
-		return nil, fmt.Errorf("at least one agent must be defined")
-	}
+	// You really *should* have agents, but you don't *have* to have them.
+	// At some future point we will support loading and/or creating agents
+	// after the API is running.
 
 	// Set up access, unless we don't.
 	var encoder func(string) string
@@ -110,10 +109,18 @@ func (api *API) Listen() error {
 		adrs = DefaultListenAddress
 	}
 	if api.defaultKey != "" {
-
-		fmt.Println("**")
-		fmt.Println("** ALL-ACCESS DEFAULT API KEY:", api.access.keyEncoder(api.defaultKey))
-		fmt.Println("**")
+		// Warn that we're running with the default key, but wait a bit to
+		// get the log after the startup message.  My OCD impulses, cheeeze...
+		time.AfterFunc(time.Second, func() {
+			api.logger.Warn("ALL-ACCESS DEFAULT KEY IN USE",
+				"auth_key", api.access.keyEncoder(api.defaultKey))
+		})
+	}
+	if len(api.sourceAgents) == 0 {
+		// Likewise warn if the API isn't much usable due to lack of "agency."
+		time.AfterFunc(time.Second, func() {
+			api.logger.Warn("NO AGENTS DEFINED")
+		})
 	}
 
 	return api.app.Listen(adrs)
