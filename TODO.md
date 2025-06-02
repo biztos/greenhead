@@ -3,6 +3,7 @@
 Priorities:
 
 - Config override logic, as below.
+    - why isn't log-fiber working?! maybe this
 - Document configs!
 - __Then make it public already, ask for feedback soon!__
 - Multi-api agents ("flex").
@@ -31,6 +32,9 @@ Maybe move default logic into the config processor?
 * Make all flags default to zero-val
 * Describe defaults in the help text, really only for int and string
 * Set defaults *after* merging configs
+
+OK, but have to deal with some things like tool list, or rather: agent conform
+is a different problem even if it also involves pushing to lists!
 
 ## MAYBE move config to top level, it has a lot going on already.
 
@@ -414,3 +418,51 @@ Some cool stuff listed here.
 https://github.com/samber/slog-fiber
 
 Or is it better to just let the ops guys integrate regular logs?
+
+## Ask Another Agent function
+
+Why not have a function that lets you consult another agent?
+
+Say you have a legal issue, it could ask the LawyerAgent.  And so on.
+
+Easy to test this, might have to tweak the language a bit.  Having the other
+agent able to use tools the first agent can not, would be a problem.
+
+Maybe say, for starters, that a callable agent can only have the tools its
+caller has?  Makes sense.
+
+Agent config should say if it's callable?  Or the config for the tool?
+
+(Right now there is no internal tool config, oops!)
+
+## A describe-tools function.
+
+Would be good to be able to describe the tools from within an LLM.  Mostly for
+chat purposes.
+
+So something like list_tools and describe_tool.
+
+You'd have to enable them in configs of course.
+
+Tricky part is, the tool has to have the agent for context, otherwise it does
+not know what tools it has.
+
+__CHATGPT 4o CAN ALREADY DO THIS BY ITSELF more or less!__
+
+* List your available tool functions please.
+* What is the input format for the tool functions.echo_format?
+
+OK, not need I think, but we'll see how well the other LLMs do with it.
+
+## INTERNAL TOOL CONFIGS
+
+Oh yeah, obviously some tools might have special configs.
+
+Tool should be able to define that.
+
+Then should be able to set it as part of the master config.
+
+    ToolConfigs: name -> config (any)
+
+__THIS IS AGENT-LEVEL BUT GETS OVERRIDE AT TOP LEVEL__
+
