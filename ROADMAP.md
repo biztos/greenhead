@@ -13,25 +13,24 @@ _You're soaking in it!_
 * Pair runner (two-agent conversation)
 * Simple chat
 * Built-in agents (simple demonstration agents)
+* HTTP API
+* Simple chat web UI
 
 ## v0.2
 
-* HTTP API
-	* Main use-case is other bots e.g. a Slackbot
-	* "chat" over HTTP with context on server
+* Support for other LLMs besides OpenAI.
+	* LLAMA et al, will test via Groq
+	* Claude ideally.
+	* Others based on feedback.
+* Flexibile agents and tools.
+* Tool config.
+* HTTP API Enhancements
 	* BYO API Key
-	* Secondary API Keys tied to agents
-		* ...so key ABC gets agent Foo, BCA gets Bar, and so on.
-		* reasonable way to refresh that so e.g. you can assign keys
 	* Graceful shutdown
 * Useful built-in tools
 	* pro-bing
 	* miekg/dns
 	* others TBD
-* Support for other LLMs besides OpenAI.
-	* LLAMA et al, will test via Groq
-	* Claude ideally.
-	* Others based on feedback.
 * Improvements/changes based on feedback.
 
 ## v0.3
@@ -52,3 +51,4 @@ _You're soaking in it!_
 * Model-switcher: let the LLM change the model.
 * Tool: more general KV store, maybe Badger?
 * Tool: SQLite3 database interface.
+* cf TODO.md for more speculative things.
