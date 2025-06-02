@@ -47,30 +47,47 @@ You're in a desert, walking along in the sand when all of the sudden you look do
       <div id="progress" class="hidden">
         <svg
           id="spinner"
-          width="50"
-          height="50"
-          viewBox="0 0 100 100"
+          width="60"
+          height="60"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <!-- Outer circle -->
+          <!-- Head circle -->
           <circle
-            cx="50"
-            cy="50"
-            r="45"
+            cx="30"
+            cy="30"
+            r="25"
+            fill="lightgreen"
+            stroke="black"
+            stroke-width="1"
+          />
+
+          <!-- Left eye (larger) -->
+          <circle
+            cx="22"
+            cy="22"
+            r="5"
             fill="white"
             stroke="black"
-            stroke-width="2"
+            stroke-width="1"
           />
 
-          <!-- Main halves -->
+          <!-- Right eye (smaller) -->
+          <circle
+            cx="38"
+            cy="22"
+            r="3.5"
+            fill="white"
+            stroke="black"
+            stroke-width="1"
+          />
+
+          <!-- Crooked smile mouth -->
           <path
-            d="M50,5 A45,45 0 0,0 50,95 A22.5,22.5 0 0,1 50,50 A22.5,22.5 0 0,0 50,5"
-            fill="black"
+            d="M 20 36 Q 28 41 40 38"
+            fill="none"
+            stroke="black"
+            stroke-width="3"
           />
-
-          <!-- Small circles -->
-          <circle cx="50" cy="27.5" r="5" fill="white" />
-          <circle cx="50" cy="72.5" r="5" fill="black" />
         </svg>
       </div>
     </div>
