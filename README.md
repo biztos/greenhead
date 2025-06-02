@@ -1,4 +1,4 @@
-# Greenhead - Agentic LLM Runner
+# Greenhead - Agentic AI Framework in Go. 
 
 ![Provisional Greenhead Mascot](/assets/src/webui/greenhead-150x225.png)
 
@@ -312,3 +312,9 @@ and other great open-source software packages.
 [cobra]: https://cobra.dev/
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
+
+
+<!-- gussying up the ole README, or trying to... -->
+<style>
+img { display: block; text-align: center }
+</style>
