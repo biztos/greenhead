@@ -1,0 +1,44 @@
+<svg
+          id="spinner"
+          width="60"
+          height="60"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <!-- Head circle -->
+          <circle
+            cx="30"
+            cy="30"
+            r="25"
+            fill="lightgreen"
+            stroke="black"
+            stroke-width="1"
+          />
+
+          <!-- Left eye (larger) -->
+          <circle
+            cx="22"
+            cy="22"
+            r="5"
+            fill="white"
+            stroke="black"
+            stroke-width="1"
+          />
+
+          <!-- Right eye (smaller) -->
+          <circle
+            cx="38"
+            cy="22"
+            r="3.5"
+            fill="white"
+            stroke="black"
+            stroke-width="1"
+          />
+
+          <!-- Crooked smile mouth -->
+          <path
+            d="M 20 36 Q 28 41 40 38"
+            fill="none"
+            stroke="black"
+            stroke-width="3"
+          />
+        </svg>

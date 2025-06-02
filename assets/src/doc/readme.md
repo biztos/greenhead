@@ -1,9 +1,12 @@
-# Greenhead - Agentic LLM Runner
+# Greenhead - Agentic AI Framework in Go. 
 
+## ⚠️ **Warning**
 
-## *WARNING: this is pre-release software and may change at any time.*
+This is pre-release software and may change at any time.
 
-### *NB: examples may only work with OpenAI at this time. More APIs soon!*
+*NB: examples may only work with OpenAI at this time. More APIs soon!*
+
+---
 
 Greenhead is a framework for building and running AI Agents. It is a Go
 package, a command-line utility, a Web API, and a way of making custom
@@ -311,3 +314,4 @@ and other great open-source software packages.
 [cobra]: https://cobra.dev/
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
+

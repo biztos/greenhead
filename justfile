@@ -6,7 +6,10 @@ list:
 
 # Prepare assets etc.
 prep:
-	fgrep -v '![' README.md > assets/src/doc/readme.md
+	cat .github/rm-head.md > .github/README.md
+	grep -v '^# ' README.md >> .github/README.md
+	cat .github/rm-foot.md >> .github/README.md
+	cp README.md assets/src/doc/readme.md
 	cp API.md assets/src/doc/api.md
 	cd assets && binsanity src
 	mkdir -p build
