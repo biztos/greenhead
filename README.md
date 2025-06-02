@@ -313,8 +313,3 @@ and other great open-source software packages.
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
 
-
-<!-- gussying up the ole README, or trying to... -->
-<style>
-img { display: block; text-align: center }
-</style>
