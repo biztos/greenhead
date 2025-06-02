@@ -19,20 +19,22 @@ body {
   margin: 0px auto;
 }
 #prompt-entry {
-  margin-top: 20px;
+  margin: 20px auto;
+  width: 80%;
 }
-#prompt-entry label {
+#prompt-entry label.main {
+  display: block;
+  margin-bottom: 4px; /* beat the highlight line! */
   font-weight: bold;
-  font-size: 1.2em;
-  margin-top: 11px;
-  margin-right: 5px;
-  display: inline-block;
-  vertical-align: top;
+  text-transform: uppercase;
+  font-size: 1.2rem;
+  letter-spacing: 1rem;
+  font-family: monospace;
 }
 #prompt-textarea {
   resize: none;
   overflow: hidden;
-  width: 70%;
+  width: 100%;
   height: auto;
   min-height: 40px;
   font: sans-serif;
@@ -48,6 +50,9 @@ body {
 #prompt-textarea.flash {
   border: 1px solid red;
   background: #ffc;
+}
+#prompt-controls input {
+  margin-left: 20px;
 }
 #progress {
   margin: 20px auto;
@@ -165,6 +170,10 @@ button {
 }
 .controls {
   text-align: right;
+}
+.controls label {
+  font-family: sans-serif;
+  font-weight: normal;
 }
 
 /* Possibly stupid spinner stuff... */

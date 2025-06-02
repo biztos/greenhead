@@ -48,6 +48,7 @@ function setupAll(): void {
     ta.select();
   });
   elem("#prompt-textarea").addEventListener("keydown", watchPrompt);
+  elem("#prompt-send-button").addEventListener("click", runCompletion);
   elem("#error-dismiss-button").addEventListener("click", dismissError);
   elem("#newchat-button").addEventListener("click", newChat);
   elem("#reset-key-button").addEventListener("click", resetKey);
@@ -58,7 +59,16 @@ function setupAll(): void {
   show("#newchat");
 }
 
-async function runCompletion(prompt: string): Promise<void> {
+async function runCompletion(): Promise<void> {
+  // Make sure there's something useful to send.
+  const ta = elem("#prompt-textarea") as HTMLTextAreaElement;
+  const prompt = ta.value;
+  if (!prompt.match(/\S/)) {
+    flash("#prompt-textarea");
+    return;
+  }
+
+  // Off you go!
   const api = API.getInstance();
   api.abort();
 
@@ -290,6 +300,13 @@ function startChat(agent: Agent): void {
   addSystemMessage(msg);
 
   // NB: do NOT reset the prompt, user might want to reuse it!
+  // TODO: figure out what IN THE HAYOW is causing the ta to shrink on newChat
+  // (it's not the hide/show, already checked that... sth about adding to DOM
+  // maybe...)
+  const ta = elem("#prompt-textarea") as HTMLTextAreaElement;
+  setTimeout(() => {
+    sizeTextArea(ta);
+  }, 1);
 
   // Show the chat area.
   show("#chat");
@@ -366,19 +383,19 @@ function watchPrompt(event: KeyboardEvent): void {
 
   let ta = event.target! as HTMLTextAreaElement;
 
+  // Size the text area in any case, 'tis annoying but somehow we have to.
   sizeTextArea(ta);
+
+  // Ignore if not set.
+  const chk = elem("#prompt-return-sends-checkbox") as HTMLInputElement;
+  if (!chk.checked) {
+    return;
+  }
 
   if (event.key === "Enter") {
     if (!event.shiftKey) {
       event.preventDefault();
-      // Grab the text and make sure it's got something in it.
-      let s = ta.value;
-      if (!s.match(/\S/)) {
-        flash(ta);
-        return;
-      }
-      // Off you go!
-      runCompletion(s);
+      runCompletion();
     }
   }
 }

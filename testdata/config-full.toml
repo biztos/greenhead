@@ -16,6 +16,7 @@ log_tool_args = false
 max_completions = 100
 max_toolchain = 10
 no_tools = false
+log_fiber = true
 
 [[external_tools]]
   name = "echo_format"

@@ -26,14 +26,19 @@
           <button id="chat-cancel-button">Cancel</button>
         </div>
         <div id="prompt-entry">
-          <label for="prompt-textarea">Prompt:</label>
+          <label for="prompt-textarea" class="main">Prompt</label>
           <textarea id="prompt-textarea">
 You're in a desert, walking along in the sand when all of the sudden you look down and you see a tortoise.</textarea
           >
-          <p>
-            Press <strong>Return</strong> to send;
-            <strong>Shift-Return</strong> for newline.
-          </p>
+          <div id="prompt-controls" class="controls">
+            <input
+              type="checkbox"
+              id="prompt-return-sends-checkbox"
+              chekced="checked"
+            />
+            <label for="prompt-return-sends-checkbox">Send on return</label>
+            <button id="prompt-send-button">Send</button>
+          </div>
         </div>
       </div>
       <div id="newchat" class="hidden">
