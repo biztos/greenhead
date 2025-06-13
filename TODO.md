@@ -5,7 +5,6 @@
 - Config override logic, as below.
     - why isn't log-fiber working?! maybe this
 - Document configs!
-- __Then make it public already, ask for feedback soon!__
 - Multi-api agents ("flex").
 - Fake client for testing UI et al w/o any actual LLM
 - Demo mode with fake agents.

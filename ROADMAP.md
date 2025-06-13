@@ -15,6 +15,7 @@ _You're soaking in it!_
 * Built-in agents (simple demonstration agents)
 * HTTP API
 * Simple chat web UI
+* Builds and Container (for download, not on hub yet)
 
 ## v0.2
 
@@ -31,12 +32,17 @@ _You're soaking in it!_
 	* pro-bing
 	* miekg/dns
 	* others TBD
+* Agent persistence.
+	* Postgres and SQLite standard.
+	* Pluggable/configurable.
 * Improvements/changes based on feedback.
 
 ## v0.3
 
+* Add RAG support.
 * Add MCP support. (Ouch, probably a lot of work.)
 	* May be necessary for support of non-OpenAI LLMs.
+	* But remember COMPLEXITY != UTILITY!
 * Improvements/changes based on feedback.
 
 ## v1.0
