@@ -18,8 +18,9 @@ prep:
 run *ARGS='--version': prep
 	go run ./cmd/ghd {{ARGS}}
 
-# Serve the API locally, using a working test config.
+# Serve the API locally, using a working test config; open a browser on Mac.
 serve *ARGS: prep
+	(which open && sleep 2 && open http://localhost:3030) &
 	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # As serve, but calls webui to rebuild the SPA first.
