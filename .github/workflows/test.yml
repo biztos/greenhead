@@ -26,10 +26,7 @@ jobs:
     
     - name: Install Just
       uses: extractions/setup-just@v2
-    
-    - name: Make sure assets are compiled.
-      run: just checkbinsanity
-    
+
     - name: Run tests
       run: just test
 

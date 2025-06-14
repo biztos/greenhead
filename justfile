@@ -12,13 +12,6 @@ assets:
 	grep -v '^!\[' README.md > assets/src/doc/readme.md
 	cd assets && binsanity src
 
-# Check that binsanity.go is up to date (not older than its sources).
-checkbinsanity:
-	build-tools/check-updated.sh assets/binsanity.go README.md
-	build-tools/check-updated.sh assets/binsanity.go webui
-	build-tools/check-updated.sh assets/binsanity.go tools
-	build-tools/check-updated.sh assets/binsanity.go assets/src
-
 # Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version':
 	go run ./cmd/ghd {{ARGS}}

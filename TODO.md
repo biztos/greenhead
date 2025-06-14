@@ -513,3 +513,7 @@ part of the original Greenhead idea was "let crypto bros do crypto things."
 
 ## CI check to make sure the assets are fresh.
 
+Checking binsanity.go datestamp didn't do it b/c checkout timestamps.
+
+Next idea: copy binsanity.go to say build/orig and then re-run the webui,
+licenses, tooldoc, assets -- and then diff the binsanity files.
