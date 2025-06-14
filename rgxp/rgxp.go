@@ -1,4 +1,21 @@
-// Package rgxp provides convenience wrappers for regexp.Regexp.
+// Package rgxp provides convenience wrappers for regexp.Regexp, primarily
+// for use in configs.
+//
+// If you need to configure, say, a name selector with values like:
+//
+//	"Tom" # match Tom exactly
+//	"/tom/i" # match Tom and Tommie and tomacek
+//
+// ...then you can use this package to manage such configs in a TOML and/or
+// Cobra environment.
+//
+// Note that in order to exactly match a regexp-ish string like "/foo/" you
+// must use a regexp like this:
+//
+//	"/^[/]foo[/]$/"
+//
+// If you do a lot of this, rgxp is probably not the package you're looking
+// for.
 package rgxp
 
 import (

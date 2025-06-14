@@ -251,3 +251,38 @@ func TestUnmarshalTomlOptionalError(t *testing.T) {
 	require.ErrorContains(err, rgxp.ErrInvalid.Error())
 
 }
+
+func TestMatchOrEqualString(t *testing.T) {
+
+	require := require.New(t)
+
+	type check struct {
+		name string
+		exp  bool
+		src  string
+	}
+	checks := []check{
+		{"regexp hits", true, "/f.*r/"},
+		{"regexp misses", false, "/not/"},
+		{"string hits", true, "foo bar"},
+		{"string misses", false, "not"},
+	}
+
+	for _, c := range checks {
+		r := rgxp.MustParseOptional(c.src)
+		require.Equal(c.exp, r.MatchOrEqualString("foo bar"), c.name)
+	}
+
+}
+
+// The case of "string-match a regexp" is in the docs so let's make sure it
+// works.  If you really have to do this, you should probably not be here! :-)
+func TestMatchOrEqualStringRegexpStyle(t *testing.T) {
+
+	require := require.New(t)
+
+	r := rgxp.MustParseOptional("/^[/]foo bar[/]$/")
+
+	require.True(r.MatchOrEqualString("/foo bar/"))
+
+}
