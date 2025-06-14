@@ -4,8 +4,8 @@
 list:
 	just --list
 
-# Prepare assets etc.
-prep:
+# Prepare assets sources.  Requires binsanity.
+assets:
 	cat .github/rm-head.md > .github/README.md
 	cat README.md | sed -n '/^<!-- cut -->$/,$p' | sed '1d' >> .github/README.md
 	cat .github/rm-foot.md >> .github/README.md
@@ -14,29 +14,29 @@ prep:
 	mkdir -p build
 
 # Run locally from source, with args passed. Args must not contain spaces.
-run *ARGS='--version': prep
+run *ARGS='--version':
 	go run ./cmd/ghd {{ARGS}}
 
 # Serve the API locally, using a working test config; open a browser on Mac.
-serve *ARGS: prep
+serve *ARGS:
 	(which open && sleep 2 && open http://localhost:3030) &
 	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
-# As serve, but calls webui to rebuild the SPA first.
-serve-webui *ARGS: webui prep
+# As serve, but calls webui and assets to rebuild the SPA first.
+serve-webui *ARGS: webui assets
 	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # Build for current environment.
-build: prep
+build:
 	go build -o build/ghd ./cmd/ghd
 
 # Build for Apple Silicon Mac.
-build-macos-arm: prep
+build-macos-arm:
 	mkdir -p build/darwin-arm64
 	GOOS=darwin GOARCH=arm64 go build -o build/darwin-arm64/ghd ./cmd/ghd
 
 # Build for Intel Mac.
-build-macos-intel: prep
+build-macos-intel:
 	mkdir -p build/darwin-amd64
 	GOOS=darwin GOARCH=amd64 go build -o build/darwin-amd64/ghd ./cmd/ghd
 
@@ -53,22 +53,22 @@ build-linux: build-linux-arm build-linux-intel
 build-all: build-macos build-windows build-linux
 
 # Build for ARM Windows.
-build-windows-arm: prep
+build-windows-arm:
 	mkdir -p build/windows-arm64
 	GOOS=windows GOARCH=arm64 go build -o build/windows-arm64/ghd.exe
 
 # Build for Intel Windows.
-build-windows-intel: prep
+build-windows-intel:
 	mkdir -p build/windows-amd64
 	GOOS=windows GOARCH=amd64 go build -o build/windows-amd64/ghd.exe
 
 # Build for ARM Linux.
-build-linux-arm: prep
+build-linux-arm:
 	mkdir -p build/linux-arm64
 	GOOS=linux GOARCH=arm64 go build -o build/linux-arm64/ghd.exe
 
 # Build for Intel Linux.
-build-linux-intel: prep
+build-linux-intel:
 	mkdir -p build/linux-amd64
 	GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/ghd.exe
 
@@ -78,27 +78,31 @@ build-full: clean vet license tooldoc test build-all
 	@echo TODO: run coverage and upload it somewhere
 
 # Check for programmer errors.
-vet: prep
+vet:
 	go vet ./...
 
 # Run unit tests.
-test: prep
+test:
 	go test ./...
 
+# Run unit tests with fresh assets.
+atest: assets
+    go test ./...
+
 # Run unit tests with coverage, and open the coverage report.
-cover: prep
+cover:
 	go test ./... -coverprofile=cover.out && go tool cover -html=cover.out
 
 # Run tests with coverage for upload to Codecov.
-codecov: prep
+codecov:
 	go test ./... -coverprofile=coverage.txt
 
 # Run benchmarks, if any.
-bench: prep
+bench:
 	go test ./... -bench=.
 
 # Run pkgsite because godoc is deprecated. :-(
-doc: prep
+doc:
 	pkgsite -open
 
 # Remove the build and cover artifacts.
