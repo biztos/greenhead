@@ -11,7 +11,13 @@ assets:
 	cat .github/rm-foot.md >> .github/README.md
 	grep -v '^!\[' README.md > assets/src/doc/readme.md
 	cd assets && binsanity src
-	mkdir -p build
+
+# Check that binsanity.go is up to date (not older than its sources).
+checkbinsanity:
+	build-tools/check-updated.sh assets/binsanity.go README.md
+	build-tools/check-updated.sh assets/binsanity.go webui
+	build-tools/check-updated.sh assets/binsanity.go tools
+	build-tools/check-updated.sh assets/binsanity.go assets/src
 
 # Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version':
@@ -116,17 +122,20 @@ license:
 	rm -rf build/third_party_licenses
 	go-licenses save ./... --save_path=build/third_party_licenses
 	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md
+	just assets
 
 # Compile and bundle the webui files, putting them under assets.
 webui:
 	cd webui && prettier -w index.html src/*.*
 	cd webui && npm run build
 	cp -f webui/dist/index.html assets/src/webui/app.html
+	just assets
 
-# Copy README.md files from tools into documenation source.
+# Copy README.md files from tools into assets.
 tooldoc:
 	find tools -name README.md -exec sh -c \
 	'for f; do dir=$(dirname "$f"); base=$(basename "$dir"); \
 	out="assets/src/doc/$dir.md"; mkdir -p "$(dirname "$out")"; \
 	cp "$f" "$out"; done' \
 	sh {} +
+	just assets

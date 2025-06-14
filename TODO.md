@@ -511,3 +511,5 @@ setting up their environments?)
 Need somebody who knows (and wants support for) Web3 to talk this one up, but
 part of the original Greenhead idea was "let crypto bros do crypto things."
 
+## CI check to make sure the assets are fresh.
+
