@@ -90,6 +90,10 @@ test: prep
 cover: prep
 	go test ./... -coverprofile=cover.out && go tool cover -html=cover.out
 
+# Run tests with coverage for upload to Codecov.
+codecov: prep
+	go test ./... -coverprofile=coverage.txt
+
 # Run benchmarks, if any.
 bench: prep
 	go test ./... -bench=.
