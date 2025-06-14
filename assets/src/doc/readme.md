@@ -1,4 +1,7 @@
-# Greenhead - Agentic AI Framework in Go. 
+
+# Greenhead - Agentic AI Framework in Go.
+
+<!-- cut -->
 
 ## ⚠️ **Warning**
 

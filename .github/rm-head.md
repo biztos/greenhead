@@ -7,9 +7,12 @@ It is auto-generated.  See the top-level justfile for details.
 
 -->
 
-<h1 align="center">Greenhead - Agentic AI Framework in Go.</h1>
-<p align="center"><img src="/assets/src/webui/greenhead-150x225.png" alt="provisional greenhead mascot"></p>
+<!-- TODO: badges, doc links, etc.
 
-<!-- TODO: badges, doc links, etc. -->
+Don't really want that stuff cluttering up the Go docs.
 
----
+-->
+
+![provisional greenhead mascot](/assets/src/webui/greenhead-150x225.png)
+
+# Greenhead - Agentic AI Framework in Go.

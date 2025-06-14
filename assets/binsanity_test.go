@@ -21,7 +21,7 @@ import (
 
 const BinsanityAssetMissing = "webui/root.html--NOPE"
 const BinsanityAssetPresent = "doc/readme.md"
-const BinsanityAssetPresentSum = "1a566b21b20c496c84a271bb857fed5b65ad6b7ea9f4ffb6b81479b174ee6611"
+const BinsanityAssetPresentSum = "5609257fb0e670a3d5d55f78b80e86969a845fc00f427f080f7994a168b50789"
 
 var BinsanityAssetNames = []string{
 
@@ -59,7 +59,7 @@ var BinsanityAssetSums = []string{
 	"7f84f67d02944c995bde337c4f70f3f3c1556684cf8298731a51bb3014130061",
 	"7c4899a35d0d48162f54454cce04343fd402fa3da40a36c1ffc611a382969f68",
 	"e66573e846581a3110de4f575a9be8937a52bb47979c5c631367051c4d72f398",
-	"1a566b21b20c496c84a271bb857fed5b65ad6b7ea9f4ffb6b81479b174ee6611",
+	"5609257fb0e670a3d5d55f78b80e86969a845fc00f427f080f7994a168b50789",
 	"9d9c4535cf0577291fc57b0a6daebda9a3d9490bef897604631a220e0ceac60b",
 	"b1a0ffd526cd067a93a5b0fd5634f38fd756319a1cbd9034b9e1b6d093587614",
 	"a184d7b13e8dd11c9a7f1ac4073a9268a0dd053a7e45771fcbf84728d5b311fe",

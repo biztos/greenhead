@@ -7,12 +7,15 @@ It is auto-generated.  See the top-level justfile for details.
 
 -->
 
-<h1 align="center">Greenhead - Agentic AI Framework in Go.</h1>
-<p align="center"><img src="/assets/src/webui/greenhead-150x225.png" alt="provisional greenhead mascot"></p>
+<!-- TODO: badges, doc links, etc.
 
-<!-- TODO: badges, doc links, etc. -->
+Don't really want that stuff cluttering up the Go docs.
 
----
+-->
+
+![provisional greenhead mascot](/assets/src/webui/greenhead-150x225.png)
+
+# Greenhead - Agentic AI Framework in Go.
 
 ## ⚠️ **Warning**
 
@@ -253,6 +256,7 @@ name must be in English, and must include a language code:
 The main README must at last include a top-level heading in English:
 
 ```text
+# Zebra Painter - German-language painter of zebras
 
 Dieses Werkzeug ermöglicht das Fernmalen von Zebras, gestreifte Pferde aus
 Afrika bzw. dem Tiergarten.
@@ -275,6 +279,7 @@ target users are.  Further documentation may be for specialists.
 Example:
 
 ```text
+# Time Machine
 
 ## This tool enables time travel and is for use by Licensed Physicists only.
 
@@ -327,5 +332,7 @@ and other great open-source software packages.
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
 
-<!-- footer stuff if any, TBD, for now let's just have our spinner head -->
-<p align="center"><img src="/design/spinner.svg"</img></p>
+<!-- (arguably) decorative footer -->
+---
+
+<p align="center"><img src="/design/spinner.svg" alt="decorative element"></img></p>
