@@ -10,7 +10,6 @@ prep:
 	cat README.md | sed -n '/^<!-- cut -->$/,$p' | sed '1d' >> .github/README.md
 	cat .github/rm-foot.md >> .github/README.md
 	grep -v '^!\[' README.md > assets/src/doc/readme.md
-	cp API.md assets/src/doc/api.md
 	cd assets && binsanity src
 	mkdir -p build
 

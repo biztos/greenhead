@@ -99,8 +99,8 @@ func DurLog(t time.Time) []any {
 	return []any{"duration", Dur(t)}
 }
 
-// MarshalJsonFile marshals v to JSON and writes the data to file.
-func MarshalJsonFile(v any, file string) error {
+// JsonFile marshals v to JSON and writes the data to file.
+func JsonFile(v any, file string) error {
 
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -112,16 +112,38 @@ func MarshalJsonFile(v any, file string) error {
 	return nil
 }
 
-// MustMarshalJsonFile calls MarshalJsonFile and panics on error.
-func MustMarshalJsonFile(v any, file string) {
+// JsonFilePretty is as JsonFile but with indent.
+func JsonFilePretty(v any, file string) error {
 
-	if err := MarshalJsonFile(v, file); err != nil {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(file, b, 0666); err != nil {
+		return err
+	}
+	return nil
+
+}
+
+// MustJsonFile calls JsonFile and panics on error.
+func MustJsonFile(v any, file string) {
+
+	if err := JsonFile(v, file); err != nil {
 		panic(err)
 	}
 }
 
-// MarshalTomlFile marshals v to TOML and writes the data to file.
-func MarshalTomlFile(v any, file string) error {
+// MustJsonFilePretty calls JsonFilePretty and panics on error.
+func MustJsonFilePretty(v any, file string) {
+
+	if err := JsonFilePretty(v, file); err != nil {
+		panic(err)
+	}
+}
+
+// TomlFile marshals v to TOML and writes the data to file.
+func TomlFile(v any, file string) error {
 
 	b, err := toml.Marshal(v)
 	if err != nil {
@@ -131,6 +153,15 @@ func MarshalTomlFile(v any, file string) error {
 		return err
 	}
 	return nil
+}
+
+// MustTomlFile calls TomlFile and panics on error.
+func MustTomlFile(v any, file string) {
+
+	err := TomlFile(v, file)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Comma-separated list of lowercased file extensions that can be Marshaled

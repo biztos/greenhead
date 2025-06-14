@@ -259,7 +259,7 @@ func (c *OpenAiClient) DumpErr(req any, res any, err error) {
 		"error":    err.Error(),
 	}
 	file := filepath.Join(c.DumpDir, "error.json")
-	utils.MustMarshalJsonFile(v, file)
+	utils.MustJsonFilePretty(v, file)
 
 }
 

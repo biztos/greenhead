@@ -336,7 +336,7 @@ func NewAgent(cfg *Config) (*Agent, error) {
 		}
 		fn := fmt.Sprintf("%s-config.toml", a.ULID)
 		cfg_file := filepath.Join(a.dumpdir, fn)
-		if err := utils.MarshalTomlFile(cfg, cfg_file); err != nil {
+		if err := utils.TomlFile(cfg, cfg_file); err != nil {
 			return nil, fmt.Errorf("error dumping config: %w", err)
 		}
 		client.SetDumpDir(a.dumpdir)
@@ -539,7 +539,7 @@ func (a *Agent) DumpCompletion(req *CompletionRequest, res *CompletionResponse) 
 	name := fmt.Sprintf("%s-%04d.json", a.ULID, a.completed)
 	path := filepath.Join(a.dumpdir, name)
 	v := map[string]any{"request": req, "response": res}
-	if err := utils.MarshalJsonFile(v, path); err != nil {
+	if err := utils.JsonFilePretty(v, path); err != nil {
 		return fmt.Errorf("error dumping completion: %w", err)
 	}
 	return nil
