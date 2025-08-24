@@ -149,7 +149,7 @@ The `pair run` command could then be used to play a game of Tic Tac Toe
 between two OpenAI agents:
 
 ```sh
-minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
+minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log
 ```
 
 The top-level `greenhead` package exposes functions for easy customization of
@@ -318,4 +318,3 @@ and other great open-source software packages.
 [cobra]: https://cobra.dev/
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
-

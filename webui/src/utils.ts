@@ -1,5 +1,4 @@
 /* utils.ts - I can't believe I'm writing this in 2025! 🤡
-
 */
 
 type elemSel = string | HTMLElement;

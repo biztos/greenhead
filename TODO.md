@@ -4,6 +4,7 @@
 
 - Config override logic, as below.
     - why isn't log-fiber working?! maybe this
+- Switch to Responses API.
 - Document configs!
 - Multi-api agents ("flex").
 - Fake client for testing UI et al w/o any actual LLM
