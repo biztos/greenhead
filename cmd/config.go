@@ -16,7 +16,7 @@ The preferred format for config files is TOML, but JSON and JSON5 are also
 supported.`,
 }
 
-var configDumpJson bool
+var ConfigDumpJson bool
 
 // ConfigDumpCmd represents the "config dump" subcommand.
 var ConfigDumpCmd = &cobra.Command{
@@ -37,7 +37,7 @@ Comments are *not* preserved at this time.
 		if err != nil {
 			return err
 		}
-		if configDumpJson {
+		if ConfigDumpJson {
 			r.Config.DumpJson(Stdout)
 		} else {
 			r.Config.DumpToml(Stdout)
@@ -61,7 +61,7 @@ Succeeds silently if there are no errors.`,
 }
 
 func init() {
-	ConfigDumpCmd.Flags().BoolVar(&configDumpJson, "json", false,
+	ConfigDumpCmd.Flags().BoolVar(&ConfigDumpJson, "json", false,
 		"Dump JSON instead of TOML")
 
 	ConfigCmd.AddCommand(ConfigDumpCmd)
