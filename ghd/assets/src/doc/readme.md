@@ -173,8 +173,7 @@ The top-level `greenhead` package exposes functions for easy customization of
 your app.  In addition to the name, you will usually want to customize the
 tools, and sometimes also the command-line options.
 
-For more advanced customization, see the `examples` subdirectory of the source
-code.
+For more advanced customization, see the `ghd/examples` subdirectory.
 
 ## Using the Packages
 

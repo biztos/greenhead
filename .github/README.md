@@ -7,7 +7,7 @@ It is auto-generated.  See the top-level justfile for details.
 
 -->
 
-![provisional greenhead mascot](/assets/src/webui/greenhead-150x225.png)
+![provisional greenhead mascot](/ghd/assets/src/webui/greenhead-150x225.png)
 
 # Greenhead - Agentic AI Framework in Go.
 
@@ -205,8 +205,7 @@ The top-level `greenhead` package exposes functions for easy customization of
 your app.  In addition to the name, you will usually want to customize the
 tools, and sometimes also the command-line options.
 
-For more advanced customization, see the `examples` subdirectory of the source
-code.
+For more advanced customization, see the `ghd/examples` subdirectory.
 
 ## Using the Packages
 
