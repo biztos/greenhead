@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead"
-	"github.com/biztos/greenhead/tools"
-	"github.com/biztos/greenhead/utils"
+	"github.com/biztos/greenhead/ghd/tools"
+	"github.com/biztos/greenhead/ghd/utils"
 )
 
 var TheTool *tools.ExternalTool

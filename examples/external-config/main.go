@@ -8,32 +8,32 @@
 // For an example of the same thing baked into the Go proper, which provides
 // extra flexibility for calling the tool from the CLI itself, see:
 //
-//	examples/external/main.go
+//  examples/external/main.go
 //
 // To run from the project root:
 //
-//	go run ./examples/external-config/ agents run 'hello world' --show-calls
+//  go run ./examples/external-config/ agents run 'hello world' --show-calls
 package main
 
 import (
-	"github.com/biztos/greenhead"
-	"github.com/biztos/greenhead/cmd"
-	"github.com/biztos/greenhead/utils"
+  "github.com/biztos/greenhead"
+  "github.com/biztos/greenhead/ghd/cmd"
+  "github.com/biztos/greenhead/ghd/utils"
 
-	_ "github.com/biztos/greenhead/tools/all"
+  _ "github.com/biztos/greenhead/ghd/tools/all"
 )
 
 func main() {
 
-	// Boilerplate setup and run:
-	greenhead.CustomApp("external-config", "1.0.0", "SuperCorp External Tool",
-		"In real life, External means Internal -- to SuperCorp!")
-	greenhead.Run()
+  // Boilerplate setup and run:
+  greenhead.CustomApp("external-config", "1.0.0", "SuperCorp External Tool",
+    "In real life, External means Internal -- to SuperCorp!")
+  greenhead.Run()
 }
 
 func init() {
 
-	var ConfigToml = `# Config including the echo_format tool.
+  var ConfigToml = `# Config including the echo_format tool.
 [[external_tools]]
   name = "echo_format"
   description = "Echo args back with formatting."
@@ -119,6 +119,6 @@ func init() {
   a header of "goobers" and reverse set to true. \
   """
 `
-	utils.MustUnTomlString(ConfigToml, cmd.Config)
+  utils.MustUnTomlString(ConfigToml, cmd.Config)
 
 }

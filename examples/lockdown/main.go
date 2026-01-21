@@ -23,9 +23,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead"
-	"github.com/biztos/greenhead/runner"
-	_ "github.com/biztos/greenhead/tools/all"
-	"github.com/biztos/greenhead/utils"
+	"github.com/biztos/greenhead/ghd/runner"
+	_ "github.com/biztos/greenhead/ghd/tools/all"
+	"github.com/biztos/greenhead/ghd/utils"
 )
 
 var Stdout = os.Stdout // For testing.

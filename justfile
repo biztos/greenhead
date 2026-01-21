@@ -9,35 +9,35 @@ assets:
 	cat .github/rm-head.md > .github/README.md
 	cat README.md | sed -n '/^<!-- cut -->$/,$p' | sed '1d' >> .github/README.md
 	cat .github/rm-foot.md >> .github/README.md
-	grep -v '^!\[' README.md > assets/src/doc/readme.md
-	cd assets && binsanity src
+	grep -v '^!\[' README.md > ghd/assets/src/doc/readme.md
+	cd ghd/assets && binsanity src
 
 # Run locally from source, with args passed. Args must not contain spaces.
 run *ARGS='--version':
-	go run ./cmd/ghd {{ARGS}}
+	go run ./ghd/cmd/ghd {{ARGS}}
 
 # Serve the API locally, using a working test config; open a browser on Mac.
 serve *ARGS:
 	(which open && sleep 2 && open http://localhost:3030) &
-	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
+	go run ./ghd/cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # As serve, but calls webui and assets to rebuild the SPA first.
 serve-webui *ARGS: webui assets
-	go run ./cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
+	go run ./ghd/cmd/ghd api serve --config=testdata/config-full.toml {{ARGS}}
 
 # Build for current environment.
 build:
-	go build -o build/ghd ./cmd/ghd
+	go build -o build/ghd ./ghd/cmd/ghd
 
 # Build for Apple Silicon Mac.
 build-macos-arm:
 	mkdir -p build/darwin-arm64
-	GOOS=darwin GOARCH=arm64 go build -o build/darwin-arm64/ghd ./cmd/ghd
+	GOOS=darwin GOARCH=arm64 go build -o build/darwin-arm64/ghd ./ghd/cmd/ghd
 
 # Build for Intel Mac.
 build-macos-intel:
 	mkdir -p build/darwin-amd64
-	GOOS=darwin GOARCH=amd64 go build -o build/darwin-amd64/ghd ./cmd/ghd
+	GOOS=darwin GOARCH=amd64 go build -o build/darwin-amd64/ghd ./ghd/cmd/ghd
 
 # Build for Mac (all architectures).
 build-macos: build-macos-arm build-macos-intel
@@ -114,14 +114,14 @@ license:
 	mkdir -p build
 	rm -rf build/third_party_licenses
 	go-licenses save ./... --save_path=build/third_party_licenses
-	build-tools/licenses.sh build/third_party_licenses assets/src/doc/licenses.md
+	build-tools/licenses.sh build/third_party_licenses ghd/assets/src/doc/licenses.md
 	just assets
 
 # Compile and bundle the webui files, putting them under assets.
 webui:
 	cd webui && prettier -w index.html src/*.*
 	cd webui && npm run build
-	cp -f webui/dist/index.html assets/src/webui/app.html
+	cp -f webui/dist/index.html ghd/assets/src/webui/app.html
 	just assets
 
 # Copy README.md files from tools into assets.

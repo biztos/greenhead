@@ -35,11 +35,28 @@ https://codecov.io/gh/biztos/greenhead/graph/badge.svg?token=B2IUXP37PV
 
 -->
 
-## ⚠️ **Warning**
+## 📢 Important Note on Project Status
 
-This is pre-release software and may change at any time.
+Greenhead still has a lot of promise, because -- AFAICT -- it's the only
+framework that allows for config-only integration with your legacy
+command-line tools while also allowing for full customizability of the
+binary.
 
-*NB: examples may only work with OpenAI at this time. More APIs soon!*
+That said, Your Humble [Author][biztos] has other 🐟 to 🍳 at
+the moment, and further work on Greenhead is likely to be sporadic at best,
+unless someone forks it or [hires me][hireme] to customize
+the software to their needs.
+
+In particular, considerations include:
+
+* Finding a more flexible LLM API abstraction similar to [Vercel AI][vercel-ai]
+* Possibly moving to [MCP][mcp] (or maybe not; function calls are a good fit here)
+* Rewriting the crappy web UI to be modern.
+* Fix the access API, it's a mess.
+* Surely other things besides!
+
+Read on if you'd like to play with this or [copy][LICENSE] any of the ideas
+herein.
 
 ---
 
@@ -55,15 +72,16 @@ There are four main ways to use Greenhead:
 4. Contribute tools for others to use.
 
 Greenhead wants these use-cases to be as easy as possible while still being
-powerful enough to build Skynet. _(Just kidding?)_
+powerful enough to build [Skynet][skynet].
 
 ## Motivation
 
 Many people have tasks they would like AI assistance with, but connecting the
-tools for Agents is often too difficult or insufficiently secure.
+__tools__ for Agents is often too difficult or insufficiently secure, and/or
+comes with framework lock-in.
 
-Some of these tools can be defined as functions; others already exist as
-binaries or scripts on the user's system.
+Some of these tools can be defined as native functions; others already exist
+as binaries or scripts on the user's system.
 
 Greenhead presents a uniform way of setting up both kinds of tools and
 presenting them to the AI. This, we hope, will make adoption of Agentic AI
@@ -167,7 +185,7 @@ package main
 
 import (
     "github.com/biztos/greenhead"
-    _ "github.com/biztos/greenhead/tools/tictactoe"
+    _ "github.com/biztos/greenhead/ghd/tools/tictactoe"
 )
 
 func main() {
@@ -180,7 +198,7 @@ The `pair run` command could then be used to play a game of Tic Tac Toe
 between two OpenAI agents:
 
 ```sh
-minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log 
+minimal run "Start game." --agent=tictactoe --agent=tictactoe -l tmp.log
 ```
 
 The top-level `greenhead` package exposes functions for easy customization of
@@ -196,13 +214,14 @@ If your goal is to incorporate the agent-runner logic into your own project,
 you will eventually need to use more than the top-level `greenhead` package.
 
 To copy the full run cycle, especially regarding config management, you will
-want to examine the `runner` subpackage.  To manage agents and tools directly,
-the `agent`, `tools`, and `registry` packages should be consulted.
+want to examine the `ghd/runner` subpackage.  To manage agents and tools
+directly, the `ghd/agent`, `ghd/tools`, and `ghd/registry` packages should be
+consulted.
 
-Subpackages in a nutshell:
+Subpackages in a nutshell, all under `ghd/`:
 
 * agent - agent logic and API clients.
-* api - the HTTP API.
+* api - the HTTP API; __needs work__
 * assets - assets built from the `src` subdir with [binsanity][binsanity].
 * cmd - the [Cobra][cobra] setup for the CLI; uses `runner` for command logic.
 * registry - global registry of tools.
@@ -219,19 +238,18 @@ for safety and utility: it should be impossible for naïve users to cause
 damage, and the tool should be useful to a reasonable number of people.
 (Entertainment counts as "useful" -- games are encouraged!)
 
-Additional requirements:
+Please be sure that:
 
-1. The tool name must follow the namespacing conventions.
-2. Descriptive text and documentation must be in English (see below).
-3. A working `agent.config` must be included.
-4. The `README.md` must be included and be easy for a layperson to understand.
-5. Test coverage must be 100% (see below).
+1. The tool name follows the namespacing conventions.
+2. Descriptive text and documentation is (also) in English.
+3. A working `agent.config` is included.
+4. The `README.md` is easy for a layperson to understand.
 
-For a canonical example, see the `tictactoe` tool.
+For a canonical example, see the `ghd/tools/tictactoe` directory.
 
 If you have an idea for a useful tool but are not a Go programmer, feel free
-to open a ticket describing your idea in detail.  Someone else may find it
-compelling and code it for you.
+to open a ticket describing your idea.  Someone else may find it compelling
+and code it for you.
 
 ### Namespacing
 
@@ -262,49 +280,6 @@ Especially for higher-level packages, avoid names that might conflict with
 future implementations at a lower level.  The bias is for longer and more
 descriptive tool names.
 
-### Non-English Tools
-
-If a tool is not in English -- meaning its input and output are in another
-language, and that language may be used with the LLM -- then it's appropriate
-for its documentation to also be in the target language.  However, the tool
-name must be in English, and must include a language code:
-
-`mytool_zebra_painter_de`
-
-The main README must at last include a top-level heading in English:
-
-```text
-# Zebra Painter - German-language painter of zebras
-
-Dieses Werkzeug ermöglicht das Fernmalen von Zebras, gestreifte Pferde aus
-Afrika bzw. dem Tiergarten.
-```
-
-Documentation in additional languages besides English is always welcome,
-even for English-specific tools, in the form of `README-<lang>.md` files:
-`README-de.md`, `README-th.md` and so on.
-
-In the unlikely event there are significant non-English contributions,
-advice on how best to handle this is welcome.
-
-### Expert Tools
-
-Expert tools, i.e. those that are not easily understood by a layperson, or
-have complex prerequisites, or perform specialized tasks, are welcome. These
-tools _must_ explain in plain language what they do in general, and who the
-target users are.  Further documentation may be for specialists.
-
-Example:
-
-```text
-# Time Machine
-
-## This tool enables time travel and is for use by Licensed Physicists only.
-
-Requires TIME_TICKET set in env.  Requires flubberized tensor feet on all
-equipment in the physical locus of trigger activation.
-```
-
 ### External Binaries
 
 Submitted tools may call external binaries, within reasonable safety bounds.
@@ -318,21 +293,6 @@ the same binary.
 
 For example a `host` command wrapped to take a `-t` option but nothing else
 might be named `unix_host_lookup_by_type`.
-
-### Test Coverage
-
-Our goal is 100% test coverage across the entire project.  Tool submissions
-must meet this requirement.
-
-It may be impractical to test the _actual_ execution of a tool, e.g. if the
-tool makes a network call.  (Do not make network calls from the tests!) This
-is normal, and in Go we handle this by using interfaces and testing types.
-
-Design for testing!  If you have questions, feel free to ask.
-
-## Further Reading
-
-Additional documentation is available at the project [website][ghd].
 
 ## Acknowledgements
 
@@ -349,7 +309,12 @@ and other great open-source software packages.
 [cobra]: https://cobra.dev/
 [fiber]: https://gofiber.io/
 [go-openai]: https://github.com/sashabaranov/go-openai
-
+[vercel-ai]: https://ai-sdk.dev/docs/introduction
+[biztos]: https://biztos.com
+[hireme]: https://biztos.com/ghcv/
+[mcp]: https://modelcontextprotocol.io/docs/getting-started/intro
+[license]: ./LICENSE
+[skynet]: https://skynetobserver.substack.com/
 <!-- (arguably) decorative footer -->
 ---
 

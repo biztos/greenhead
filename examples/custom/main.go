@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/biztos/greenhead"
-	_ "github.com/biztos/greenhead/tools/all"
+	_ "github.com/biztos/greenhead/ghd/tools/all"
 )
 
 func main() {

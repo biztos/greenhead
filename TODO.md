@@ -4,7 +4,6 @@
 
 - Config override logic, as below.
     - why isn't log-fiber working?! maybe this
-- Switch to Responses API.
 - Document configs!
 - Multi-api agents ("flex").
 - Fake client for testing UI et al w/o any actual LLM
@@ -518,3 +517,55 @@ Checking binsanity.go datestamp didn't do it b/c checkout timestamps.
 
 Next idea: copy binsanity.go to say build/orig and then re-run the webui,
 licenses, tooldoc, assets -- and then diff the binsanity files.
+
+---
+
+---
+
+---
+
+# Greenhead Feature Roadmap
+
+The plan forward, roughly in order, or at least it was back in mid-2025.
+
+## v0.2
+
+* Support for other LLMs besides OpenAI.
+    * LLAMA et al, will test via Groq
+    * Claude ideally.
+    * Others based on feedback.
+* Flexibile agents and tools.
+* Tool config.
+* HTTP API Enhancements
+    * BYO API Key
+    * Graceful shutdown
+* Useful built-in tools
+    * pro-bing
+    * miekg/dns
+    * others TBD
+* Agent persistence.
+    * Postgres and SQLite standard.
+    * Pluggable/configurable.
+* Improvements/changes based on feedback.
+
+## v0.3
+
+* Add RAG support.
+* Add MCP support. (Ouch, probably a lot of work.)
+    * May be necessary for support of non-OpenAI LLMs.
+    * But remember COMPLEXITY != UTILITY!
+* Improvements/changes based on feedback.
+
+## v1.0
+
+* TBD -- the above is a "1.0 of the mind" but need to see what users want!
+
+## FUTURE
+
+* HTTP API for running pairs, sets, etc.
+* "Broker" support for many agents.
+* Pass-through API? Maybe.
+* Model-switcher: let the LLM change the model.
+* Tool: more general KV store, maybe Badger?
+* Tool: SQLite3 database interface.
+* cf TODO.md for more speculative things.

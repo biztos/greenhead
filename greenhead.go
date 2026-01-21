@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/biztos/greenhead/cmd"
-	"github.com/biztos/greenhead/registry"
-	"github.com/biztos/greenhead/tools"
+	"github.com/biztos/greenhead/ghd/cmd"
+	"github.com/biztos/greenhead/ghd/registry"
+	"github.com/biztos/greenhead/ghd/tools"
 )
 
 // Run exposes the cmd submodule's Execute function.
