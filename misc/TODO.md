@@ -1,5 +1,9 @@
 # TODO (including speculative things)
 
+__NB: this is all pretty old, if I restart work on Greenhead it gets audited.__
+
+And yes, that's why it's hiding in `/misc` for now.
+
 ## Priorities:
 
 - Config override logic, as below.

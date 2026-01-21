@@ -7,7 +7,7 @@ It is auto-generated.  See the top-level justfile for details.
 
 -->
 
-![provisional greenhead mascot](/assets/src/webui/greenhead-150x225.png)
+![provisional greenhead mascot](/ghd/assets/src/webui/greenhead-150x225.png)
 
 # Greenhead - Agentic AI Framework in Go.
 

@@ -114,7 +114,7 @@ license:
 	mkdir -p build
 	rm -rf build/third_party_licenses
 	go-licenses save ./... --save_path=build/third_party_licenses
-	build-tools/licenses.sh build/third_party_licenses ghd/assets/src/doc/licenses.md
+	misc/licenses.sh build/third_party_licenses ghd/assets/src/doc/licenses.md
 	just assets
 
 # Compile and bundle the webui files, putting them under assets.
