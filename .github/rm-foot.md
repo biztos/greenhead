@@ -1,4 +1,4 @@
 <!-- (arguably) decorative footer -->
 ---
 
-<p align="center"><img src="/design/spinner.svg" alt="decorative element"></img></p>
+<p align="center"><img src="/misc/spinner.svg" alt="decorative element"></img></p>
