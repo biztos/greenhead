@@ -76,6 +76,11 @@ build-full: clean vet license tooldoc test build-all
 	@echo TODO: publish the builds somewhere
 	@echo TODO: run coverage and upload it somewhere
 
+# Release using goreleaser (will build everything to clean dist dir).
+[confirm("⚠️ BUILD AND RELEASE ARTIFACTS TO GITHUB?")]
+release:
+	goreleaser release --clean
+
 # Check for programmer errors.
 vet:
 	go vet ./...
@@ -104,9 +109,9 @@ bench:
 doc:
 	pkgsite -open
 
-# Remove the build and cover artifacts.
+# Remove the build, release (dist) and cover artifacts.
 clean:
-	/bin/rm -rf build cover.out
+	/bin/rm -rf build dist cover.out
 
 # Generate the licenses for the doc command, checking compatibility first.
 license:
