@@ -37,26 +37,27 @@ https://codecov.io/gh/biztos/greenhead/graph/badge.svg?token=B2IUXP37PV
 
 ## 📢 Important Note on Project Status
 
-Greenhead still has a lot of promise, because -- AFAICT -- it's the only
+Greenhead still has a lot of promise, because – AFAICT – it's the only
 framework that allows for config-only integration with your legacy
 command-line tools while also allowing for full customizability of the
 binary.
 
-That said, Your Humble [Author][biztos] has other 🐟 to 🍳 at
-the moment, and further work on Greenhead is likely to be sporadic at best,
-unless someone forks it or [hires me][hireme] to customize
-the software to their needs.
+That said, Your Humble [Author][biztos] has other 🐟 to 🍳 at the moment, and
+further work on Greenhead is likely to be sporadic at best, unless someone
+forks it or [hires me][hireme] to customize the software to their needs.
 
 In particular, considerations include:
 
 * Finding a more flexible LLM API abstraction similar to [Vercel AI][vercel-ai]
 * Possibly moving to [MCP][mcp] (or maybe not; function calls are a good fit here)
-* Rewriting the crappy web UI to be modern.
+* Rewriting the little web UI to be modern.
 * Fix the access API, it's a mess.
 * Surely other things besides!
 
-Read on if you'd like to play with this or [copy][LICENSE] any of the ideas
+Read on if you'd like to play with this or copy any of the ideas
 herein.
+
+---
 
 ---
 
@@ -77,8 +78,8 @@ powerful enough to build [Skynet][skynet].
 ## Motivation
 
 Many people have tasks they would like AI assistance with, but connecting the
-__tools__ for Agents is often too difficult or insufficiently secure, and/or
-comes with framework lock-in.
+__tools__ to Agents is often too difficult or insufficiently secure, and/or
+introduces permanent external dependencies.
 
 Some of these tools can be defined as native functions; others already exist
 as binaries or scripts on the user's system.
@@ -111,9 +112,7 @@ ghd agents run Howdy --log-file=tmp.log --agent=chatty --agent=pirate
 ## Running the Web API
 
 The Web API exposes persistent chat conversations over an HTTP interface. The
-server maintains chat context.  Full documentation of the API is available
-online at the project [website][ghd] as well as from the `ghd doc api`
-command.
+server maintains chat context.
 
 To run the HTTP API with two built-in agents available:
 
@@ -303,7 +302,6 @@ Greenhead is built with
 [go-openai][go-openai],
 and other great open-source software packages.
 
-[ghd]: https://ghd.biztos.com/
 [binsanity]: https://pkg.go.dev/github.com/biztos/binsanity
 [cobra]: https://cobra.dev/
 [fiber]: https://gofiber.io/
@@ -312,7 +310,6 @@ and other great open-source software packages.
 [biztos]: https://biztos.com
 [hireme]: https://biztos.com/ghcv/
 [mcp]: https://modelcontextprotocol.io/docs/getting-started/intro
-[license]: ./LICENSE
 [skynet]: https://skynetobserver.substack.com/
 <!-- (arguably) decorative footer -->
 ---

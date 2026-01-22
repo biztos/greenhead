@@ -1,0 +1,37 @@
+# .goreleaser.yaml for greenhead
+#
+# Docs: https://goreleaser.com
+
+version: 2 # <-- of the config syntax, not the software!
+
+before:
+  hooks:
+    - just assets
+    - go mod tidy
+    - just test
+
+builds:
+  - id: greenhead
+    main: ./ghd/cmd/ghd/
+    binary: ghd
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats: [tar.gz]
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).

@@ -56,3 +56,5 @@ dist-ssr
 *.sw?
 
 /coverage.txt
+# Added by goreleaser init:
+dist/
