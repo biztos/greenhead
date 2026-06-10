@@ -64,12 +64,12 @@ build-windows-intel:
 # Build for ARM Linux.
 build-linux-arm:
 	mkdir -p build/linux-arm64
-	GOOS=linux GOARCH=arm64 go build -o build/linux-arm64/ghd.exe
+	GOOS=linux GOARCH=arm64 go build -o build/linux-arm64/ghd
 
 # Build for Intel Linux.
 build-linux-intel:
 	mkdir -p build/linux-amd64
-	GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/ghd.exe
+	GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/ghd
 
 # Make a full build with testing etc for all targets, CI-style.
 build-full: clean vet license tooldoc test build-all
